@@ -1,0 +1,1928 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>[試作] 育つドメインの木 — トップページ右カラム</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Zen+Maru+Gothic:wght@700;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet" />
+<style>
+/*
+  試作｜トップページの右カラム（HeroArt）を「育つドメインの木」に置き換える案
+  --------------------------------------------------------------------------
+  - 本番コードには一切触れていません。frontend/src/styles/app.css のトークンと
+    DomainSearchPage.tsx / AppLayout.tsx のヒーロー構造を写経した上で、
+    右カラムだけ DomainTree に差し替えています。
+  - 木は手描きの絵ではなく **毎回その場で生成** します。取得件数 → 成長段階 →
+    枝の再帰深さ・幹の長さ・葉の量 が連動するので、次の1件で必ず何かが変わります。
+  - 葉は1枚ずつドメインに対応させません（v1でやって、名前が読めないわりに
+    密度が出ないと分かったため）。葉の「量」で件数を語り、名前は出しません。
+  - 外部素材ゼロ（ライセンス管理不要）。
+*/
+
+/* ===== tokens : frontend/src/styles/app.css :root の写し ===== */
+:root{
+  --paper:#fbfcf6; --paper-2:#f3f7ee;
+  --ink:#17241c; --ink-soft:#465449; --ink-faint:#5f6c60; --ink-hint:#78857a;
+  --line:#e4ece0; --line-strong:#cbe6c4;
+  --green:#1f6d45; --green-deep:#175538; --green-darkest:#123f2a;
+  --grass:#2f8f5b; --grass-1:#eef7ec; --grass-2:#dcefd6; --grass-3:#cbe6c4;
+  --green-contrast:#ffffff; --green-ring:rgb(31 109 69 / 22%);
+  --sun:#f6e6bd; --card:#ffffff; --header-surface:#ffffff;
+  --danger:#b23a26; --orange:#b5651d;
+  --shadow-soft:0 22px 48px -30px rgb(23 60 40 / 42%);
+  --radius:0rem;
+
+  /* 木の専用トークン（採用時は app.css に足す想定） */
+  --bark:#6f5238; --bark-dark:#54402c;
+  --leaf-1:#2b7f4f;   /* 奥の葉 */
+  --leaf-2:#3fa06a;   /* 中間 */
+  --leaf-3:#6cc487;   /* 手前・光の当たる葉 */
+  /* 黄〜茶の4段は「隣と取り違えたときに取る行動が違う」並びなので、色相だけで
+     なく明度も1段ずつ空ける。隣り合う2つが P/D/T 型の見えかたでも融けない
+     ところまで広げてある（更新が近い→まもなく→復旧できる→復旧できない）。 */
+  --leaf-soon:#f9d05d;   /* 更新が近い＝黄色い葉 */
+  --leaf-soon-2:#e27b18; /* まもなく期限＝橙 */
+  --leaf-wither:#af6652; /* 枯れかけ。まだ復旧できる側の赤茶 */
+  --leaf-dead:#7d4a35;   /* 期限切れ＝枯葉 */
+  /* 期限が分からない葉。樹冠の緑のどれとも重ならない灰緑にする。ここを
+     --leaf-2 にすると樹冠の塗りと1ピクセルも違わず、状態そのものが消える。 */
+  --leaf-unknown:#96a294;
+  --halo:#cfe9c6;
+  /* ドメインの葉の縁。樹冠の塗りに溶けないための輪郭で、色ではなく「形」の差。
+     半透明だと下の葉の色に染まって差が消えるので、不透明のインクで引く。 */
+  /* 自分のドメインの葉だけに入る縁取り。樹冠に対して 4.1:1 あり、
+     装飾葉に埋もれずに拾える。黒に寄せると絵から浮くので深緑にとどめる。 */
+  --leaf-domain-stroke:#14352a;
+  /* キーボードのフォーカス。葉の色は状態で変わり、背後の樹冠も明暗どちらにも
+     なるので、1色ではどこかで必ず沈む。芯と縁の2本を重ね、片方が背景に
+     負けてももう片方が残るようにする。 */
+  --leaf-focus-core:#0d1712;
+  --leaf-focus-halo:#ffffff;
+
+  /* 地面の小花。草だけだと足もとが単調なので、彩りに3色だけ持つ。 */
+  --flower-1:#f4ece0; --flower-2:#e8b3b3; --flower-3:#f0c15c;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#121a14; --paper-2:#17211a;
+    --ink:#e9f0e7; --ink-soft:#a8b8a9; --ink-faint:#85947f; --ink-hint:#7b8a7c;
+    --line:#27332a; --line-strong:#3a4a3d;
+    --green:#6cc38c; --green-deep:#86d3a1; --green-darkest:#b6e6c5;
+    --grass:#58b57c; --grass-1:#1b2a1f; --grass-2:#223528; --grass-3:#2c4433;
+    --green-contrast:#0e1a12; --green-ring:rgb(108 195 140 / 26%);
+    --sun:#3a3116; --card:#1a241d; --header-surface:#0e150f;
+    --danger:#f3a294; --orange:#e0a066;
+    --shadow-soft:0 22px 48px -30px rgb(0 0 0 / 62%);
+    --bark:#7d5f45; --bark-dark:#5d452f;
+    --leaf-1:#2c6f48; --leaf-2:#3f9a67; --leaf-3:#68bd83;
+    --leaf-soon:#e1b23e; --leaf-soon-2:#cd6324;
+    --leaf-wither:#a05957; --leaf-dead:#69492d;
+    --leaf-unknown:#7d9285;
+    --halo:#2a4330;
+    --leaf-domain-stroke:rgb(233 240 231 / 30%);
+    --leaf-focus-core:#f4fbf3; --leaf-focus-halo:#0a120c;
+    --flower-1:#ded3c2; --flower-2:#c98f8f; --flower-3:#d9ae52;
+  }
+}
+
+/* ===== base ===== */
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--paper); color:var(--ink); overflow-x:hidden;
+  font-family:'Noto Sans JP','Poppins','Hiragino Kaku Gothic ProN',sans-serif;
+  font-size:15px; line-height:1.9; font-feature-settings:'palt';
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:'Zen Maru Gothic','Poppins',sans-serif;font-weight:700;margin:0}
+a{color:var(--green);text-underline-offset:4px;transition:color .15s}
+a:hover{color:var(--green-deep)}
+:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.font-en{font-family:'Poppins','Noto Sans JP',sans-serif;font-feature-settings:normal}
+.wrap{max-width:1160px;margin:0 auto;padding:0 16px}
+@media(min-width:640px){.wrap{padding:0 28px}}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* ===== header : AppLayout.tsx の写し ===== */
+header.site{position:sticky;top:0;z-index:40;background:var(--header-surface);border-bottom:1px solid var(--line);box-shadow:0 6px 18px -18px rgb(23 60 40 / 45%)}
+.hd{display:flex;align-items:center;gap:8px;height:62px}
+.brand{display:flex;align-items:center;gap:8px;font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:18px;letter-spacing:-.01em;color:var(--green-darkest);text-decoration:none}
+.brandmark{width:32px;height:32px;flex:none;display:block;background:var(--green);border-radius:4px;padding:5px}
+.hd nav{display:none;align-items:center;gap:4px;margin-left:8px}
+.hd nav a{padding:6px 12px;font-size:13.5px;font-weight:500;color:var(--ink-soft);text-decoration:none}
+.hd nav a:hover{background:var(--grass-1);color:var(--green-deep)}
+@media(min-width:768px){.hd nav{display:flex}}
+.hd .right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.chip{display:none;align-items:center;gap:6px;background:var(--grass-1);color:var(--ink-soft);font-size:12px;font-weight:500;padding:3px 10px}
+.chip i{width:6px;height:6px;border-radius:999px;background:var(--grass);flex:none}
+@media(min-width:768px){.chip{display:inline-flex}}
+.ghostbtn{font:inherit;font-size:13px;font-weight:500;color:var(--ink-soft);background:none;border:0;cursor:pointer;padding:6px 10px}
+.ghostbtn:hover{background:var(--grass-1)}
+
+/* ===== hero : DomainSearchPage.tsx の写し（右だけ差し替え） ===== */
+.hero{
+  position:relative;display:flex;align-items:center;overflow:hidden;
+  background:linear-gradient(180deg,var(--grass-1) 0%,var(--grass-1) 58%,var(--paper) 100%);
+  padding:48px 0;
+}
+@media(min-width:1024px){.hero{min-height:calc(100svh - 62px);padding:56px 0}}
+.leaf-motif{position:absolute;border-radius:0 78% 0 78%;pointer-events:none;z-index:0;background:var(--grass-2)}
+.motif-a{top:-88px;left:-160px;height:360px;width:520px;transform:rotate(-12deg);opacity:.55}
+.motif-b{right:-120px;bottom:-80px;height:270px;width:380px;transform:rotate(24deg);opacity:.42}
+.hero-grid{position:relative;z-index:1;display:grid;gap:48px;align-items:center}
+@media(min-width:1024px){.hero-grid{grid-template-columns:minmax(0,1fr) 440px}}
+
+.catch{margin:0 0 28px;font-size:31px;line-height:1.32;font-weight:900;text-wrap:balance}
+@media(min-width:640px){.catch{font-size:48px}}
+.modeswitch{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px;background:rgb(255 255 255 / 80%);padding:4px;box-shadow:var(--shadow-soft);margin-bottom:24px}
+@media (prefers-color-scheme: dark){.modeswitch{background:rgb(26 36 29 / 80%)}}
+.modeswitch span,.modeswitch a{font-family:'Zen Maru Gothic',sans-serif;font-size:13px;font-weight:700;padding:6px 16px;text-decoration:none}
+.modeswitch span{background:var(--grass-2);color:var(--green-darkest)}
+.modeswitch a{color:var(--ink-soft);display:flex;align-items:center;gap:6px}
+.searchpill{display:flex;flex-wrap:wrap;gap:6px;max-width:560px;background:var(--card);padding:6px;box-shadow:var(--shadow-soft)}
+@media(min-width:640px){.searchpill{flex-wrap:nowrap}}
+.searchpill .fld{display:flex;min-width:0;flex:1;align-items:center;gap:10px;padding:0 12px}
+@media(min-width:640px){.searchpill .fld{padding-left:16px}}
+.searchpill svg{flex:none;stroke:var(--grass)}
+.searchpill input{height:56px;min-width:0;flex:1;border:0;background:transparent;padding:0;font:inherit;font-size:16px;color:var(--ink)}
+.searchpill input:focus{outline:none}
+.searchpill input::placeholder{color:var(--ink-faint)}
+.hint{margin:14px 0 0;max-width:560px;font-size:12.5px;line-height:1.75;color:var(--ink-faint)}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;
+  border:0;background:var(--green);color:var(--green-contrast);
+  font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:15px;
+  height:56px;padding:0 32px;transition:background .15s;text-decoration:none;
+}
+.btn:hover{background:var(--green-deep);color:var(--green-contrast)}
+.btn.sm{height:36px;padding:0 16px;font-size:13px}
+.btn.outline{background:transparent;color:var(--green-deep);box-shadow:inset 0 0 0 1px var(--green-ring)}
+.btn.outline:hover{background:var(--grass-2);color:var(--green-darkest)}
+.ai-cta{margin-top:32px}
+
+/* ===== 右カラム : DomainTree ===== */
+.tree-card{position:relative;width:100%;max-width:440px;margin:0 auto}
+/* viewBox は描画後に実測して切り直す。aspect-ratio も一緒に差し替えるので、
+   葉の座標（％）と実表示は常に一致する。 */
+.tree-stage{position:relative;width:100%;aspect-ratio:460/560}
+#treeSvg{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
+
+/* 木ぜんぶをそよがせる。座標を持つ <g> とは必ず分ける
+   （CSS の transform は SVG の transform 属性を丸ごと上書きするため）。 */
+.sway{transform-box:fill-box;transform-origin:50% 100%}
+.anim .sway{animation:sway 9s ease-in-out infinite alternate}
+@keyframes sway{from{transform:rotate(-.5deg)}to{transform:rotate(.5deg)}}
+
+/* 枝は世代ごとに根もとから立ち上げる（段階が変わったときの手応え） */
+.gen{transform-box:fill-box;transform-origin:50% 100%}
+.anim .gen.draw{animation:growin .55s cubic-bezier(.22,1,.36,1) backwards;animation-delay:var(--dl,0s)}
+@keyframes growin{from{opacity:0;transform:scaleY(.5)}to{opacity:1;transform:none}}
+
+/* 葉むらは奥・手前の2層。増えた分だけ手前の層がふくらむ */
+.anim .foliage.draw .lf{animation:pop .5s cubic-bezier(.34,1.56,.64,1) backwards;animation-delay:var(--dl,0s)}
+.lf{transform-box:fill-box;transform-origin:0% 50%}
+@keyframes pop{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:none}}
+
+/* 舞い落ちる葉 */
+.faller{opacity:0}
+.anim .faller{animation:fall var(--dur,11s) linear infinite;animation-delay:var(--fd,0s)}
+@keyframes fall{
+  0%{opacity:0;transform:translate(0,0) rotate(0)}
+  9%{opacity:.85}
+  82%{opacity:.5}
+  100%{opacity:0;transform:translate(var(--dx,26px),var(--dy,300px)) rotate(340deg)}
+}
+
+/* === fall (animation agent owns) === */
+/* 枯葉は「席から地面へ動かす」のではなく、はじめから地面に置いておいて、
+   落下アニメのほうが枝の上まで巻き戻す（＝キーフレームの終点が無変形）。
+   逆向きに書くと「落ちきった位置」を CSS と JS が別々に計算することになり、
+   再描画のたびに枯葉がワープする。終点を transform:none に固定すれば
+   その食い違いが起こりようがなく、reduced-motion のグローバルな
+   animation:none に潰されても葉は地面に残る（＝状態を誤って伝えない）。 */
+.dleaf-anim{transform-box:fill-box;transform-origin:0% 50%}
+.anim .dleaf-anim.fall{
+  animation:leaffall var(--fall-dur,1.3s) cubic-bezier(.37,.16,.63,.86) backwards;
+  animation-delay:var(--fall-dl,0s);
+}
+/* --fx/--fy は席までの巻き戻し、--sx/--sy はそれに直交する「ひとゆれ」。
+   左右に振り戻しながら回さないと、まっすぐ落ちる消しゴムに見える。
+   数値は葉のローカル座標（親の rotate/scale の内側）なので、JS が
+   接地角とスケールの逆行列を掛けたものを入れている。 */
+@keyframes leaffall{
+  0%  {transform:translate(var(--fx,0px),var(--fy,0px)) rotate(var(--fr,0deg))}
+  28% {transform:translate(calc(var(--fx,0px) * .70 + var(--sx,0px)),calc(var(--fy,0px) * .70 + var(--sy,0px)))
+       rotate(calc(var(--fr,0deg) * .66 + 13deg))}
+  58% {transform:translate(calc(var(--fx,0px) * .38 - var(--sx,0px)),calc(var(--fy,0px) * .38 - var(--sy,0px)))
+       rotate(calc(var(--fr,0deg) * .38 - 13deg))}
+  84% {transform:translate(calc(var(--fx,0px) * .13 + var(--sx,0px) * .45),calc(var(--fy,0px) * .13 + var(--sy,0px) * .45))
+       rotate(calc(var(--fr,0deg) * .13 + 6deg))}
+  100%{transform:translate(0px,0px) rotate(0deg)}
+}
+/* つかまえようとした葉は止める。落ちている最中の葉はカーソルの下から
+   逃げるので、そのままだと「押せるはずのものが押せない」時間が生まれる。
+   ふきだしを開いているあいだ木を止めるのと同じ考え方で、animation-play-state
+   なので離せば続きから落ちる（animation:none にすると位置が跳ぶ）。 */
+.dleaf:hover .dleaf-anim.fall,
+.dleaf:focus-visible .dleaf-anim.fall,
+.tip-open .dleaf-anim.fall{animation-play-state:paused}
+/* === /fall === */
+
+/* ===== ドメインの葉 : 1枚 = 1件 =====
+   装飾葉と違って「押せる」ものなので、大きさ・縁取り・レイヤの3つで
+   装飾葉と区別する。色は状態を語るだけで、区別には使わない。 */
+.dleaf{cursor:pointer}
+/* 座標は transform 属性が、落下は .dleaf-anim が、拡大はこの層が持つ。
+   CSS の transform は SVG の transform 属性を丸ごと上書きするので分ける。
+   .lf には grew のときに pop が乗るので、拡大を .lf に当ててはいけない。 */
+.dleaf-hit{transform-box:fill-box;transform-origin:0% 50%;transition:transform .14s ease-out}
+.dleaf:hover .dleaf-hit,.dleaf:focus-visible .dleaf-hit{transform:scale(1.22)}
+/* フォーカスの芯を描くためだけの1本。ふだんは stroke も fill もないので
+   何も描かれず、当たり判定も増えない。 */
+.dlf-ring{fill:none;stroke:none;pointer-events:none}
+/* フォーカスの輪郭。葉の色は状態で変わり、背後の樹冠も明暗どちらにもなるので、
+   1色で引くと必ずどこかで沈む（--green の1本だったときはダークで葉の塗りに
+   対して 1.07:1 しかなく、しかも平常時の縁を置き換えるので focus すると
+   かえって輪郭が消えていた）。芯と縁の2本を重ね、片方が背景に負けても
+   もう片方が残るようにする。太さは木の拡大率（段階ごとに変わる）ではなく
+   画面の見た目で決めたいので non-scaling-stroke に載せる。 */
+.dleaf:focus{outline:none}                       /* マウスで押しただけの :focus には出さない */
+/* outline は現行の Chrome/Safari/Firefox なら SVG にも描かれる。2本の stroke が
+   何かの理由で落ちても、境界だけは必ず残るようにしておく保険。 */
+.dleaf:focus-visible{outline:2px solid var(--leaf-focus-core);outline-offset:2px}
+.dleaf:focus-visible .dlf{
+  stroke:var(--leaf-focus-halo);stroke-width:5;
+  paint-order:stroke;                            /* 縁は塗りの下。外へはみ出た半分だけが見える */
+  vector-effect:non-scaling-stroke;
+}
+.dleaf:focus-visible .dlf-ring{
+  stroke:var(--leaf-focus-core);stroke-width:2;vector-effect:non-scaling-stroke;
+}
+/* ゲスト/失敗/読込中は木の上に別の意味が乗る。触れる葉が残っていると嘘になる。 */
+.is-guest .domain-leaves,.is-error .domain-leaves,.is-loading .domain-leaves{pointer-events:none}
+
+/* ===== ドメインの葉のふきだし ===== */
+/* SVG の <title> は使わない（表示が OS 任せ・遅延する・タップで出ない）。
+   HTML のオーバーレイなら、文字の大きさも色も本文と同じ規則で作れる。 */
+.leaf-tip{
+  position:absolute;left:0;top:0;z-index:4;      /* overlay(z:5) より下 = ゲスト/失敗では隠れる */
+  transform:translate(calc(-50% + var(--nudge,0px)),calc(-100% - 12px));
+  /* 208px は「残り18日 ｜ 2026年9月14日 まで」が折り返さない最小幅。
+     ここを詰めると、日付の行末に「まで」だけが取り残される。 */
+  min-width:208px;max-width:min(268px,84vw);pointer-events:auto;
+  background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-soft);
+  padding:10px 12px;line-height:1.6;
+}
+.leaf-tip[hidden]{display:none}
+.leaf-tip.is-below{transform:translate(calc(-50% + var(--nudge,0px)),12px)}
+/* 矢印は本体を押し戻しても葉の真上に残す（--nudge を逆向きに効かせる）。 */
+.leaf-tip::after{
+  content:'';position:absolute;left:calc(50% - var(--nudge,0px));bottom:-6px;
+  width:0;height:0;margin-left:-6px;
+  border:6px solid transparent;border-bottom:0;border-top-color:var(--card);
+}
+.leaf-tip.is-below::after{bottom:auto;top:-6px;border-top:0;border-bottom-color:var(--card)}
+.leaf-tip__name{display:block;font-size:13.5px;font-weight:700;color:var(--ink);word-break:break-all}
+.leaf-tip__state{display:block;font-size:12px;font-weight:700;margin-top:3px}
+/* 状態語の色は「まだ手を打てるか」で決める。復旧できない葉（tone=neutral）を
+   赤で急かしても打つ手がないので、そこだけは意図して沈ませる。順番任せに
+   すると次の一行を足した人が気づかずに反転させるので、セレクタで決めきる。 */
+.leaf-tip[data-tone="ok"] .leaf-tip__state{color:var(--green-deep)}
+.leaf-tip[data-tone="ending"] .leaf-tip__state{color:var(--orange)}
+.leaf-tip[data-tone="neutral"] .leaf-tip__state{color:var(--ink-faint)}
+/* 期限切れでも復旧できるうちは赤。手を打てば戻るという意味の赤なので、
+   復旧できない葉（上の neutral）とは違う色でなければならない。 */
+.leaf-tip[data-state="expired"][data-tone="ending"] .leaf-tip__state{color:var(--danger)}
+.leaf-tip__days{display:block;font-size:11.5px;color:var(--ink-faint);margin-top:2px}
+.leaf-tip__days:empty{display:none}          /* 期限が分からない葉は日付の行ごと出さない */
+/* 自動更新。オンは添えるだけでよく、危ないのは「期限が近いのにオフ」の組み合わせ
+   なので、そのときだけ色と太さを上げる（色だけに頼らないよう文言も変える）。 */
+.leaf-tip__renew{display:block;font-size:11.5px;color:var(--ink-faint);margin-top:2px}
+.leaf-tip__renew:empty{display:none}
+.leaf-tip__renew[data-warn="1"]{color:var(--orange);font-weight:700}
+.leaf-tip__link{display:inline-block;margin-top:7px;font-size:11.5px;font-weight:700}
+/* 開いているあいだは木を止める。9秒周期のそよぎで葉がカーソルの下から逃げ、
+   ふきだしが実座標からズレていくため。animation:none にすると木が跳ねる。 */
+.tip-open .sway{animation-play-state:paused}
+
+/* 読込中のシルエット */
+.skeleton{opacity:0;transition:opacity .3s}
+.skeleton *{fill:var(--grass-2) !important;stroke:none !important}
+.is-loading .skeleton{opacity:1}
+.is-loading .anim .skeleton{animation:pulse 1.5s ease-in-out infinite}
+.is-loading .live{opacity:0}
+.live{transition:opacity .3s}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:.85}}
+
+/* 木の下のキャプション : 件数・段階・次の段階までの進み */
+.tree-cap{margin-top:6px;padding:0 4px}
+.cap-line{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.cap-num{font-family:'Poppins',sans-serif;font-weight:700;font-size:30px;line-height:1;color:var(--green-darkest)}
+.cap-unit{font-size:13px;color:var(--ink-soft)}
+.cap-stage{margin-left:auto;font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:12.5px;color:var(--green-contrast);background:var(--grass);padding:2px 12px}
+.cap-sub{margin:8px 0 0;font-size:12.5px;line-height:1.7;color:var(--ink-faint)}
+.cap-sub em{font-style:normal;font-weight:700;color:var(--ink)}
+.cap-sub .warn{color:var(--orange);font-weight:700}
+.cap-sub .bad{color:var(--danger);font-weight:700}
+/* 件数の塊は「期／限を確認できない」のように語の途中で折り返させない。
+   日本語はどこでも改行できてしまうので、区切りの ｜ でだけ折り返す。 */
+.cap-sub .warn,.cap-sub .bad,.cap-sub .unsure,.cap-sub .rest{white-space:nowrap}
+/* 期限が分からない件。急かす色ではないが、地の文に埋めると読み飛ばされる。 */
+.cap-sub .unsure{color:var(--ink-soft);font-weight:700}
+/* 葉を押したときの行き先。#capSub に書き込むと <em>/<span> の組み立てごと
+   消えて、件数の強調が二度と戻らないので、行を分けて持つ。 */
+.cap-nav{margin:6px 0 0;font-size:12px;font-weight:700;color:var(--green-deep)}
+.cap-nav:empty{display:none}
+.bar{height:5px;background:var(--grass-2);margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--grass);width:0;transition:width .6s cubic-bezier(.22,1,.36,1)}
+
+/* 未ログイン / 失敗 の差し替え */
+.overlay{position:absolute;inset:0;z-index:5;display:none;align-items:center;justify-content:center;padding:20px}
+.is-guest .overlay.guest,.is-error .overlay.error{display:flex}
+.overlay .box{
+  display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;
+  background:var(--card);box-shadow:var(--shadow-soft);border:1px solid var(--line);
+  padding:22px 24px;max-width:100%;
+}
+.overlay p{margin:0;font-size:13px;line-height:1.85;color:var(--ink-soft);text-wrap:balance}
+.overlay strong{display:block;font-family:'Zen Maru Gothic',sans-serif;font-size:15.5px;color:var(--ink);margin-bottom:4px;white-space:nowrap}
+.is-guest .tree-cap,.is-error .tree-cap,.is-loading .tree-cap{visibility:hidden}
+
+/* ===== 下段の解説バンド ===== */
+.band{padding:56px 0;background:var(--paper)}
+.band.alt{background:var(--grass-1)}
+.band h2{font-size:22px;font-weight:900;margin-bottom:6px}
+.band .lead{margin:0 0 26px;font-size:13.5px;color:var(--ink-faint);max-width:46em}
+.stages{display:grid;gap:12px;grid-template-columns:repeat(2,1fr);list-style:none;margin:0;padding:0}
+@media(min-width:768px){.stages{grid-template-columns:repeat(6,1fr)}}
+.stages li{background:var(--card);padding:14px 14px 16px;box-shadow:var(--shadow-soft)}
+.stages li.on{outline:2px solid var(--grass)}
+.stages svg{display:block;height:120px;width:100%;margin-bottom:8px}
+.stages b{display:block;font-family:'Zen Maru Gothic',sans-serif;font-size:14px}
+.stages span{font-family:'Poppins',sans-serif;font-size:11.5px;color:var(--ink-faint)}
+.stages em{display:block;font-style:normal;font-size:11.5px;line-height:1.6;color:var(--ink-soft);margin-top:4px}
+
+footer{background:var(--paper-2);padding:34px 0;font-size:12px;color:var(--ink-faint);border-top:1px solid var(--line)}
+footer p{margin:2px 0}
+
+/* ===== 試作コントロール（本番には入りません） ===== */
+.panel-toggle{
+  position:fixed;right:14px;bottom:14px;z-index:91;font:inherit;font-size:12px;font-weight:700;
+  cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);
+  padding:6px 14px;box-shadow:var(--shadow-soft);
+}
+body.panel-open .panel-toggle{bottom:auto;top:76px}
+.panel{display:none;position:fixed;right:14px;bottom:14px;z-index:90;width:264px;
+  background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-soft);padding:12px 14px;font-size:12px}
+body.panel-open .panel{display:block}
+.panel b{display:block;font-size:10.5px;letter-spacing:.05em;color:var(--ink-faint);margin-bottom:8px}
+.panel .row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.panel button{font:inherit;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--line);background:var(--paper-2);color:var(--ink);padding:3px 10px}
+.panel button:hover{background:var(--grass-2)}
+.panel button.on{background:var(--green);border-color:var(--green);color:var(--green-contrast)}
+.panel .cap{margin:6px 0 0;font-size:10.5px;line-height:1.65;color:var(--ink-faint)}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none !important;transition-duration:.01ms !important}
+}
+body.reduce .anim *{animation:none !important}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap hd">
+    <a class="brand" href="#">
+      <svg class="brandmark" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M7 20h10"/><path d="M12 20v-8"/>
+        <path d="M12 12C12 9 9.5 7 6.5 7c0 3 2.5 5 5.5 5Z"/>
+        <path d="M12 12c0-3 2.5-5 5.5-5 0 3-2.5 5-5.5 5Z"/>
+      </svg>
+      ゼロからドメイン
+    </a>
+    <nav aria-label="メイン"><a href="#">かんたん</a></nav>
+    <div class="right">
+      <span class="chip"><i></i>AuthContext: 認証済み</span>
+      <button class="ghostbtn" type="button">ログアウト</button>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- ── ヒーロー : 左は現行そのまま / 右カラムだけ木に差し替え ──────────── -->
+<section class="hero">
+  <span class="leaf-motif motif-a" aria-hidden="true"></span>
+  <span class="leaf-motif motif-b" aria-hidden="true"></span>
+
+  <div class="wrap hero-grid">
+    <div>
+      <h1 class="sr-only">ドメイン検索</h1>
+      <p class="catch">ほしい名前、<br />空いているか見てみよう。</p>
+
+      <div class="modeswitch" role="group" aria-label="モードの切り替え">
+        <span aria-current="page">通常モード</span>
+        <a href="#">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.94 14.06 3 21m9-18 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/></svg>
+          かんたんモード
+        </a>
+      </div>
+
+      <form class="searchpill" onsubmit="return false" aria-label="ドメイン検索（プレビューでは動きません）">
+        <div class="fld">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" placeholder="my-shop" aria-label="取得したいドメイン名" />
+        </div>
+        <button class="btn" type="submit">検索する</button>
+      </form>
+      <p class="hint">TLD（.com など）は含めず入力してください。全角文字は自動的に半角へ変換されます。</p>
+
+      <div class="ai-cta">
+        <button class="btn" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.94 14.06 3 21m9-18 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/></svg>
+          AIに相談する
+        </button>
+      </div>
+    </div>
+
+    <!-- ── 右カラム : 育つドメインの木 ─────────────────────────────── -->
+    <div class="tree-card" id="treeCard">
+      <div class="tree-stage anim" id="stageBox">
+        <!-- role="img" は配下を支援技術に対して presentational にしてしまい、葉のボタンが
+             一切読まれなくなる。<title>/<desc> はそのまま名前として使う。 -->
+        <svg id="treeSvg" viewBox="0 0 460 560" role="group" aria-labelledby="treeTitle treeDesc">
+          <title id="treeTitle">取得済みドメインの木</title>
+          <desc id="treeDesc">取得したドメインが増えるほど木が育ち、葉が茂ります。</desc>
+          <defs>
+            <linearGradient id="gBark" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="var(--bark-dark)"/>
+              <stop offset="55%" stop-color="var(--bark)"/>
+              <stop offset="100%" stop-color="var(--bark-dark)"/>
+            </linearGradient>
+            <filter id="fHalo" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="15"/>
+            </filter>
+          </defs>
+
+          <g class="skeleton" id="treeSkeleton" aria-hidden="true"></g>
+          <g class="live" id="treeLive"></g>
+        </svg>
+
+        <div class="leaf-tip" id="leafTip" role="tooltip" hidden>
+          <b class="leaf-tip__name font-en"></b>
+          <span class="leaf-tip__state"></span>
+          <span class="leaf-tip__days"></span>
+          <span class="leaf-tip__renew"></span>
+          <a class="leaf-tip__link" href="#">詳しく見る</a>
+        </div>
+
+        <div class="overlay guest">
+          <div class="box">
+            <p><strong>ログインすると、木が育ちます</strong>取得したドメインが増えるほど枝が伸び、葉が茂ります。</p>
+            <a class="btn sm outline" href="#">ログイン</a>
+          </div>
+        </div>
+        <div class="overlay error">
+          <div class="box">
+            <p><strong>木を読み込めませんでした</strong>通信が不安定なようです。時間をおいて、もう一度お試しください。</p>
+            <button class="btn sm outline" type="button">再読み込み</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tree-cap" id="cap">
+        <div class="cap-line">
+          <span class="cap-num font-en" id="capNum">0</span>
+          <span class="cap-unit">件のドメインが育っています</span>
+          <span class="cap-stage" id="capStage">種</span>
+        </div>
+        <p class="cap-sub" id="capSub"></p>
+        <p class="cap-nav" id="capNav" role="status"></p>
+        <div class="bar" aria-hidden="true"><i id="capBar"></i></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 解説 : 成長段階 ─────────────────────────────────────────────── -->
+<section class="band alt">
+  <div class="wrap">
+    <h2>木は、取得した数だけ育ちます</h2>
+    <p class="lead">枝分かれの深さ・幹の太さ・樹高・葉の量は取得件数から毎回その場で計算しています。決め打ちの画像を差し替えているわけではないので、次の1件で必ずどこかが変わります。</p>
+    <ul class="stages" id="stageList"></ul>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>ゼロからドメイン — GMOインターネットグループ 学生ハッカソン TeamC</p>
+    <p>これは design_theme 配下の試作ページです。本番のトップページ（DomainSearchPage.tsx）には手を入れていません。</p>
+  </div>
+</footer>
+
+<button class="panel-toggle" type="button" id="panelToggle" aria-expanded="false" aria-controls="panel">試作コントロール</button>
+<aside class="panel" id="panel" aria-label="試作用コントロール">
+  <b>試作用コントロール（本番には入りません）</b>
+  <div class="row" id="countRow"></div>
+  <div class="row">
+    <button type="button" data-act="plus">+1件 取得</button>
+    <button type="button" data-act="minus">-1件</button>
+  </div>
+  <div class="row" id="stateRow"></div>
+  <p class="cap">1024px 未満では右カラムが本文の下に回り込みます。ダークは OS の設定に追従します。</p>
+</aside>
+
+<script>
+(() => {
+'use strict';
+
+/* ============================================================
+   1. データ（試作用のダミー）
+   ------------------------------------------------------------
+   ここから下の「導出」層は MyDomainSummary の形しか知らない。
+   採用するときは、このダミー層だけを API の戻り値に差し替えればよい。
+   ============================================================ */
+
+/* 基準時刻。?now=2026-08-27 で固定できる（スクリーンショットを安定させるため）。 */
+const NOW = (() => {
+  const q = new URLSearchParams(location.search).get('now');
+  const d = q ? new Date(q) : new Date();
+  return Number.isNaN(d.getTime()) ? new Date() : d;
+})();
+const DAY_MS = 86400000;
+
+/* ---- ダミーデータ層（本番では丸ごと消える） ----------------------------
+   期限は「今日から何日後か」で持つ。日付を直書きすると試作が半年で腐って、
+   全部が期限切れの木になる。d:null は「期限が分からない」件を作るため。 */
+const iso = (days) => new Date(NOW.getTime() + days * DAY_MS).toISOString().slice(0, 10);
+
+const DOMAINS = [
+  {n:'teamc-shop.com',      d: 284, lifecycle:'active',        autoRenew:true },
+  {n:'kitaq-blog.net',      d: 201, lifecycle:'active',        autoRenew:true },
+  {n:'zero-domain.dev',     d: 158, lifecycle:'active',        autoRenew:true },
+  {n:'old-campaign.club',   d: -12, lifecycle:'pendingDelete', autoRenew:false},
+  {n:'hackathon-teamc.org', d: 340, lifecycle:'active',        autoRenew:true },
+  {n:'my-portfolio.me',     d:  62, lifecycle:'active',        autoRenew:false},
+  {n:'sakura-cafe.shop',    d: 310, lifecycle:'active',        autoRenew:true },
+  {n:'nagasaki-trip.site',  d: 122, lifecycle:'active',        autoRenew:true },
+  {n:'green-lab.tech',      d: 249, lifecycle:'active',        autoRenew:true },
+  {n:'yumeno-atelier.xyz',  d:  74, lifecycle:'active',        autoRenew:false},
+  {n:'teamc-status.info',   d: 178, lifecycle:'active',        autoRenew:true },
+  {n:'kitaq-signage.app',   d: 296, lifecycle:'active',        autoRenew:true },
+  {n:'ohana-flower.store',  d:  18, lifecycle:'active',        autoRenew:false},
+  {n:'moriwaka-design.co',  d: 213, lifecycle:'active',        autoRenew:true },
+  {n:'tsuru-recipe.online', d: 187, lifecycle:'active',        autoRenew:true },
+  {n:'inasa-camp.space',    d: 232, lifecycle:'active',        autoRenew:true },
+  {n:'hinode-books.pro',    d: 169, lifecycle:'active',        autoRenew:true },
+  {n:'komorebi-photo.link', d: 205, lifecycle:'active',        autoRenew:true },
+  {n:'asaichi-market.biz',  d: 194, lifecycle:'active',        autoRenew:true },
+  {n:'kaze-no-oto.blog',    d: 226, lifecycle:'active',        autoRenew:true },
+  {n:'teamc-sandbox.cloud', d: -58, lifecycle:'gone',          autoRenew:false},
+  {n:'shiokaze-inn.jp',     d:  27, lifecycle:'active',        autoRenew:false},
+  {n:'yamabiko-fm.live',    d:null, lifecycle:'active',        autoRenew:false},
+  {n:'hoshizora-map.world', d: 351, lifecycle:'active',        autoRenew:true },
+];
+
+/* ダミー1件 → 実アプリの MyDomainSummary 相当。ここが唯一の境目で、
+   これより下（deriveLeafState など）は d も iso() も知らない。 */
+const toDomain = (dm) => ({
+  name: dm.n,
+  exDate: dm.d === null ? '' : iso(dm.d),
+  lifecycle: dm.lifecycle,
+  statuses: [],
+  rgpStatuses: [],
+  autoRenew: dm.autoRenew,
+});
+
+/* ---- ここから導出層（本番へそのまま持っていける） --------------------- */
+/* 名前で引けるようにしておく。ふきだしは席ではなく名前から中身を作るので、
+   再描画で DOM が作り直されても表示が変わらない。 */
+const DOMAIN_BY_NAME = new Map(DOMAINS.map(dm => [dm.n, toDomain(dm)]));
+/* 表示に使う件数ぶんの一覧。並びは displayOrder（§期限が近い順）で決まる。 */
+const shownDomains = (count) => displayOrder(DOMAINS.slice(0, count).map(toDomain));
+
+/* ============================================================
+   2. 成長段階 — 件数から枝の再帰深さ・幹の長さ・葉の大きさを決める
+   ============================================================ */
+const STAGES = [
+  /* detail は一覧に出す1行。リード文が「件数から計算している」と言っている当の
+     数字（枝分かれの深さ＝depth）を見せる。飾りの名前を並べても、その主張は
+     何も裏づけられないため。depth と同じ行に置いてあるのは、片方だけ直した
+     ときに食い違いへ気づけるようにするため。 */
+  {min:0,  name:'種',       depth:0, trunk:0,   leaf:0,    spread:0,   detail:'枝はまだなし'},
+  {min:1,  name:'芽',       depth:2, trunk:58,  leaf:1.75, spread:.34, detail:'枝分かれ 2回'},
+  {min:3,  name:'若木',     depth:3, trunk:84,  leaf:1.35, spread:.38, detail:'枝分かれ 3回'},
+  {min:6,  name:'木',       depth:4, trunk:108, leaf:1.20, spread:.40, detail:'枝分かれ 4回'},
+  {min:12, name:'大きな木', depth:5, trunk:112, leaf:1.05, spread:.33, detail:'枝分かれ 5回'},
+  {min:21, name:'大樹',     depth:6, trunk:120, leaf:.92,  spread:.32, detail:'枝分かれ 6回'},
+];
+const stageIndex = (n) => { let i=0; for(let k=0;k<STAGES.length;k++) if(n>=STAGES[k].min) i=k; return i };
+
+const VB = {w:460, h:560};
+const GROUND = 512, BASE_X = 230;
+const FIT = {x0:26, x1:434, y0:52, y1:GROUND};
+/* 拡大の上限。木の大小は幹の長さと枝の深さ（＝取得件数）で決まるべきなので、
+   ここは「枠からはみ出さないための安全弁」であって段階ごとに変えない。 */
+const MAX_SCALE = 1.12;
+/* 葉の総数。件数に対してゆるやかに加速させると、
+   1件のときは芽らしく、大樹では葉むらが重なって見える。 */
+const leafTotal = (n) => Math.min(520, Math.round(6 * n + 3.2 * Math.pow(n, 1.55)));
+
+/* ============================================================
+   2.5 ドメイン1件 → 葉1枚の状態
+   ------------------------------------------------------------
+   しきい値・文言・計算式は本番（frontend/src/features/mypage/domainDisplay.ts と
+   domainStatusLabels.ts）の写し。ここだけ独自の境界を作ると、木と一覧で
+   色が食い違って「どちらが本当か」が分からなくなる。
+   ============================================================ */
+
+/* 本番と同じ切り上げ。当日中は 0 ではなく 1 として扱われる。 */
+function daysUntil(exDate, now = NOW){
+  const t = new Date(exDate).getTime();
+  return Number.isNaN(t) ? null : Math.ceil((t - now.getTime()) / DAY_MS);
+}
+
+const JA_DATE = new Intl.DateTimeFormat('ja-JP', {dateStyle:'long'});
+function formatDateJa(exDate){
+  const t = new Date(exDate);
+  return Number.isNaN(t.getTime()) ? '' : JA_DATE.format(t);
+}
+
+/* 復旧できるかは statuses と rgpStatuses の両方に出る（片方しか見ないと、
+   EPP 側だけに出ている RGP を取りこぼす）。restorableUntil を過ぎたら false。 */
+function canRestore(domain, now = NOW){
+  const all = [].concat(domain.statuses || [], domain.rgpStatuses || []).map(String);
+  const inRgp = all.some(v => /redemptionperiod|pendingrestore/i.test(v));
+  if(!inRgp) return false;
+  if(domain.restorableUntil){
+    const t = new Date(domain.restorableUntil).getTime();
+    if(!Number.isNaN(t) && t < now.getTime()) return false;
+  }
+  return true;
+}
+
+/**
+ * 葉1枚の状態。判定は上から順で、最初に当たったものを返す。
+ * key は5値。落下は key==='expired' の1条件だけで決まる。
+ * label は「色を認識できない環境に状態を伝える本体」なので、
+ * 残り日数のような数字は混ぜない（数字はふきだしの別の行が持つ）。
+ * @param {{name:string, exDate:string, lifecycle:string}} domain
+ * @returns {{key:string, label:string, tone:string, colorVar:string, daysLeft:number|null}}
+ */
+function deriveLeafState(domain, now = NOW){
+  const daysLeft = domain.exDate ? daysUntil(domain.exDate, now) : null;
+  if(daysLeft === null)
+    // 樹冠の塗り（--leaf-2）と同じ色にすると、期限が分からない葉だけが背景に
+    // 溶けて「状態のない葉」になってしまう。専用の灰緑を持たせる。
+    return {key:'unknown', label:'期限が確認できません', tone:'neutral', colorVar:'var(--leaf-unknown)', daysLeft:null};
+  if(domain.lifecycle === 'gone')
+    return {key:'expired', label:'復旧できる期間が終了しました', tone:'neutral', colorVar:'var(--leaf-dead)', daysLeft};
+  if(domain.lifecycle === 'pendingDelete' && canRestore(domain, now))
+    return {key:'expired', label:'いまなら復旧できます', tone:'ending', colorVar:'var(--leaf-wither)', daysLeft};
+  if(domain.lifecycle === 'pendingDelete')
+    return {key:'expired', label:'解約手続き中です', tone:'ending', colorVar:'var(--leaf-dead)', daysLeft};
+  if(daysLeft <= 0)
+    return {key:'expired', label:'期限切れです', tone:'ending', colorVar:'var(--leaf-dead)', daysLeft};
+  if(daysLeft <= 30)
+    return {key:'urgent', label:'まもなく期限です', tone:'ending', colorVar:'var(--leaf-soon-2)', daysLeft};
+  if(daysLeft <= 90)
+    return {key:'watch', label:'更新が近づいています', tone:'ending', colorVar:'var(--leaf-soon)', daysLeft};
+  return {key:'healthy', label:'使えています', tone:'ok', colorVar:'var(--leaf-3)', daysLeft};
+}
+
+/* 表示順 = 期限が近い順。いちばん危ない葉が、いちばんよく散った席に座る。
+   同点を名前で決めるのは、API の返す順に席が依存しないようにするため
+   （順が変わるたびに葉が飛び回ると、同じ木に見えなくなる）。 */
+function displayOrder(domains){
+  return domains.slice().sort((a, b) =>
+    (a.exDate || '9999-12-31').localeCompare(b.exDate || '9999-12-31') ||
+    a.name.localeCompare(b.name));
+}
+
+/* 「どれを葉にするか」は「どう並べるか」とは別の軸で決める。
+   displayOrder は期限が近い順なので、期限を確認できない件は日付が無く必ず
+   最後に回る。そこへ MAX_DOMAIN_LEAVES を掛けると、真っ先に消えるのが
+   「状態が分からない件」になってしまう — 上限で落とすべきなのは、
+   まだ余裕がある件のほうで、確認が要る件ではない。 */
+const LEAF_PRIORITY = {expired: 0, urgent: 1, watch: 2, unknown: 3, healthy: 4};
+
+/* 先頭 n 件が葉になる並びを返す。葉になる分は期限が近い順（＝キーボードの
+   巡回順とツールチップの読み上げ順は今までどおり）、そのうしろに残りが続く。 */
+function arrangeForLeaves(list, n){
+  const rank = d => LEAF_PRIORITY[deriveLeafState(d).key] ?? 9;
+  const byNeed = list.slice().sort((a, b) =>
+    rank(a) - rank(b) ||
+    (a.exDate || '9999-12-31').localeCompare(b.exDate || '9999-12-31') ||
+    a.name.localeCompare(b.name));
+  return displayOrder(byNeed.slice(0, n)).concat(byNeed.slice(n));
+}
+
+/* 本番 MyPage.tsx と同じリンク先。更新は詳細ページの中のダイアログなので、
+   木からのリンクは詳細ページ1本でよい。 */
+const detailPath = (name) => '/mypage/domains/' + encodeURIComponent(name);
+
+/* ふきだしと aria-label の文言。どちらも状態語を必ず含むので、
+   色が読めない環境でも意味が落ちない。 */
+function daysText(domain, s){
+  if(s.key === 'unknown') return '';
+  if(s.key === 'expired') return `${formatDateJa(domain.exDate)} に期限が切れました`;
+  return `残り${s.daysLeft}日 ｜ ${formatDateJa(domain.exDate)} まで`;
+}
+function leafAria(domain, s){
+  if(s.key === 'unknown' || s.key === 'expired') return `${domain.name}、${s.label}`;
+  return `${domain.name}、${s.label}、残り${s.daysLeft}日`;
+}
+
+/* mulberry32 — 同じ種なら常に同じ木。再訪しても形が変わらない。 */
+function prng(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const r1 = (v) => Math.round(v*10)/10;
+const NS = 'http://www.w3.org/2000/svg';
+const el = (name, attrs) => { const n = document.createElementNS(NS, name); for(const k in attrs) n.setAttribute(k, attrs[k]); return n; };
+const put = (parent, name, attrs) => { const n = el(name, attrs); parent.appendChild(n); return n; };
+
+/* ============================================================
+   3. 木の生成 — 再帰で枝を伸ばす。曲線の制御点も残しておき、
+      葉むらは枝そのものの上に散らす（枝先だけだと団子になる）。
+   ============================================================ */
+function buildTree(st, seed){
+  const rand = prng(seed);
+  const branches = [], tips = [];
+  if(st.depth === 0) return {branches, tips};
+
+  (function grow(x, y, ang, len, w, d, parent){
+    // 幹は曲げを抑える。小さい木ほど全体をまっすぐに。
+    const bend = (rand() - .5) * (d === st.depth ? .12 : .30) * (st.depth <= 2 ? .45 : 1);
+    const end = ang + bend;
+    const cx = x + Math.cos(ang) * len * .55, cy = y + Math.sin(ang) * len * .55;
+    const ex = x + Math.cos(end) * len,       ey = y + Math.sin(end) * len;
+
+    // 線ではなく「先細りの帯」として持つ。stroke は太さを変えられないので、
+    // 進行方向の法線に沿って両側へ振った輪郭を作って塗る。
+    const w2 = w * .68;
+    const L = Math.hypot(ex - x, ey - y) || 1;
+    const nx = -(ey - y) / L, ny = (ex - x) / L;
+    const wm = (w + w2) / 2;
+    const d2 =
+      `M${r1(x + nx*w/2)} ${r1(y + ny*w/2)}` +
+      `Q${r1(cx + nx*wm/2)} ${r1(cy + ny*wm/2)} ${r1(ex + nx*w2/2)} ${r1(ey + ny*w2/2)}` +
+      `L${r1(ex - nx*w2/2)} ${r1(ey - ny*w2/2)}` +
+      `Q${r1(cx - nx*wm/2)} ${r1(cy - ny*wm/2)} ${r1(x - nx*w/2)} ${r1(y - ny*w/2)}Z`;
+
+    const me = branches.push({
+      d:d2, gen:st.depth - d, w, w2, parent,
+      p0:[x,y], pc:[cx,cy], p1:[ex,ey], ang:end,
+    }) - 1;
+
+    if(d <= 0){ tips.push({x:ex, y:ey, a:end, b:me}); return; }
+
+    const three = d < st.depth - 1 && rand() < .22;
+    const dirs = three ? [-1, 0, 1] : [-1, 1];
+    // 上へ引き戻す係数（負の重力屈性）。下枝ほど大きく開き、上ほど閉じる。
+    const up = .12 + (st.depth - d) * .045;
+    for(const dir of dirs){
+      const sp  = st.spread * (1.55 - (st.depth - d) * .17);
+      const off = dir === 0 ? (rand()-.5)*.2 : dir * sp * (.72 + rand()*.6);
+      const na  = (end + off) * (1 - up) + (-Math.PI/2) * up;
+      const nl  = len * (dir === 0 ? .58 : .70 + rand()*.15);
+      grow(ex, ey, na, nl, w2, d - 1, me);
+    }
+  })(BASE_X, GROUND, -Math.PI/2, st.trunk, 6 + st.depth * 3.2, st.depth, -1);
+
+  return {branches, tips};
+}
+
+/** 二次ベジエ上の点と接線 */
+function qAt(b, t){
+  const [x0,y0] = b.p0, [cx,cy] = b.pc, [x1,y1] = b.p1, u = 1 - t;
+  return {
+    x: u*u*x0 + 2*u*t*cx + t*t*x1,
+    y: u*u*y0 + 2*u*t*cy + t*t*y1,
+    a: Math.atan2(2*u*(cy-y0) + 2*t*(y1-cy), 2*u*(cx-x0) + 2*t*(x1-cx)),
+  };
+}
+
+/* 閉じた滑らかな輪郭（Catmull-Rom → 三次ベジエ）。楕円のままだと弧がきれいすぎて
+   「雲の絵」に見えるので、半径を少しずつ揺らした多角形を丸めて樹冠の形を作る。 */
+function smoothClosed(pts){
+  const n = pts.length;
+  let d = `M${r1(pts[0][0])} ${r1(pts[0][1])}`;
+  for(let i = 0; i < n; i++){
+    const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
+    d += `C${r1(p1[0] + (p2[0]-p0[0])/6)} ${r1(p1[1] + (p2[1]-p0[1])/6)}` +
+         ` ${r1(p2[0] - (p3[0]-p1[0])/6)} ${r1(p2[1] - (p3[1]-p1[1])/6)}` +
+         ` ${r1(p2[0])} ${r1(p2[1])}`;
+  }
+  return d + 'Z';
+}
+
+function blobPath(cx, cy, rx, ry, rnd, n = 12, wob = .2){
+  const pts = [];
+  for(let i = 0; i < n; i++){
+    const a = i / n * Math.PI * 2 + (rnd() - .5) * .18;
+    const k = 1 + (rnd() - .5) * 2 * wob;
+    pts.push([cx + Math.cos(a) * rx * k, cy + Math.sin(a) * ry * k]);
+  }
+  return smoothClosed(pts);
+}
+
+/* 葉むらの取りつけ位置。枝先だけでなく、外側2世代の枝の途中にも置く。 */
+function anchorsOf(branches, tips, depth){
+  const a = [];
+  for(const t of tips) a.push({x:t.x, y:t.y, a:t.a});
+  for(const b of branches){
+    // 幹（gen 0）には葉を付けない。付けると浅い木で樹冠が幹まで降りてきて、
+    // 木が「地面から生えた茂み」に見えてしまう。
+    if(b.gen === 0) continue;
+    const back = depth - b.gen;          // 0 = 枝先側
+    if(back > 4) continue;
+    const ts = back <= 1 ? [.2, .45, .68, .9] : back === 2 ? [.3, .6, .9] : back === 3 ? [.5, .85] : [.75];
+    for(const t of ts) a.push(qAt(b, t));
+  }
+  return a;
+}
+
+/* 置く順番 — 既に置いた点から最も遠い点を選び続ける（最遠点順）。
+   葉が少ないうちでも一箇所に固まらず、増えるほど均等に詰まっていく。 */
+function spreadOrder(pts){
+  const n = pts.length;
+  if(!n) return [];
+  let first = 0;
+  for(let i=1;i<n;i++) if(pts[i].y < pts[first].y) first = i;
+  const used = new Array(n).fill(false), out = [first];
+  used[first] = true;
+  const dist = pts.map(p => Math.hypot(p.x-pts[first].x, p.y-pts[first].y));
+  for(let k=1;k<n;k++){
+    let best=-1, bd=-1;
+    for(let i=0;i<n;i++) if(!used[i] && dist[i] > bd){ bd = dist[i]; best = i; }
+    if(best < 0) break;
+    used[best] = true; out.push(best);
+    for(let i=0;i<n;i++) if(!used[i]) dist[i] = Math.min(dist[i], Math.hypot(pts[i].x-pts[best].x, pts[i].y-pts[best].y));
+  }
+  return out;
+}
+
+/* 樹冠の下地の濃さ。芽のうちは葉が数枚しかないので塗らない。 */
+const BODY_STRENGTH = [0, 0, .5, .75, .9, 1];
+
+/* ============================================================
+   4. 描画
+   ============================================================ */
+/* 木の形は種（seed）で決まる。?seed=123 で差し替えられるようにしてあるのは、
+   どの数字がいちばん気持ちのいい形になるか、チームで見比べるため。 */
+let SEED = Number(new URLSearchParams(location.search).get('seed')) || 88;
+
+const LEAF_D = 'M0 0C4-5.4 12-6.6 17.5 0C12 6.6 4 5.4 0 0Z';
+/* 樹冠の塗りは --leaf-1/2（暗い側）。葉はその上に重なるので、
+   明るい側（--leaf-2/3）を多めに混ぜないと塗りに溶けて質感が出ない。 */
+const LEAF_TONES = ['var(--leaf-2)', 'var(--leaf-3)', 'var(--leaf-1)'];
+
+/* 枝から取った取りつけ位置を、いくつかの「葉むらのかたまり」にまとめる。
+   枝の線に沿って葉を置くと枝と枝のあいだが空いて樹冠が割れて見えるので、
+   まずかたまりを作り、その中に葉を散らす（絵描きが樹冠を塗る手順と同じ）。 */
+function clusterAnchors(anchors, order, k, extent){
+  if(!anchors.length) return [];
+  k = Math.max(1, Math.min(k, order.length));
+  const seeds = order.slice(0, k).map(i => anchors[i]);       // 最遠点順の先頭＝よく散った種
+  const bins = seeds.map(sd => ({sx:0, sy:0, n:0, dd:0, seed:sd}));
+  for(const a of anchors){
+    let best = 0, bd = Infinity;
+    for(let i = 0; i < seeds.length; i++){
+      const d = (a.x-seeds[i].x)**2 + (a.y-seeds[i].y)**2;
+      if(d < bd){ bd = d; best = i; }
+    }
+    const b = bins[best];
+    b.sx += a.x; b.sy += a.y; b.n++;
+  }
+  const out = [];
+  for(const b of bins){
+    if(!b.n) continue;
+    out.push({cx: b.sx / b.n, cy: b.sy / b.n, n:b.n, r:0});
+  }
+  // 半径は「いちばん近い他のかたまりまでの距離」を基準にすると、隣どうしが
+  // 必ず重なって樹冠がひと続きに見える。ただし上下限は木の大きさに比例させる
+  // — 固定値にすると、若木の樹冠だけ体に対して巨大に膨らむ。
+  const lo = Math.max(7, extent * .085), hi = Math.max(lo + 2, extent * .31);
+  // かたまりを樹冠の重心へ少しだけ引き寄せる。枝の骨格をそのまま使うと
+   // 輪郭がひょうたん型に割れるので、丸みの側へ寄せて谷を浅くする。
+  if(out.length > 2){
+    let mx = 0, my = 0;
+    for(const c of out){ mx += c.cx; my += c.cy; }
+    mx /= out.length; my /= out.length;
+    for(const c of out){ c.cx += (mx - c.cx) * .12; c.cy += (my - c.cy) * .08; }
+  }
+
+  const jr = prng(out.length * 7919 + Math.round(extent));
+  for(const c of out){
+    let nearest = Infinity;
+    for(const o of out) if(o !== c) nearest = Math.min(nearest, Math.hypot(o.cx-c.cx, o.cy-c.cy));
+    c.r = Math.max(lo, Math.min(hi, (nearest === Infinity ? hi : nearest) * 1.32));
+    // 真円をきれいに並べると風船が並んで見えるので、1つずつ形をずらす
+    c.jx = .88 + jr() * .34;
+    c.jy = .74 + jr() * .28;
+    c.ox = (jr() - .5) * c.r * .3;
+    c.oy = (jr() - .5) * c.r * .22;
+  }
+
+  // 谷を埋める。近いのに弱くしか重なっていない2つのかたまりのあいだへ小さな
+  // かたまりを足すと、ひょうたん型の樹冠がひと続きの丸みになる。
+  const bridges = [];
+  for(let i = 0; i < out.length; i++){
+    for(let j = i + 1; j < out.length; j++){
+      if(bridges.length >= 6) break;
+      const a = out[i], b = out[j];
+      const d = Math.hypot(a.cx - b.cx, a.cy - b.cy), rr = a.r + b.r;
+      if(d > rr * .7 && d < rr * 1.75){
+        bridges.push({
+          cx:(a.cx + b.cx) / 2, cy:(a.cy + b.cy) / 2,
+          r: Math.min(a.r, b.r) * .78,
+          jx:.9 + jr() * .3, jy:.72 + jr() * .26, ox:0, oy:0, bridge:true,
+        });
+      }
+    }
+  }
+  // 樹冠の真ん中が空いていたら1つ足す。二股の谷が深いままだと
+  // ハート型に割れて「木」に見えなくなる。
+  if(out.length > 3){
+    let mx = 0, my = 0, minR = Infinity;
+    for(const c of out){ mx += c.cx; my += c.cy; minR = Math.min(minR, c.r); }
+    mx /= out.length; my /= out.length;
+    let covered = false;
+    for(const c of out) if(Math.hypot(c.cx - mx, c.cy - my) < c.r * .7) covered = true;
+    if(!covered) bridges.push({cx:mx, cy:my, r:minR, jx:1, jy:.82, ox:0, oy:0, bridge:true});
+  }
+  return out.concat(bridges);
+}
+
+/* 芽のあいだだけは、葉を枝の点そのものから生やす。葉の付け根が枝に触れて
+   いないと「千切れた葉が浮いている」ように見えてしまうため。 */
+function sproutLeaves(anchors, order, n, st, rand){
+  const out = [];
+  if(!order.length) return out;
+  for(let i = 0; i < n; i++){
+    const a = anchors[order[i % order.length]];
+    const side = (i % 2) ? 1 : -1;
+    out.push({
+      x: a.x, y: a.y,
+      rot: a.a * 180 / Math.PI + side * (46 + rand() * 30),
+      sc: st.leaf * (.8 + rand() * .35),
+      tone: rand(), front: true,
+    });
+  }
+  return out;
+}
+
+/* かたまりの中に葉を散らす。外周ほど密にすると、内側は塗りで埋まり、
+   輪郭だけが葉でぎざぎざになる＝「茂っている」ように見える。 */
+function scatterLeaves(clusters, n, st, rand){
+  const out = [];
+  if(!clusters.length) return out;
+  for(let i = 0; i < n; i++){
+    const c = clusters[i % clusters.length];
+    const th = rand() * Math.PI * 2;
+    const rr = Math.sqrt(rand()) * c.r * 1.18;   // 塗りの外まではみ出させて、輪郭をぎざぎざにする
+    out.push({
+      x: c.cx + Math.cos(th) * rr * 1.12,
+      y: c.cy + Math.sin(th) * rr * .94,
+      rot: th * 180 / Math.PI + (rand() - .5) * 70,
+      sc: st.leaf * (.78 + rand() * .55),
+      tone: rand(),
+      front: rr > c.r * .62 || rand() < .3,
+    });
+  }
+  return out;
+}
+
+/* ============================================================
+   5.5 ドメインの葉の席
+   ------------------------------------------------------------
+   scatterLeaves をそのまま使えないのは、あれが rand() で位置を決めるから。
+   同じ席が二度と再現されず、sqrt 分布で内側にも落ちるので樹冠の塗りに
+   埋まる葉が出る。名前つきの葉は「必ず見える」「必ず同じ場所」でなければ
+   ならないので、乱数を使わない別の経路にする。
+   ============================================================ */
+const RIM_K = 8;                   // かたまり1つあたりの席の候補数
+const MIN_GAP_K = .11;             // 席どうしの最小間隔（extent に対する比）
+const MAX_DOMAIN_LEAVES = 20;      /* 葉にする上限。初心者向けのサービスなので、
+                                      多くの人は数件しか持たない前提で控えめに置く。
+                                      超えた分は樹冠を埋めずキャプションの「ほか N件」に
+                                      逃がす — 葉を増やし続けると、どれが自分の
+                                      ドメインか探せなくなるほうが損失が大きい。 */
+
+/* 席の候補。かたまりの外周＝樹冠のシルエット上だけを候補にする。
+   内側は塗りで埋まるので、名前つきの葉を置いても消えてしまう。 */
+function domainRim(clusters, anchors, order, si){
+  const rim = [];
+  // 芽までは clusters がない（sproutLeaves 経路）ので、枝の点をそのまま席にする。
+  if(si <= 1){
+    order.forEach((oi, i) => {
+      const a = anchors[oi];
+      rim.push({x:a.x, y:a.y, rot: a.a * 180 / Math.PI + (i % 2 ? 1 : -1) * 52, ci:-1, k:i});
+    });
+    return rim;
+  }
+  clusters.forEach((c, ci) => {
+    if(c.bridge) return;           // 谷埋め用の偽かたまりには置かない
+    for(let k = 0; k < RIM_K; k++){
+      const a = (k / RIM_K) * Math.PI * 2 - Math.PI / 2;   // 真上から時計回り
+      rim.push({
+        x: c.cx + c.ox + Math.cos(a) * c.r * c.jx * 1.02,
+        y: c.cy + c.oy + Math.sin(a) * c.r * c.jy * 1.02,
+        rot: a * 180 / Math.PI + 90,                        // 葉が外を向く
+        ci, k,
+      });
+    }
+  });
+  return rim;
+}
+
+/* 最遠点順の先頭から、最小間隔を満たすものだけ取る。
+   間隔を緩めながら再走査するのは「かたまりが少ない若木で、同じかたまりの
+   隣り合う席が続けて選ばれて団子になる」事故だけを潰すため。 */
+function pickSeats(rim, need, extent){
+  if(!rim.length || need <= 0) return [];
+  const ord = spreadOrder(rim);
+  let gap = extent * MIN_GAP_K;
+  for(let relax = 0; relax < 4; relax++){
+    const out = [];
+    for(const i of ord){
+      const p = rim[i];
+      if(out.every(q => Math.hypot(q.x - p.x, q.y - p.y) >= gap)) out.push(p);
+      if(out.length === need) return out;
+    }
+    if(out.length === need) return out;
+    gap *= .7;
+  }
+  return ord.slice(0, need).map(i => rim[i]);   // 最後の保険（間隔を諦めて数を満たす）
+}
+
+/* 葉になれなかったドメインの気配を、装飾葉の色づきだけで残す。
+     更新が近い → 黄色く色づく（枝に残る）
+     期限切れ   → 枯れて茶色くなり、その多くは地面に落ちている
+   対象は states.slice(nDom) — つまり MAX_DOMAIN_LEAVES を超えて葉に
+   なれなかった分だけ。実物の葉が出ている件を色づいた装飾葉でも描くと、
+   同じ1件が二度数えられて見える。上限が 20 なので、21件以上を選ぶと
+   この経路が実際に走る。 */
+function tintLeaves(leaves, states, nDom){
+  const rest = states.slice(nDom);            // 葉になれなかった分だけが対象
+  const n = (...keys) => rest.filter(s => keys.includes(s.key)).length;
+  const total = states.length;
+  const soonR = total ? n('watch', 'urgent') / total : 0;
+  const deadN = n('expired');
+  const deadR = total ? deadN / total : 0;
+  const L = leaves.length;
+  // 黄色は目立つので持ち分の半分強。枯葉は枝に少しだけ残し、残りは落ち葉にまわす。
+  const nSoon   = Math.min(L, Math.round(L * soonR * .55));
+  const nWither = Math.min(L - nSoon, Math.round(L * deadR * .22));
+  const idx = leaves.map((_, i) => i).sort((a, b) => leaves[a].tone - leaves[b].tone);
+  for(let i = 0; i < nSoon; i++) leaves[idx[i]].tint = (i % 3 === 0) ? 'var(--leaf-soon-2)' : 'var(--leaf-soon)';
+  for(let i = nSoon; i < nSoon + nWither; i++){
+    const l = leaves[idx[i]];
+    if(!l) break;
+    l.tint = 'var(--leaf-wither)';
+    l.droop = true;             // 枯れかけは下を向く
+  }
+  return {
+    fallen: deadN ? Math.max(4, Math.round(L * deadR * .42)) : 0,
+    dropping: deadN ? Math.min(5, 1 + deadN) : 0,
+  };
+}
+
+function fitOf(pts){
+  let x0 = BASE_X, x1 = BASE_X, y0 = GROUND;
+  for(const p of pts){ x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); }
+  const pad = 26;
+  x0 -= pad; x1 += pad; y0 -= pad;
+  const s = Math.min(MAX_SCALE,
+    (FIT.x1 - FIT.x0) / Math.max(1, x1 - x0),
+    (FIT.y1 - FIT.y0) / Math.max(1, GROUND - y0));
+  return {s, dx: r1(-((x0 + x1) / 2 - BASE_X) * s), box:{x0, x1, y0}};
+}
+
+/* ============================================================
+   枯葉の落下
+   ------------------------------------------------------------
+   期限切れの葉は枝に残さず、根もとの地面へ落として、そこに残す。
+   組み立ての要は1つだけ:
+
+     葉の transform 属性は最初から「着地した姿」にしておき、
+     落下アニメのほうが席（枝）まで巻き戻したところから再生される。
+
+   素直に「席に置いて地面へ動かす」と、落ちきった位置を CSS と JS が
+   別々に計算することになり、再描画のたびに枯葉がワープする。終点を
+   無変形に固定すれば、着地点＝属性そのものなので食い違いようがない。
+   reduced-motion で animation が丸ごと殺されても葉は地面にいる。
+   ============================================================ */
+const RAD = Math.PI / 180;
+
+/* 動きを減らす設定。試作の「アニメ軽減」ボタンが実行中に body.reduce を
+   付け外しするので、読み込み時に1度だけ評価してはいけない。 */
+const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches
+  || document.body.classList.contains('reduce');
+
+/* 一度落ちた葉の記憶（key: `種:ドメイン名`）。件数を1つ増やすたびに
+   枯葉が枝へ舞い戻ってまた落ちる、という嘘をつかないため。 */
+const fellOnce = new Set();
+
+/* 幹と根張りが地面を占める帯。根もとは根張り（renderTree の flare）のぶん
+   幹より広い。ここに枯葉を落とすと、茶色の葉が茶色の樹皮に重なって
+   「地面に何枚あるか」が読めなくなる。幹の太さの式は renderTree と同じ
+   （6 + 深さ*3.2）で、枝を作り直さずに済むよう段階から引き直している。 */
+function trunkBand(si, sc){
+  const tw = 6 + STAGES[si].depth * 3.2;
+  const half = tw * 2.3 / 2 + 8.75 * sc;   // 根張りの半幅 ＋ 葉の半分
+  return [-half, half];
+}
+
+/* 枯葉の車線。根もとから左右交互に外へ、葉1枚ぶんの歩幅で並べる。
+   幹の帯に中心がかかる車線と、草地からはみ出す車線は使わない。 */
+function fallLanes(si, sc, step){
+  const rxG = (62 + si * 24) * .92;        // 既存の落ち葉の帯と同じ幅
+  const trunk = trunkBand(si, sc);
+  const bands = [trunk];
+  const lanes = [];
+  for(let i = 0; i < 24 && lanes.length < 8; i++){
+    const x = ((i % 2) ? 1 : -1) * step * (.5 + Math.floor(i / 2));
+    if(Math.abs(x) + 8.75 * sc > rxG) continue;
+    if(bands.some(([a, b]) => x > a && x < b)) continue;
+    lanes.push(x);
+  }
+  if(lanes.length) return lanes;
+  // 幹が草地を覆いつくすほど太い木では、せめて幹の上だけは外す。
+  const edge = Math.min(trunk[1] + step * .5, rxG - 8.75 * sc);
+  return [-edge, edge];
+}
+
+/* 着地点。まず手前の列の車線を埋め、あふれたぶんだけ列をずらす。
+   同じ場所に2枚落ちると1枚に見えて、地面の枚数と件数が食い違う。 */
+const FALL_ROWS = [8, 15, 3];
+function groundSlot(ei, si, sc, rand){
+  const step  = 17.5 * sc + 8;                    // 葉の長さ＋すきま
+  const lanes = fallLanes(si, sc, step);
+  const row   = Math.floor(ei / lanes.length) % FALL_ROWS.length;
+  const cx    = lanes[ei % lanes.length] + row * step * .36 + (rand() - .5) * 7;
+  // 隣どうしで奥行きを少しずらす。同じ高さに並ぶと、地面に落ちた葉ではなく
+  // 何かの模様に見えてくる。
+  const cy    = GROUND + FALL_ROWS[row] + (ei % 2 ? 4 : 0) + (rand() - .5) * 3;
+  // 接地角は水平まわり ±20°。転がった葉は寝ているので、立った角度で
+  // 止めると地面に刺さって見える。1枚おきに頭の向きを入れ替えて並びを崩す。
+  const rot = ((ei % 2) ? 180 : 0) + (rand() - .5) * 40;
+  // 葉の原点は付け根なので、真ん中が車線に来るように半分ぶん戻す。
+  const half = 8.75 * sc;
+  const gx = BASE_X + cx - Math.cos(rot * RAD) * half;
+  const gy = cy - Math.sin(rot * RAD) * half;
+  // 枠の下端は cropToTree が GROUND+34 で止めている。fitOf の拡大は
+  // MAX_SCALE までなので、そこまで見込んで着地点を上げておかないと
+  // いちばん手前の葉だけ切れる。
+  return {gx, gy: Math.min(gy, GROUND + 33 / MAX_SCALE - 6 * sc), rot};
+}
+
+/* 落下アニメの終点＝この属性。落ちた葉も、これから落ちる葉も、
+   最初からこの姿で DOM に置かれる。 */
+const restingTransform = (slot, sc) =>
+  `translate(${r1(slot.gx)} ${r1(slot.gy)}) rotate(${r1(slot.rot)}) scale(${r1(sc * 100) / 100})`;
+
+/* 枯葉の落下。UI 側は renderTree から attach を呼ぶだけで、
+   落下の都合（記憶・接地点・装飾との重複）はすべてこの中に閉じる。 */
+const FALL = (() => {
+  let taken   = 0;             // この描画で実物の枯葉になった枚数
+  const spots = [];            // その着地点の x。装飾の落ち葉を退けるのに使う
+
+  return {
+    /** @param {SVGGElement} node .dleaf 要素 @param {{seat,k,si,sc,rand,seed}} ctx */
+    attach(node, ctx){
+      // renderTree は席の順に呼ぶので、k===0 が新しい描画の始まり。
+      // 落下は renderTree の外に記憶を持つため、ここで前回ぶんを捨てる。
+      if(ctx.k === 0){ taken = 0; spots.length = 0; }
+      // 状態は ctx ではなく DOM が持っている（落下は expired の1条件で決まる）。
+      // mini ツリーを気にしなくてよいのは、呼び出し側が nDom > 0 のときにしか
+      // 呼ばないから — nDom > 0 は interactive、つまり !mini と同義。
+      if(node.dataset.state !== 'expired') return;
+
+      const ei   = taken++;
+      const slot = groundSlot(ei, ctx.si, ctx.sc, ctx.rand);
+      spots.push(slot.gx);
+      node.setAttribute('transform', restingTransform(slot, ctx.sc));
+
+      const key = ctx.seed + ':' + node.dataset.domain;
+      if(reduceMotion() || fellOnce.has(key)){
+        // 動きを減らす設定では「落ちる過程」は見せないが「落ちた結果」は必ず見せる。
+        // ここで記憶に足しておくのは、設定を切り替えた拍子に地面の葉が
+        // 枝へ戻って落ち直すのを防ぐため。
+        fellOnce.add(key);
+        return;
+      }
+
+      const anim = node.querySelector('.dleaf-anim');
+      if(!anim) return;
+      // 席から着地点までの差を、葉のローカル座標へ引き戻す。親が
+      // rotate(接地角) scale(sc) を持っているので、その逆を掛けないと
+      // CSS の translate が斜めに効いて、枝ではないところから落ちてくる。
+      const dx = ctx.seat.x - slot.gx, dy = ctx.seat.y - slot.gy;
+      const c = Math.cos(-slot.rot * RAD), s = Math.sin(-slot.rot * RAD);
+      const dir = (ei % 2) ? 1 : -1;
+      // 落差に応じたひとゆれ。落下方向に直交する向きへ振る。
+      const len = Math.hypot(dx, dy) || 1;
+      const amp = Math.min(15, 6 + len * .045) * dir;
+      const px = -dy / len * amp, py = dx / len * amp;
+      // 起点の傾き＝席に置かれていたときの角度。足りなければ半回転足して、
+      // めくれながら落ちるようにする（回らないと紙切れが滑って見える）。
+      let fr = (((ctx.seat.rot - slot.rot) % 360) + 360) % 360;
+      if(dir < 0) fr -= 360;
+      if(Math.abs(fr) < 150) fr += dir * 180;
+
+      anim.style.setProperty('--fx', r1((dx * c - dy * s) / ctx.sc) + 'px');
+      anim.style.setProperty('--fy', r1((dx * s + dy * c) / ctx.sc) + 'px');
+      anim.style.setProperty('--sx', r1((px * c - py * s) / ctx.sc) + 'px');
+      anim.style.setProperty('--sy', r1((px * s + py * c) / ctx.sc) + 'px');
+      anim.style.setProperty('--fr', r1(fr) + 'deg');
+      // 短く。落ちること自体は情報だが、見せ場ではない。
+      anim.style.setProperty('--fall-dur', r1(1.15 + ctx.rand() * .45) + 's');
+      anim.style.setProperty('--fall-dl',  r1(Math.min(.95, .28 + ei * .22)) + 's');
+      anim.classList.add('fall');
+      // 落ちきってから記憶する。途中で描き直されたら最初から落とす
+      // ほうが、半端な高さで固まるより嘘が少ない。
+      anim.addEventListener('animationend', () => fellOnce.add(key), {once:true});
+    },
+
+    /** SEED 変更時に呼ばれる */
+    reset(){ fellOnce.clear(); taken = 0; spots.length = 0; },
+
+    /** 装飾落ち葉の削減量。nDom===0 の描画（mini・ゲスト）では attach が
+        一度も呼ばれないので、前の描画の記憶を持ち越さないよう捨てる。 */
+    reserved(nDom){
+      if(!nDom){ taken = 0; spots.length = 0; }
+      return taken;
+    },
+
+    /** 実物の枯葉の真上か。装飾の落ち葉を1枚重ねると、1件が2件に見える。 */
+    occupied(x, w){ return spots.some(gx => Math.abs(gx - x) < w); },
+  };
+})();
+
+/* 表示順（＝期限が近い順）に並んだドメインの葉。矢印キーの巡回は
+   DOM 順ではなくこの並びを辿る。 */
+const leafNodes = [];
+
+function renderTree(count, {seed = SEED, mini = false, grew = false} = {}){
+  // 触れる葉はこの関数が毎回作り直す。参照を捨てるのは、木が生えない
+  // （count===0 の）早期 return より前でなければならない。あとに置くと
+  // 24件→0件にしたときに前回の葉が leafNodes に残り、DOM から外れた
+  // 要素に .focus() する幽霊が生まれる。
+  if(!mini) leafNodes.length = 0;
+  const si = stageIndex(count), st = STAGES[si];
+  const rand = prng(seed ^ 0x5eed);
+  const root = el('g', {});
+  const {branches, tips} = buildTree(st, seed);
+
+  const anchors  = anchorsOf(branches, tips, st.depth);
+  const order    = spreadOrder(anchors);
+  const nLeaf    = Math.round(leafTotal(count) * (mini ? .7 : 1));
+  // 木の広がり＝樹冠のスケール基準。かたまりの半径をこれに比例させないと、
+  // 若木の樹冠だけ体に対して巨大に膨らむ。
+  let ax0 = 1e9, ax1 = -1e9, ay0 = 1e9, ay1 = -1e9;
+  for(const a of anchors){ ax0=Math.min(ax0,a.x); ax1=Math.max(ax1,a.x); ay0=Math.min(ay0,a.y); ay1=Math.max(ay1,a.y); }
+  const extent   = anchors.length ? Math.max(ax1-ax0, ay1-ay0, 40) : 40;
+  const clusters = clusterAnchors(anchors, order, Math.max(2, Math.min(13, Math.round(Math.sqrt(nLeaf)))), extent);
+
+  // 段階一覧の小さな木・読込中の影・ゲスト/失敗の木には、触れる葉を作らない（§8）。
+  // タブ停止が100個以上ページに生えるうえ、スケルトンの一律塗りが状態の色を潰す。
+  const interactive = !mini && count > 0 && state.mode === 'normal';
+  const shown  = interactive ? shownDomains(count) : [];
+  const rim    = interactive ? domainRim(clusters, anchors, order, si) : [];
+  const nDom   = interactive ? Math.min(count, DOMAINS.length, MAX_DOMAIN_LEAVES, rim.length) : 0;
+  // 席が足りないときも含め、葉になる nDom 件は優先度で選ぶ。
+  const states = interactive ? arrangeForLeaves(shown, nDom) : [];
+  // 総葉数は変えない。装飾葉から名前つきの葉へ振り替えるだけなので、
+  // 樹冠のボリューム感も fitOf の結果も今までどおり。
+  const nDeco  = Math.max(0, nLeaf - nDom);
+  const seats  = pickSeats(rim, nDom, extent);
+  const leaves = si <= 1
+    ? sproutLeaves(anchors, order, nDeco, st, rand)
+    : scatterLeaves(clusters, nDeco, st, rand);
+  const wither = tintLeaves(leaves, states, nDom);
+
+  // 席もあわせて実測する。ドメインの葉は装飾葉より大きいので、
+  // 席を外すと樹冠の端の葉だけ枠から切れる。
+  const fitPts = leaves.concat(tips, seats);
+  const {s, dx, box} = fitPts.length ? fitOf(fitPts) : {s:1, dx:0, box:{x0:BASE_X-60,x1:BASE_X+60,y0:GROUND-60}};
+  const tf = `translate(${BASE_X} ${GROUND}) scale(${r1(s*100)/100}) translate(${-BASE_X} ${-GROUND})`;
+
+  // shift(枠合わせ) > sway(そよぎ) > scaled(縮小)。CSS アニメは transform 属性を
+  // 上書きしてしまうので、揺らす層と座標を持つ層は必ず分ける。
+  const shift  = put(root, 'g', {transform:`translate(${dx} 0)`});
+  const back   = put(shift, 'g', {transform:tf});   // 地面（揺れない）
+  const sway   = put(shift, 'g', {class:'sway'});
+  const scaled = put(sway,  'g', {transform:tf});
+  const front  = put(shift, 'g', {transform:tf});   // 地面の落ち葉（揺れない）
+
+  // --- 地面 ---
+  put(back, 'ellipse', {cx:BASE_X, cy:GROUND+4, rx:62 + si*24, ry:9 + si*1.7, fill:'var(--grass-3)', opacity:.55});
+  const gr = prng(seed ^ 99);
+  const spanG = 54 + si * 19;
+  for(let i=0;i<24;i++){
+    const t = gr();
+    const gx = BASE_X + (t - .5) * 2 * spanG * (.35 + gr()*.65);
+    const h  = 9 + gr()*15 * (1 - Math.abs(gx-BASE_X)/(spanG*2.2));
+    const lean = (gx < BASE_X ? -1 : 1) * (3 + gr()*7);
+    put(back, 'path', {d:`M${r1(gx)} ${GROUND+3}q${r1(lean*.3)} ${r1(-h*.62)} ${r1(lean)} ${r1(-h)}`,
+      stroke:'var(--grass)', 'stroke-width':1.9, 'stroke-linecap':'round', fill:'none', opacity:.3 + gr()*.3});
+  }
+
+  // 小花。木が育つほど増える。地面の賑やかさは草だけだと足りない。
+  if(si >= 2){
+    const fl = prng(seed ^ 313);
+    const FLOWER = ['var(--flower-1)', 'var(--flower-2)', 'var(--flower-3)'];
+    for(let i = 0; i < (si - 1) * 4; i++){
+      const fx = BASE_X + (fl() - .5) * 2 * spanG * (.45 + fl() * .6);
+      const fy = GROUND - 1 - fl() * 7;
+      const c  = FLOWER[Math.floor(fl() * 3) % 3];
+      const g  = put(back, 'g', {transform:`translate(${r1(fx)} ${r1(fy)}) scale(${r1((1.5 + fl()*.9)*100)/100})`});
+      for(let k = 0; k < 5; k++){
+        const a = k * 72 * Math.PI / 180;
+        put(g, 'circle', {cx:r1(Math.cos(a)*2.4), cy:r1(Math.sin(a)*2.4), r:1.9, fill:c});
+      }
+      put(g, 'circle', {cx:0, cy:0, r:1.5, fill:'var(--flower-3)'});
+    }
+  }
+
+  if(st.depth === 0){
+    put(back, 'path', {d:`M${BASE_X-48} ${GROUND+2}q48 -27 96 0Z`, fill:'var(--bark)', opacity:.3});
+    put(back, 'ellipse', {cx:BASE_X, cy:GROUND-10, rx:11, ry:14, fill:'url(#gBark)', transform:`rotate(-12 ${BASE_X} ${GROUND-10})`});
+    put(back, 'path', {d:`M${BASE_X-3} ${GROUND-17}q4 8 2 15`, stroke:'rgb(255 255 255 / 30%)', 'stroke-width':1.6, fill:'none', 'stroke-linecap':'round'});
+    return {node:root, si, nDom:0};
+  }
+
+  // 重なりの順番をここで確定させる。あとから append すると必ず前に出てしまう。
+  const halo  = put(scaled, 'g', {filter:'url(#fHalo)', opacity:.5});
+  const bg    = put(scaled, 'g', {});                       // 枝（樹冠に隠れる分も含む）
+  const mass  = put(scaled, 'g', {});                        // 樹冠の塗り
+  const layerBack  = put(scaled, 'g', {class:'foliage' + (grew ? ' draw' : '')});
+  const layerFront = put(scaled, 'g', {class:'foliage' + (grew ? ' draw' : '')});
+  // 装飾葉より必ずあと。ここに置くことで、名前つきの葉が装飾葉に隠れることが
+  // 構造的にあり得なくなる（front 判定の運任せにしない）。
+  const dleaves    = put(scaled, 'g', {class:'domain-leaves'});
+
+  // --- 樹冠の下地。かたまりを重ねて塗り、上に葉を散らす ---
+  const bodyK = BODY_STRENGTH[si];
+  if(bodyK > 0){
+    const R = (c) => c.r * (.78 + .14 * bodyK);   // 塗りは葉より一回り内側。輪郭は葉に作らせる
+    const br = prng(seed ^ 0x10b);
+    for(const c of clusters) put(halo, 'circle', {cx:r1(c.cx), cy:r1(c.cy), r:r1(R(c)*.95), fill:'var(--halo)'});
+    for(const c of clusters)
+      put(mass, 'path', {d:blobPath(c.cx+c.ox, c.cy+c.oy+4, R(c)*c.jx, R(c)*c.jy, br, 12, .19), fill:'var(--leaf-1)'});
+    for(const c of clusters)
+      put(mass, 'path', {d:blobPath(c.cx+c.ox-c.r*.06, c.cy+c.oy-c.r*.12, R(c)*c.jx*.82, R(c)*c.jy*.8, br, 11, .22), fill:'var(--leaf-2)'});
+  }
+
+  // --- 枝（世代ごとにまとめ、根もとから順に立ち上げる） ---
+  const gens = [];
+  for(const b of branches){
+    // いちばん外側の小枝は葉むらより外へ出て枯れ枝に見えるので描かない
+    if(st.depth >= 3 && b.gen === st.depth) continue;
+    let g = gens[b.gen];
+    if(!g){
+      g = gens[b.gen] = el('g', {class:'gen' + (grew ? ' draw' : '')});
+      g.style.setProperty('--dl', (b.gen * .1) + 's');
+    }
+    put(g, 'path', {d:b.d, fill: b.gen === 0 ? 'url(#gBark)' : 'var(--bark)'});
+    if(b.w2 > 1.6) put(g, 'circle', {cx:r1(b.p1[0]), cy:r1(b.p1[1]), r:r1(b.w2/2), fill:'var(--bark)'});
+  }
+  for(const g of gens) if(g) bg.appendChild(g);
+
+  // 根張り。幹がまっすぐ地面に刺さっていると「棒」に見えるので、
+  // 根もとだけ両側へ広げて地面に馴染ませる。
+  if(branches.length){
+    const tw = branches[0].w, rw = tw * 2.3, h = Math.min(34, tw * 2.4);
+    const flare = put(bg, 'path', {d:
+      `M${r1(BASE_X - rw/2)} ${GROUND + 2}` +
+      `C${r1(BASE_X - rw/2 + tw*.18)} ${r1(GROUND - h*.42)} ${r1(BASE_X - tw/2 - tw*.12)} ${r1(GROUND - h*.7)} ${r1(BASE_X - tw/2)} ${r1(GROUND - h)}` +
+      `L${r1(BASE_X + tw/2)} ${r1(GROUND - h)}` +
+      `C${r1(BASE_X + tw/2 + tw*.12)} ${r1(GROUND - h*.7)} ${r1(BASE_X + rw/2 - tw*.18)} ${r1(GROUND - h*.42)} ${r1(BASE_X + rw/2)} ${GROUND + 2}Z`,
+      fill:'url(#gBark)'});
+    bg.insertBefore(flare, bg.firstChild);
+  }
+
+  // --- 葉むら : 奥・手前の2層。手前の層だけが件数に応じてふくらむ ---
+  leaves.forEach((l, i) => {
+    const host = l.front ? layerFront : layerBack;
+    const fill = l.tint || LEAF_TONES[l.tone < .34 ? 0 : l.tone < .86 ? 1 : 2];
+    // 枯れかけは重みで下を向く。色だけでなく向きでも「弱っている」と分かるように。
+    const rot = l.droop ? 55 + (l.rot % 50) : l.rot;
+    const slot = put(host, 'g', {transform:`translate(${r1(l.x)} ${r1(l.y)}) rotate(${r1(rot)}) scale(${r1(l.sc*100)/100})`});
+    const lf = put(slot, 'path', {class:'lf', d:LEAF_D, fill});
+    if(grew) lf.style.setProperty('--dl', (.25 + (i / Math.max(1, leaves.length)) * .5) + 's');
+  });
+
+  // --- ドメインの葉 : 1枚 = 1件 ---
+  if(nDom > 0){
+    dleaves.setAttribute('role', 'group');
+    dleaves.setAttribute('aria-roledescription', 'ドメインの葉');
+    dleaves.setAttribute('aria-label', `取得済みドメイン ${count}件`);
+    const frand = prng(seed ^ 0xfa11);
+    // 装飾葉は st.leaf * (.78–1.33)。比べる相手は装飾葉の平均ではなく
+    // 「いちばん大きい装飾葉」で、大樹では 496枚のうち必ず何枚かがそこに来る。
+    // 1.28倍では紛れて見つからないので、最大の装飾葉に対して約1.5倍にする。
+    const sc = st.leaf * (si <= 2 ? 1.60 : 2.05);
+    states.slice(0, nDom).forEach((dom, k) => {
+      const ls = deriveLeafState(dom);
+      const seat = seats[k];
+      // 傾きでも状態を語る。更新が近い葉は少し起き、まもなく期限の葉は垂れる。
+      const rot = ls.key === 'watch' ? seat.rot - 16
+                : ls.key === 'urgent' ? seat.rot + 34
+                : seat.rot;
+      const g = put(dleaves, 'g', {
+        class:'dleaf', 'data-domain':dom.name, 'data-state':ls.key,
+        role:'button', tabindex:'-1', 'aria-label':leafAria(dom, ls),
+        transform:`translate(${r1(seat.x)} ${r1(seat.y)}) rotate(${r1(rot)}) scale(${r1(sc*100)/100})`,
+      });
+      // 座標＝属性 / 落下＝.dleaf-anim / ホバー拡大＝.dleaf-hit の3層。
+      // CSS の transform は SVG の transform 属性を丸ごと上書きするので混ぜられない。
+      const anim = put(g, 'g', {class:'dleaf-anim'});
+      const hit  = put(anim, 'g', {class:'dleaf-hit'});
+      const path = put(hit, 'path', {
+        class:'lf dlf', d:LEAF_D, fill:ls.colorVar,
+        stroke:'var(--leaf-domain-stroke)', 'stroke-width':.9,
+      });
+      // フォーカスの芯を描くためだけの、塗りのない同じ形。SVG に z-index は
+      // ないので順番で決める — 芯はここ（塗りの上）、下敷きの縁は .dlf 自身の
+      // stroke（paint-order で塗りの下へ回す）が担う。
+      put(hit, 'path', {class:'dlf-ring', d:LEAF_D});
+      // 期限が分からない葉は縁を破線にする。色を持たない差なので、
+      // ふきだしを開かなくても「確かめていない葉」だと分かる。
+      if(ls.key === 'unknown') path.setAttribute('stroke-dasharray', '2 2');
+      FALL.attach(g, {seat, k, si, sc, rand:frand, seed});
+      leafNodes.push(g);
+    });
+    // roving tabindex : タブ停止はちょうど1つ。先頭＝いちばん期限が近い葉。
+    if(leafNodes.length) leafNodes[0].setAttribute('tabindex', '0');
+  }
+
+  // --- 落ち葉（地面）: 期限切れのドメインの分だけ、根もとに枯葉が溜まる ---
+  if(wither.fallen > 0){
+    const fl = prng(seed ^ 4241);
+    const rx = (62 + si * 24) * .92;
+    // 実物の枯葉として落ちているぶんは装飾から差し引く。同じ1件を
+    // 「名前つきの枯葉」と「装飾の落ち葉」の二重に描くと件数が水増しされる。
+    const nFallen = Math.max(0, wither.fallen - FALL.reserved(nDom));
+    for(let i = 0; i < nFallen; i++){
+      const t  = fl();
+      const lx = BASE_X + (t - .5) * 2 * rx * (.35 + fl() * .65);
+      const ly = GROUND + 1 + (fl() - .25) * 9;
+      const sc = st.leaf * (.62 + fl() * .4);
+      // 実物の枯葉の真上には敷かない。押せる葉が装飾に埋もれて見つからなくなる。
+      if(FALL.occupied(lx, 9 * st.leaf)) continue;
+      const g  = put(front, 'g', {transform:`translate(${r1(lx)} ${r1(ly)}) rotate(${r1(fl()*360)}) scale(${r1(sc*100)/100})`});
+      put(g, 'path', {d:LEAF_D, fill: fl() < .78 ? 'var(--leaf-dead)' : 'var(--leaf-wither)', opacity:.95});
+    }
+  }
+
+  // --- 舞い落ちる葉。期限切れがあれば枯葉が落ちてくる ---
+  const nFall = mini ? 0 : (si >= 3 ? 4 : 0) + wither.dropping;
+  if(nFall > 0){
+    const fr = prng(seed ^ 7);
+    for(let i = 0; i < nFall; i++){
+      const dead = i < wither.dropping;
+      const fx = BASE_X + (fr() - .5) * (box.x1 - box.x0) * .7;
+      const fy = box.y0 + (fr() * .5 + .25) * (GROUND - box.y0);
+      const slot = put(scaled, 'g', {transform:`translate(${r1(fx)} ${r1(fy)}) scale(${r1(st.leaf*90)/100})`});
+      const f = put(slot, 'g', {class:'faller'});
+      f.style.setProperty('--dur', (dead ? 7 : 9) + i * 2.1 + 's');
+      f.style.setProperty('--fd', (i * 2.3) + 's');
+      f.style.setProperty('--dx', r1((fr() - .5) * 80) + 'px');
+      f.style.setProperty('--dy', r1(GROUND - fy - 6) + 'px');
+      put(f, 'path', {d:LEAF_D, fill: dead ? 'var(--leaf-dead)' : 'var(--leaf-2)', opacity:.92});
+    }
+  }
+
+  return {node:root, si, nDom};
+}
+
+/* ============================================================
+   5. 画面の状態と配線
+   ============================================================ */
+const stageBox = document.getElementById('stageBox');
+const card     = document.getElementById('treeCard');
+const svg      = document.getElementById('treeSvg');
+const skel     = document.getElementById('treeSkeleton');
+const live     = document.getElementById('treeLive');
+const capNum   = document.getElementById('capNum');
+const capStage = document.getElementById('capStage');
+const capSub   = document.getElementById('capSub');
+const capNav   = document.getElementById('capNav');
+const capBar   = document.getElementById('capBar');
+
+const state = {count:12, mode:'normal', lastStage:-1};
+
+/* 木の高さは段階でまるごと変わるので、枠を実測して上の余白を切り落とす。
+   横は 0–460 のまま（木は中央寄せなので、横を切ると小さい木だけ拡大される）。 */
+function cropToTree(node){
+  const b = node.getBBox();
+  const top = Math.min(b.y - 20, GROUND - 300);
+  svg.setAttribute('viewBox', `0 ${r1(top)} ${VB.w} ${r1(GROUND + 34 - top)}`);
+  stageBox.style.aspectRatio = `${VB.w} / ${r1(GROUND + 34 - top)}`;
+}
+
+function paint(){
+  // 葉の DOM はこの後まるごと作り直される。開いたままのふきだしは
+  // 消えた要素を指し続けるので、必ず先に閉じる。
+  closeTip();
+  // どのドメインの葉にフォーカスがあったかだけ覚えておく。席は木が育てば
+  // 動いてよいが、「いま触っている1件」は再描画の前後で変わってはいけない。
+  const active = document.activeElement;
+  const keepFocus = active && active.closest && active.closest('.dleaf')
+    ? active.closest('.dleaf').dataset.domain : null;
+
+  card.classList.toggle('is-loading', state.mode === 'loading');
+  card.classList.toggle('is-guest',   state.mode === 'guest');
+  card.classList.toggle('is-error',   state.mode === 'error');
+
+  const shown = state.mode === 'guest' ? 0 : state.count;
+  const si    = stageIndex(shown);
+  const grew  = si !== state.lastStage;
+  const out   = renderTree(shown, {grew});
+  live.replaceChildren(out.node);
+  state.lastStage = si;
+
+  if(state.mode === 'loading'){
+    // 読込中は件数が分からないので、中くらいの木を1本だけ影として置く。
+    const sk = renderTree(8, {mini:true});
+    skel.replaceChildren(sk.node);
+    cropToTree(sk.node);
+  } else {
+    skel.replaceChildren();
+    cropToTree(out.node);
+  }
+
+  // フォーカスを戻すのは cropToTree のあと。viewBox と aspect-ratio が変わると
+  // 葉の画面上の位置も変わるので、先に戻すとふきだしがずれた場所に出る。
+  if(keepFocus){
+    const again = leafNodes.find(n => n.dataset.domain === keepFocus);
+    if(again){ setRoving(again); again.focus(); }
+  }
+
+  paintCaption(shown, si, out.nDom);
+  for(const li of document.querySelectorAll('#stageList li')) li.classList.toggle('on', +li.dataset.s === si);
+}
+
+function paintCaption(n, si, nDom = 0){
+  const st = STAGES[si], next = STAGES[si+1];
+  capNum.textContent = n;
+  capStage.textContent = st.name;
+  capBar.style.width = next ? Math.min(100, Math.round((n - st.min) / (next.min - st.min) * 100)) + '%' : '100%';
+
+  // 数え方は葉と同じ deriveLeafState に通す。ここだけ別の判定を書くと、
+  // 「期限切れ1件」と言いながら枯葉が2枚ある、という食い違いが起きる。
+  const states = shownDomains(n).map(d => deriveLeafState(d));
+  const soon = states.filter(s => s.key === 'watch' || s.key === 'urgent').length;
+  const dead = states.filter(s => s.key === 'expired').length;
+  const unsure = states.filter(s => s.key === 'unknown').length;
+  const bits = [];
+  if(n === 0)   bits.push('最初の1件を取ると、ここに芽が出ます。');
+  else if(next) bits.push(`あと <em>${next.min - n}件</em> で「${next.name}」になります。`);
+  else          bits.push('いちばん大きな「大樹」まで育ちました。');
+  if(soon) bits.push(`<span class="warn">更新が近い ${soon}件</span>`);
+  if(dead) bits.push(`<span class="bad">期限切れ ${dead}件</span>`);
+  // 期限が分からない件も必ず数える。葉は灰緑・破線で出ているのに要約からだけ
+  // 消えると、「木には何かあるが一覧には無い」という食い違いになる。
+  if(unsure) bits.push(`<span class="unsure">期限を確認できない ${unsure}件</span>`);
+  // 葉になれなかった分。木が語れる上限を黙って切り捨てると、件数が合わなくなる。
+  if(nDom > 0 && n > nDom) bits.push(`<span class="rest">ほか ${n - nDom}件</span>`);
+  capSub.innerHTML = bits.join(' ｜ ');
+  capNav.textContent = '';     // 前の描画の「移動します」を残さない
+}
+
+/* ============================================================
+   6.5 ふきだし（ドメインの葉の中身）
+   ------------------------------------------------------------
+   位置は必ず getBoundingClientRect から求める。SVG のユーザー座標は
+   cropToTree で viewBox が毎回変わるうえ、木全体が .sway の CSS 回転の
+   中にいるので、そのままでは画面上の位置と一致しない。
+   ============================================================ */
+const tip      = document.getElementById('leafTip');
+const tipName  = tip.querySelector('.leaf-tip__name');
+const tipState = tip.querySelector('.leaf-tip__state');
+const tipDays  = tip.querySelector('.leaf-tip__days');
+const tipRenew = tip.querySelector('.leaf-tip__renew');
+const tipLink  = tip.querySelector('.leaf-tip__link');
+
+/* 自動更新の一行。期限切れの葉には出さない — もう更新される予定の話ではなく、
+   復旧できるかどうかの話になっているため。 */
+function renewText(domain, ls){
+  if(ls.key === 'expired') return {text:'', warn:false};
+  if(domain.autoRenew) return {text:'自動更新 オン', warn:false};
+  // オフのまま期限が近づいているものだけが、今すぐ手を動かす必要のある葉。
+  // 文言はどちらも1行に収まる長さにする（折り返すと「です」だけが行に残る）。
+  const soon = ls.key === 'urgent' || ls.key === 'watch';
+  return {text: soon ? '自動更新 オフ・要手続き' : '自動更新 オフ', warn: soon};
+}
+
+let openLeaf = null, hoverTimer = 0, closeTimer = 0, openedAt = 0;
+
+/* ポインタでホバーできる環境か。同じ「押す」でも意味が変わるので、
+   登録時ではなく押された時に見る（開発者ツールのデバイス切り替えや、
+   外付けマウスを抜き差しするタブレットで途中から変わりうる）。 */
+const canHover = () => matchMedia('(hover:hover)').matches;
+
+/* 押したときの行き先。試作はページ遷移できないので、行き先だけを別行に出す。
+   キャプション本文（#capSub）へ書き込むと <em>/<span class="warn"> の
+   組み立てごと消えて、件数の強調が次の再描画まで戻らない。 */
+function goToDetail(path){
+  capNav.textContent = `${path} へ移動します（試作では遷移しません）`;
+}
+const activateLeaf = (leafEl) => goToDetail(detailPath(leafEl.dataset.domain));
+
+/* はみ出しの判定に使う枠。画面ではなく「実際に見えている範囲」で決める。
+   ヒーローは overflow:hidden なので、画面には収まっていてもヒーローの外へ
+   出た分は切り取られて読めない。切り取る祖先は動かないので一度だけ探す。 */
+const clipper = (() => {
+  for(let n = stageBox.parentElement; n && n !== document.body; n = n.parentElement){
+    const cs = getComputedStyle(n);
+    if(cs.overflowX !== 'visible' || cs.overflowY !== 'visible') return n;
+  }
+  return null;
+})();
+
+const TIP_M = 8;                               // 枠との最小の余白
+function clipBox(){
+  const c = clipper ? clipper.getBoundingClientRect() : null;
+  return {
+    top:   Math.max(TIP_M, c ? c.top + TIP_M : TIP_M),
+    left:  Math.max(TIP_M, c ? c.left + TIP_M : TIP_M),
+    right: Math.min(innerWidth - TIP_M, c ? c.right - TIP_M : innerWidth - TIP_M),
+  };
+}
+
+function placeTip(leafEl){
+  const s = stageBox.getBoundingClientRect();
+  const r = leafEl.getBoundingClientRect();
+  const box = clipBox();
+  tip.hidden = false;
+  tip.classList.remove('is-below');
+  tip.style.setProperty('--nudge', '0px');
+  tip.style.left = (r.left + r.width / 2 - s.left) + 'px';
+  tip.style.top  = (r.top - s.top) + 'px';
+  // 1) 上に出せなければ下へ回す
+  let t = tip.getBoundingClientRect();
+  if(t.top < box.top){
+    tip.classList.add('is-below');
+    tip.style.top = (r.bottom - s.top) + 'px';
+    t = tip.getBoundingClientRect();
+  }
+  // 2) 左右のはみ出しを押し戻す。矢印は --nudge を逆に効かせて葉の真上に残す。
+  let dx = 0;
+  if(t.left < box.left) dx = box.left - t.left;
+  else if(t.right > box.right) dx = box.right - t.right;
+  if(dx) tip.style.setProperty('--nudge', r1(dx) + 'px');
+}
+
+function openTip(leafEl){
+  clearTimeout(closeTimer);
+  const domain = DOMAIN_BY_NAME.get(leafEl.dataset.domain);
+  if(!domain) return;
+  const ls = deriveLeafState(domain);
+  tip.dataset.tone  = ls.tone;
+  tip.dataset.state = ls.key;
+  tipName.textContent  = domain.name;
+  tipState.textContent = ls.label;
+  tipDays.textContent  = daysText(domain, ls);
+  const rn = renewText(domain, ls);
+  tipRenew.textContent = rn.text;
+  if(rn.warn) tipRenew.dataset.warn = '1'; else delete tipRenew.dataset.warn;
+  tipLink.setAttribute('href', detailPath(domain.name));
+  if(openLeaf && openLeaf !== leafEl) openLeaf.removeAttribute('aria-describedby');
+  openLeaf = leafEl;
+  // 開いているあいだだけ結びつける。閉じたまま残すと、読み上げが
+  // 見えていない文章を毎回付け足してしまう。
+  leafEl.setAttribute('aria-describedby', 'leafTip');
+  stageBox.classList.add('tip-open');
+  openedAt = performance.now();
+  placeTip(leafEl);
+}
+
+function closeTip(){
+  clearTimeout(hoverTimer); clearTimeout(closeTimer);
+  if(openLeaf) openLeaf.removeAttribute('aria-describedby');
+  openLeaf = null;
+  tip.hidden = true;
+  stageBox.classList.remove('tip-open');
+}
+
+/* 閉じるのを少しだけ待つ。葉からふきだしの中のリンクへカーソルを
+   運ぶあいだに消えると、リンクが押せない。 */
+const scheduleClose = () => { clearTimeout(closeTimer); closeTimer = setTimeout(closeTip, 120); };
+const leafOf = (node) => (node && node.closest) ? node.closest('.dleaf') : null;
+
+/* roving tabindex : タブ停止はちょうど1つ。24件（実アプリでは最大60件）ぶんの
+   タブ停止をヒーローの中に作ると、検索フォームまで辿り着けなくなる。 */
+function setRoving(leafEl){
+  for(const n of leafNodes) n.setAttribute('tabindex', n === leafEl ? '0' : '-1');
+}
+
+function rovingTabindex(e){
+  const leafEl = leafOf(e.target);
+  if(!leafEl) return;
+  const i = leafNodes.indexOf(leafEl);
+  if(i < 0) return;
+  let j = -1;
+  switch(e.key){
+    case 'ArrowRight': case 'ArrowDown': j = (i + 1) % leafNodes.length; break;
+    case 'ArrowLeft':  case 'ArrowUp':   j = (i - 1 + leafNodes.length) % leafNodes.length; break;
+    case 'Home': j = 0; break;
+    case 'End':  j = leafNodes.length - 1; break;
+    case 'Enter': case ' ': case 'Spacebar':
+      e.preventDefault();                 // Space のスクロールを止める
+      // role="button" である以上、Enter/Space は「押した」でなければならない。
+      // ふきだしはフォーカスした時点で開いているので、ここで開き直すだけだと
+      // 押しても何も起きないボタンになる。
+      activateLeaf(leafEl);
+      return;
+    default: return;
+  }
+  e.preventDefault();
+  // 巡回は DOM 順（＝席の散らばり順）ではなく表示順＝期限が近い順。
+  // 見た目の並びで飛ばれても、どこを読んでいるのか分からなくなる。
+  const to = leafNodes[j];
+  setRoving(to);
+  to.focus();
+}
+
+function bindLeafEvents(){
+  // マウス。葉の上を横切っただけでは開かない（60ms の間）。
+  if(!matchMedia('(hover:none)').matches){
+    stageBox.addEventListener('pointerover', (e) => {
+      const leafEl = leafOf(e.target);
+      if(!leafEl) return;
+      clearTimeout(closeTimer); clearTimeout(hoverTimer);
+      if(openLeaf === leafEl) return;
+      hoverTimer = setTimeout(() => openTip(leafEl), 60);
+    });
+    stageBox.addEventListener('pointerout', (e) => {
+      const leafEl = leafOf(e.target);
+      if(!leafEl) return;
+      if(e.relatedTarget && leafEl.contains(e.relatedTarget)) return;
+      clearTimeout(hoverTimer);
+      scheduleClose();
+    });
+    tip.addEventListener('pointerenter', () => clearTimeout(closeTimer));
+    tip.addEventListener('pointerleave', scheduleClose);
+  }
+
+  // クリック / タップ。同じ「押す」でも、ホバーできるかどうかで意味が変わる。
+  stageBox.addEventListener('click', (e) => {
+    const leafEl = leafOf(e.target);
+    if(leafEl){
+      // ホバーできる環境では、名前も期限もすでにふきだしに出ている。だから
+      // クリックに残っている意味は「詳細画面を開く」だけ。ホバーできない
+      // 端末は逆に、タップでしか中身を出せないのでふきだしのトグルにする。
+      if(canHover()){
+        setRoving(leafEl);
+        leafEl.focus();
+        activateLeaf(leafEl);
+        return;
+      }
+      if(openLeaf === leafEl){ closeTip(); return; }
+      setRoving(leafEl);
+      leafEl.focus();
+      openTip(leafEl);
+      return;
+    }
+    if(!tip.contains(e.target)) closeTip();   // 余白を触ったら閉じる
+  });
+
+  // キーボード。フォーカスが入ったら即開く（待つ理由がない）。
+  stageBox.addEventListener('focusin', (e) => {
+    const leafEl = leafOf(e.target);
+    if(!leafEl) return;
+    setRoving(leafEl);
+    openTip(leafEl);
+  });
+  stageBox.addEventListener('focusout', (e) => {
+    if(!openLeaf) return;
+    const to = e.relatedTarget;
+    if(to && (tip.contains(to) || leafOf(to))) return;   // ふきだしの中へ抜けた分は閉じない
+    closeTip();
+  });
+  stageBox.addEventListener('keydown', rovingTabindex);
+
+  document.addEventListener('keydown', (e) => {
+    if(e.key !== 'Escape' || !openLeaf) return;
+    const back = openLeaf;
+    closeTip();
+    back.focus();          // 閉じたら葉に戻す。木の外へ放り出さない。
+  });
+
+  // 木が画面の中で動いたら、ふきだしの座標はもう合っていない。ただし葉に
+  // フォーカスが入った直後のスクロールは、ブラウザが葉を見える位置へ運んだ
+  // 結果なので閉じずに置き直す（閉じると Tab で木に入った瞬間に消える）。
+  addEventListener('scroll', () => {
+    if(!openLeaf) return;
+    if(performance.now() - openedAt < 400){ placeTip(openLeaf); return; }
+    closeTip();
+  }, {passive:true});
+  addEventListener('resize', () => { if(openLeaf) closeTip(); });
+
+  // ふきだしの中のリンクも行き先は同じ（本番は詳細ページ1本）。
+  tipLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    goToDetail(tipLink.getAttribute('href'));
+  });
+}
+
+/* ---- 成長段階の一覧（同じ生成器で小さく描く） ---- */
+function buildStageList(){
+  const ul = document.getElementById('stageList');
+  ul.replaceChildren();
+  STAGES.forEach((st, i) => {
+    const li = document.createElement('li');
+    li.dataset.s = i;
+    const s = el('svg', {viewBox:'0 0 460 560', preserveAspectRatio:'xMidYMax meet'});
+    s.appendChild(renderTree(st.min, {mini:true}).node);
+    li.appendChild(s);
+    const b = document.createElement('b'); b.textContent = st.name;
+    const hi = STAGES[i+1] ? STAGES[i+1].min - 1 : null;
+    const sp = document.createElement('span');
+    sp.textContent = hi === null ? `${st.min} 件〜` : hi === st.min ? `${st.min} 件` : `${st.min}–${hi} 件`;
+    const em = document.createElement('em'); em.textContent = st.detail;
+    li.append(b, sp, em);
+    ul.appendChild(li);
+  });
+  // 段階ごとに木の大きさが違うので、描いてから実測して viewBox を切り直す。
+  requestAnimationFrame(() => {
+    for(const s of ul.querySelectorAll('svg')){
+      const b = s.firstElementChild.getBBox(), pad = 12;
+      s.setAttribute('viewBox', `${r1(b.x-pad)} ${r1(b.y-pad)} ${r1(b.width+pad*2)} ${r1(b.height+pad*2)}`);
+    }
+  });
+}
+
+/* ---- 試作コントロール ---- */
+const COUNTS = [0,1,3,6,12,21,24];
+const MODES  = [['normal','通常'],['loading','読込中'],['error','失敗'],['guest','未ログイン']];
+function buildPanel(){
+  const cr = document.getElementById('countRow');
+  for(const c of COUNTS){
+    const b = document.createElement('button');
+    b.type='button'; b.textContent=c; b.dataset.count=c;
+    b.addEventListener('click', () => { state.count=c; state.mode='normal'; paint(); syncPanel(); });
+    cr.appendChild(b);
+  }
+  const sr = document.getElementById('stateRow');
+  for(const [m,label] of MODES){
+    const b = document.createElement('button');
+    b.type='button'; b.textContent=label; b.dataset.mode=m;
+    b.addEventListener('click', () => { state.mode=m; paint(); syncPanel(); });
+    sr.appendChild(b);
+  }
+  const sb = document.createElement('button');
+  sb.type='button'; sb.textContent='別の木'; sb.title='種を変えて別の形を生成する';
+  // 木が別物になったのだから、落ちた記憶も捨ててよい。
+  sb.addEventListener('click', () => { SEED = (SEED * 1103515245 + 12345) % 2147483647; state.lastStage = -1; FALL.reset(); paint(); buildStageList(); });
+  sr.appendChild(sb);
+
+  const rb = document.createElement('button');
+  rb.type='button'; rb.textContent='アニメ軽減';
+  // 静止状態の見え方は JS 側の分岐で決まるので、描き直さないと反映されない。
+  rb.addEventListener('click', () => { document.body.classList.toggle('reduce'); rb.classList.toggle('on'); paint(); });
+  sr.appendChild(rb);
+
+  document.querySelector('[data-act="plus"]').addEventListener('click', () => {
+    if(state.count >= DOMAINS.length) return;
+    state.count++; state.mode='normal'; paint(); syncPanel();
+  });
+  document.querySelector('[data-act="minus"]').addEventListener('click', () => {
+    if(state.count <= 0) return;
+    state.count--; state.mode='normal'; paint(); syncPanel();
+  });
+}
+function syncPanel(){
+  for(const b of document.querySelectorAll('#countRow button')) b.classList.toggle('on', +b.dataset.count === state.count);
+  for(const b of document.querySelectorAll('#stateRow button[data-mode]')) b.classList.toggle('on', b.dataset.mode === state.mode);
+}
+
+const pt = document.getElementById('panelToggle');
+pt.addEventListener('click', () => {
+  const open = document.body.classList.toggle('panel-open');
+  pt.setAttribute('aria-expanded', String(open));
+});
+
+buildStageList();
+buildPanel();
+bindLeafEvents();
+/* 設定が切り替わっても、静止した接地状態を作るのは JS 側の分岐なので、
+   描き直さないと枯葉が枝についたまま固まる。 */
+matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', () => paint());
+paint();
+syncPanel();
+})();
+</script>
+</body>
+</html>

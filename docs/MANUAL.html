@@ -1,0 +1,1523 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>ゼロからドメイン 取扱説明書</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+/* ---- 配色：アプリ本体と同じ「やわらか若草」（docs/DESIGN_SYSTEM.md）---- */
+:root {
+  --paper: #fbfcf6;
+  --paper-2: #f3f7ee;
+  --card: #ffffff;
+  --ink: #17241c;
+  --ink-soft: #465449;
+  --ink-faint: #5f6c60;
+  --line: #e4ece0;
+  --line-strong: #cbe6c4;
+  --green: #1f6d45;
+  --green-deep: #175538;
+  --green-darkest: #123f2a;
+  --grass: #2f8f5b;
+  --grass-1: #eef7ec;
+  --grass-2: #dcefd6;
+  --grass-3: #cbe6c4;
+  --green-contrast: #ffffff;
+  --sun: #f6e6bd;
+  --orange: #b5651d;
+  --sky: #dde8fa;
+  --danger: #b23a26;
+  --danger-soft: #f8e5e0;
+  --code-bg: #17241c;
+  --code-ink: #e9f0e7;
+  --code-dim: #85947f;
+  --shadow-soft: 0 22px 48px -30px rgb(23 60 40 / 42%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #121a14;
+    --paper-2: #17211a;
+    --card: #1a241d;
+    --ink: #e9f0e7;
+    --ink-soft: #a8b8a9;
+    --ink-faint: #85947f;
+    --line: #27332a;
+    --line-strong: #3a4a3d;
+    --green: #6cc38c;
+    --green-deep: #86d3a1;
+    --green-darkest: #b6e6c5;
+    --grass: #58b57c;
+    --grass-1: #1b2a1f;
+    --grass-2: #223528;
+    --grass-3: #2c4433;
+    --green-contrast: #0e1a12;
+    --sun: #3a3116;
+    --orange: #e0a066;
+    --sky: #1d2a3c;
+    --danger: #f3a294;
+    --danger-soft: #3a221e;
+    --code-bg: #0c120e;
+    --code-ink: #e9f0e7;
+    --code-dim: #6f8070;
+    --shadow-soft: 0 22px 48px -30px rgb(0 0 0 / 62%);
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #121a14;
+  --paper-2: #17211a;
+  --card: #1a241d;
+  --ink: #e9f0e7;
+  --ink-soft: #a8b8a9;
+  --ink-faint: #85947f;
+  --line: #27332a;
+  --line-strong: #3a4a3d;
+  --green: #6cc38c;
+  --green-deep: #86d3a1;
+  --green-darkest: #b6e6c5;
+  --grass: #58b57c;
+  --grass-1: #1b2a1f;
+  --grass-2: #223528;
+  --grass-3: #2c4433;
+  --green-contrast: #0e1a12;
+  --sun: #3a3116;
+  --orange: #e0a066;
+  --sky: #1d2a3c;
+  --danger: #f3a294;
+  --danger-soft: #3a221e;
+  --code-bg: #0c120e;
+  --code-ink: #e9f0e7;
+  --code-dim: #6f8070;
+  --shadow-soft: 0 22px 48px -30px rgb(0 0 0 / 62%);
+}
+
+/* ---- 基本 ---- */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 1.5rem; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+  font-feature-settings: 'palt';
+  font-size: 16px;
+  line-height: 1.85;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 {
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Noto Sans JP', sans-serif;
+  font-weight: 700;
+  line-height: 1.35;
+  text-wrap: balance;
+  margin: 0;
+  color: var(--ink);
+}
+p { margin: 0; }
+a { color: var(--green); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { color: var(--green-deep); }
+:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; border-radius: 4px; }
+.en { font-family: 'Poppins', 'Noto Sans JP', sans-serif; }
+code, kbd, pre, .mono {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+}
+code {
+  overflow-wrap: anywhere;
+  font-size: 0.88em;
+  background: var(--grass-1);
+  color: var(--green-darkest);
+  padding: 0.1em 0.4em;
+  border-radius: 6px;
+}
+kbd {
+  font-size: 0.8em;
+  padding: 0.1em 0.5em;
+  border-radius: 6px;
+  background: var(--card);
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  color: var(--ink-soft);
+}
+strong { font-weight: 700; color: var(--ink); }
+ul, ol { margin: 0; padding-left: 1.4em; }
+li { margin: 0.25em 0; }
+
+/* ---- ページ骨格 ---- */
+.page {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 3rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 5rem;
+}
+@media (max-width: 860px) {
+  .page { grid-template-columns: 1fr; gap: 1.5rem; padding: 1.25rem 1rem 4rem; }
+}
+
+/* 目次 */
+.toc {
+  position: sticky;
+  top: 1.5rem;
+  align-self: start;
+  background: var(--paper-2);
+  border-radius: 20px;
+  padding: 1.25rem 1rem;
+  font-size: 0.85rem;
+}
+.toc h2 {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0.5rem 0.6rem;
+}
+.toc ol { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.toc li { margin: 0; }
+.toc a {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  color: var(--ink-soft);
+  text-decoration: none;
+  line-height: 1.4;
+}
+.toc a .n { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 0.72rem; color: var(--ink-faint); min-width: 1.2em; }
+.toc a:hover { background: var(--grass-1); color: var(--green-deep); }
+.toc a.active { background: var(--grass-2); color: var(--green-darkest); font-weight: 700; }
+.toc a.active .n { color: var(--green); }
+@media (max-width: 860px) {
+  .toc { position: static; }
+  .toc ol { flex-direction: row; flex-wrap: wrap; }
+  .toc a { padding: 0.25rem 0.6rem; }
+}
+
+/* 本文 */
+.main { min-width: 0; max-width: 700px; display: flex; flex-direction: column; gap: 3.5rem; }
+section { display: flex; flex-direction: column; gap: 1.1rem; scroll-margin-top: 1.5rem; }
+section > h2 {
+  font-size: 1.55rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+}
+section > h2 .n {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--green);
+}
+h3 { font-size: 1.12rem; margin-top: 0.6rem; }
+h4 { font-size: 1rem; }
+.lede { color: var(--ink-soft); }
+.small { font-size: 0.86rem; color: var(--ink-faint); }
+
+/* ヒーロー */
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding-bottom: 0.5rem;
+}
+.brand { display: flex; align-items: center; gap: 0.75rem; }
+.brand .mark {
+  width: 44px; height: 44px; border-radius: 14px;
+  background: var(--green); color: var(--green-contrast);
+  display: grid; place-items: center; flex-shrink: 0;
+}
+.brand .mark svg { width: 24px; height: 24px; }
+.brand .eyebrow { font-size: 0.75rem; letter-spacing: 0.14em; color: var(--ink-faint); text-transform: uppercase; font-family: 'Poppins', sans-serif; font-weight: 600; }
+.hero h1 { font-size: clamp(1.9rem, 4vw, 2.5rem); font-weight: 900; }
+.hero h1 .g { color: var(--green); }
+.hero .lede { font-size: 1.05rem; max-width: 34em; }
+.facts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+@media (max-width: 560px) { .facts { grid-template-columns: 1fr; } }
+.fact {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 1rem 1.1rem;
+  box-shadow: var(--shadow-soft);
+  display: flex; flex-direction: column; gap: 0.2rem;
+}
+.fact .k { font-size: 0.72rem; letter-spacing: 0.1em; color: var(--ink-faint); font-weight: 700; }
+.fact .v { font-family: 'Zen Maru Gothic', sans-serif; font-weight: 700; font-size: 1.05rem; color: var(--green-darkest); }
+.fact .s { font-size: 0.82rem; color: var(--ink-soft); }
+
+/* カード類 */
+.card {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 1.25rem 1.4rem;
+  box-shadow: var(--shadow-soft);
+}
+.note {
+  background: var(--grass-1);
+  border-radius: 14px;
+  padding: 0.9rem 1.1rem;
+  color: var(--green-darkest);
+  font-size: 0.93rem;
+  display: flex; gap: 0.7rem; align-items: flex-start;
+}
+.note::before { content: '✦'; color: var(--green); flex-shrink: 0; margin-top: 0.1em; }
+.note.warn { background: var(--sun); color: var(--ink); }
+.note.warn::before { content: '！'; color: var(--orange); font-weight: 900; }
+.note.danger { background: var(--danger-soft); color: var(--ink); }
+.note.danger::before { content: '⚠'; color: var(--danger); }
+.note b { color: inherit; }
+
+/* 二択のリスト（できる / できない） */
+.twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+@media (max-width: 560px) { .twocol { grid-template-columns: 1fr; } }
+.twocol .card h3 { margin-top: 0; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+.twocol ul { padding-left: 1.2em; font-size: 0.93rem; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.dot.ok { background: var(--grass); }
+.dot.no { background: var(--ink-faint); }
+
+/* 手順（番号付き：本当に順番がある操作にだけ使う） */
+.steps { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 1rem; counter-reset: step; }
+.step {
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr);
+  gap: 0.9rem;
+  margin: 0;
+}
+.step .num {
+  width: 2.4rem; height: 2.4rem; border-radius: 50%;
+  background: var(--green); color: var(--green-contrast);
+  font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.05rem;
+  display: grid; place-items: center;
+}
+.step .body { display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.25rem; }
+.step h3, .step h4 { margin: 0; font-size: 1.08rem; }
+.step p { font-size: 0.95rem; }
+
+/* コードブロック */
+.cmd {
+  position: relative;
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  font-size: 0.86rem;
+  line-height: 1.7;
+}
+.cmd pre { margin: 0; white-space: pre; }
+.cmd .c { color: var(--code-dim); }
+.cmd .p { color: var(--grass-3); user-select: none; }
+.cmd .copy {
+  position: absolute; top: 0.5rem; right: 0.5rem;
+  border: 0; border-radius: 999px;
+  background: rgb(255 255 255 / 10%); color: var(--code-ink);
+  font-family: 'Zen Maru Gothic', sans-serif; font-weight: 700; font-size: 0.72rem;
+  padding: 0.25rem 0.7rem; cursor: pointer;
+}
+.cmd .copy:hover { background: rgb(255 255 255 / 20%); }
+
+/* 図：しくみ */
+.flow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0;
+}
+@media (max-width: 640px) { .flow { grid-template-columns: 1fr; } .flow .arrow { transform: rotate(90deg); justify-self: center; } }
+.flow .box {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 0.9rem 1rem;
+  box-shadow: var(--shadow-soft);
+  display: flex; flex-direction: column; gap: 0.2rem;
+  text-align: center;
+  min-height: 100%;
+}
+.flow .box.here { background: var(--grass-2); }
+.flow .box .t { font-family: 'Zen Maru Gothic', sans-serif; font-weight: 700; font-size: 0.98rem; color: var(--green-darkest); }
+.flow .box .d { font-size: 0.8rem; color: var(--ink-soft); line-height: 1.5; }
+.flow .arrow { color: var(--grass); font-size: 1.4rem; text-align: center; }
+.formula {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.6rem 0.8rem;
+  padding: 1rem; border-radius: 20px; background: var(--paper-2);
+  font-family: 'Zen Maru Gothic', sans-serif; font-weight: 700;
+}
+.formula .term { background: var(--card); border-radius: 999px; padding: 0.35rem 1rem; box-shadow: var(--shadow-soft); font-size: 0.95rem; }
+.formula .term .en { color: var(--green); letter-spacing: 0.25em; }
+.formula .op { color: var(--ink-faint); font-family: 'Poppins', sans-serif; font-size: 1.2rem; }
+
+/* 図：画面 */
+.screen {
+  border-radius: 20px;
+  background: var(--paper-2);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+}
+.screen .bar {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.6rem;
+  padding: 0.55rem 0.8rem; background: var(--card); border-bottom: 1px solid var(--line);
+}
+.screen .logo { display: flex; align-items: center; gap: 0.4rem; font-family: 'Zen Maru Gothic', sans-serif; font-weight: 700; font-size: 0.85rem; color: var(--ink); }
+.screen .logo .m { width: 22px; height: 22px; border-radius: 7px; background: var(--green); display: inline-block; }
+.screen .searchbox { white-space: nowrap; background: var(--grass-1); border-radius: 999px; padding: 0.3rem 0.8rem; color: var(--ink-faint); max-width: 320px; justify-self: center; width: 100%; }
+.screen .tools { display: flex; gap: 0.4rem; align-items: center; }
+.screen .tools .btn { width: 22px; height: 22px; border-radius: 50%; background: var(--grass-1); display: inline-grid; place-items: center; color: var(--ink-faint); }
+.screen .tools .av { width: 22px; height: 22px; border-radius: 50%; background: var(--green); color: var(--green-contrast); display: inline-grid; place-items: center; font-weight: 700; font-size: 0.7rem; }
+.screen .body { display: grid; grid-template-columns: 200px minmax(0, 1fr); }
+@media (max-width: 560px) { .screen .body { grid-template-columns: 1fr; } }
+.screen .side { padding: 0.6rem 0.5rem; display: flex; flex-direction: column; gap: 0.15rem; }
+.screen .side .f { padding: 0.25rem 0.7rem; border-radius: 0 999px 999px 0; }
+.screen .side .f.on { background: var(--grass-2); color: var(--green-darkest); font-weight: 700; display: flex; justify-content: space-between; }
+.screen .side .h { margin: 0.6rem 0.5rem 0.2rem; padding-top: 0.5rem; border-top: 1px solid var(--line); font-weight: 700; font-size: 0.66rem; letter-spacing: 0.06em; color: var(--ink-faint); display: flex; align-items: center; gap: 0.3rem; }
+.screen .side .in { display: flex; gap: 0.25rem; margin: 0 0.3rem; }
+.screen .side .in span:first-child { flex: 1; background: var(--card); border: 1px solid var(--line-strong); border-radius: 8px; padding: 0.15rem 0.4rem; color: var(--ink-faint); }
+.screen .side .in span:last-child { white-space: nowrap; background: var(--green); color: var(--green-contrast); border-radius: 999px; padding: 0.15rem 0.5rem; font-weight: 700; }
+.screen .side .addr > span:first-child { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.screen .side .addr { margin: 0.2rem 0.3rem 0; background: var(--card); border-radius: 8px; padding: 0.2rem 0.45rem; display: flex; justify-content: space-between; gap: 0.3rem; align-items: center; box-shadow: var(--shadow-soft); }
+.screen .side .addr .st { font-size: 0.62rem; color: var(--green); white-space: nowrap; }
+.screen .side .addr .st.na { color: var(--ink-faint); }
+.screen .side .addr .x { color: var(--ink-faint); }
+.screen .mainpane { background: var(--card); margin: 0.4rem; border-radius: 14px; overflow: hidden; }
+.screen .listhead { display: flex; justify-content: space-between; padding: 0.35rem 0.8rem; border-bottom: 1px solid var(--line); color: var(--ink-faint); }
+.screen .row { display: grid; grid-template-columns: 110px 1fr auto auto; gap: 0.5rem; align-items: center; padding: 0.4rem 0.8rem; border-bottom: 1px solid var(--line); }
+.screen .row.unread { background: var(--grass-1); color: var(--ink); font-weight: 700; }
+.screen .row .sub { display: flex; gap: 0.4rem; align-items: center; min-width: 0; }
+.screen .row .sub > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; min-width: 4em; }
+.screen .row .sub .ex { font-weight: 400; color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.screen .row .t { font-family: 'Poppins', sans-serif; font-size: 0.66rem; }
+.screen .row .cp { width: 18px; height: 18px; border-radius: 50%; background: var(--grass-1); display: inline-grid; place-items: center; color: var(--green); font-size: 0.6rem; }
+.screen .row .cp.hidden { visibility: hidden; }
+.callout {
+  display: inline-grid; place-items: center;
+  width: 1.15rem; height: 1.15rem; border-radius: 50%;
+  background: var(--orange); color: #fff;
+  font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 0.62rem;
+  flex-shrink: 0; vertical-align: middle;
+}
+.legend { list-style: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1.2rem; font-size: 0.92rem; }
+@media (max-width: 560px) { .legend { grid-template-columns: 1fr; } }
+.legend li { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem; align-items: start; margin: 0; }
+.legend .callout { margin-top: 0.4em; }
+.legend b { display: block; }
+.legend span { color: var(--ink-soft); font-size: 0.88rem; }
+
+/* ラベル（アプリと同じ見た目） */
+.chip {
+  display: inline-block; border-radius: 999px; padding: 0.05em 0.7em;
+  font-size: 0.78rem; font-weight: 600; white-space: nowrap; vertical-align: middle;
+}
+.chip.saved { background: var(--sun); color: var(--orange); }
+.chip.expired { background: var(--danger-soft); color: var(--danger); }
+.chip.verified { background: var(--grass-2); color: var(--green-darkest); }
+.chip.has { background: var(--grass-1); color: var(--green); }
+.chip.none { background: var(--paper-2); color: var(--ink-faint); }
+.chip.err { background: var(--danger-soft); color: var(--danger); }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.tablewrap { overflow-x: auto; border-radius: 14px; background: var(--card); box-shadow: var(--shadow-soft); }
+th, td { text-align: left; padding: 0.65rem 0.9rem; vertical-align: top; border-bottom: 1px solid var(--line); }
+th { font-size: 0.75rem; letter-spacing: 0.06em; color: var(--ink-faint); font-weight: 700; background: var(--paper-2); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td:first-child { white-space: nowrap; }
+
+/* 困ったとき */
+.qa { display: flex; flex-direction: column; gap: 0.9rem; }
+.qa details {
+  background: var(--card); border-radius: 20px; box-shadow: var(--shadow-soft);
+  padding: 0; overflow: hidden;
+}
+.qa summary {
+  cursor: pointer; list-style: none;
+  padding: 1rem 1.25rem;
+  font-family: 'Zen Maru Gothic', sans-serif; font-weight: 700; font-size: 1rem;
+  display: flex; gap: 0.7rem; align-items: baseline;
+}
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary::before { content: 'Q'; font-family: 'Poppins', sans-serif; color: var(--green); font-weight: 700; }
+.qa summary::after { content: '＋'; margin-left: auto; color: var(--ink-faint); font-weight: 400; }
+.qa details[open] summary::after { content: '－'; }
+.qa .a { padding: 0 1.25rem 1.1rem; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.94rem; }
+.qa .a .cause { color: var(--ink-soft); }
+.qa .a .cause::before { content: '原因 '; font-weight: 700; color: var(--ink-faint); font-size: 0.8rem; letter-spacing: 0.06em; }
+.qa .a .fix::before { content: '対処 '; font-weight: 700; color: var(--green); font-size: 0.8rem; letter-spacing: 0.06em; }
+
+/* 構成ツリー */
+.tree { font-size: 0.86rem; line-height: 1.75; }
+.tree .c { color: var(--code-dim); }
+
+
+/* 部の区切り */
+.part { display: flex; flex-direction: column; gap: 0.6rem; padding: 1.4rem 1.5rem; border-radius: 20px; background: var(--grass-2); scroll-margin-top: 1.5rem; }
+.part .eyebrow { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--green); }
+.part h2 { font-size: 1.45rem; font-weight: 900; color: var(--green-darkest); }
+.part p { color: var(--ink-soft); font-size: 0.95rem; }
+.part .facts { margin-top: 0.5rem; }
+.toc .grp { font-size: 0.7rem; font-weight: 700; color: var(--ink-faint); margin: 0.8rem 0.5rem 0.3rem; }
+.toc .grp:first-of-type { margin-top: 0; }
+.toc ol + .grp { border-top: 1px solid var(--line); padding-top: 0.7rem; }
+@media (max-width: 860px) { .toc .grp { width: 100%; } }
+
+footer { color: var(--ink-faint); font-size: 0.82rem; padding-top: 2rem; border-top: 1px solid var(--line); }
+
+@media print {
+  .toc, .cmd .copy { display: none; }
+  .page { grid-template-columns: 1fr; padding: 0; }
+  .card, .fact, .screen, .qa details { box-shadow: none; border: 1px solid var(--line); }
+  .qa details { break-inside: avoid; }
+  .qa details:not([open]) .a { display: block; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="toc" aria-label="目次">
+  <h2>目次</h2>
+  <p class="grp">第1部 ゼロからドメイン</p>
+  <ol>
+    <li><a href="#d-about"><span class="n">1</span>これは何？</a></li>
+    <li><a href="#d-screen"><span class="n">2</span>画面の全体像</a></li>
+    <li><a href="#d-signup"><span class="n">3</span>アカウントを作る</a></li>
+    <li><a href="#d-login"><span class="n">4</span>ログイン・ログアウト</a></li>
+    <li><a href="#d-search"><span class="n">5</span>ドメインを探す</a></li>
+    <li><a href="#d-order"><span class="n">6</span>ドメインを申し込む</a></li>
+    <li><a href="#d-mypage"><span class="n">7</span>マイページ</a></li>
+    <li><a href="#d-manage"><span class="n">8</span>ドメインを管理する</a></li>
+    <li><a href="#d-dns"><span class="n">9</span>ドメインをつなぐ（DNS）</a></li>
+    <li><a href="#d-transfer"><span class="n">10</span>移管（引っ越し）</a></li>
+    <li><a href="#d-easy"><span class="n">11</span>かんたんモード</a></li>
+    <li><a href="#d-assistant"><span class="n">12</span>AI アシスタント</a></li>
+    <li><a href="#d-trouble"><span class="n">13</span>困ったとき</a></li>
+    <li><a href="#d-limits"><span class="n">14</span>制限と注意事項</a></li>
+  </ol>
+  <p class="grp">第2部 Zerokara Mail</p>
+  <ol>
+    <li><a href="#m-about"><span class="n">15</span>これは何？</a></li>
+    <li><a href="#m-how"><span class="n">16</span>しくみ</a></li>
+    <li><a href="#m-prep"><span class="n">17</span>準備するもの</a></li>
+    <li><a href="#m-start"><span class="n">18</span>起動する</a></li>
+    <li><a href="#m-screen"><span class="n">19</span>画面の見方</a></li>
+    <li><a href="#m-usage"><span class="n">20</span>使い方</a></li>
+    <li><a href="#m-labels"><span class="n">21</span>ラベルの意味</a></li>
+    <li><a href="#m-know"><span class="n">22</span>知っておくこと</a></li>
+    <li><a href="#m-trouble"><span class="n">23</span>困ったとき</a></li>
+    <li><a href="#m-env"><span class="n">24</span>別の環境につなぐ</a></li>
+    <li><a href="#m-dev"><span class="n">25</span>開発者向け</a></li>
+    <li><a href="#m-security"><span class="n">26</span>注意事項</a></li>
+  </ol>
+</nav>
+
+<main class="main">
+
+<!-- ================================================================ -->
+<header class="hero">
+  <div class="brand">
+    <span class="mark" aria-hidden="true">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 0c2.5 2.6 3.75 5.6 3.75 9S14.5 18.4 12 21m0-18C9.5 5.6 8.25 8.6 8.25 12S9.5 18.4 12 21M3.5 9h17M3.5 15h17"/></svg>
+    </span>
+    <span class="eyebrow">User Manual</span>
+  </div>
+  <h1>ゼロから<span class="g">ドメイン</span> 取扱説明書</h1>
+  <p class="lede">ドメインを探して取得し、ホームページやメールにつないで管理するサービス「ゼロからドメイン」の使い方です。第1部が本体の取説、第2部が会員登録時の認証コードを確認する付属アプリ「Zerokara Mail」の取説です。</p>
+  <div class="facts">
+    <div class="fact"><span class="k">できること</span><span class="v">探す・取る・つなぐ・管理する</span><span class="s">22 種類の末尾で空きを調べ、1〜5 年で申し込み、DNS を設定し、更新や移管もできます</span></div>
+    <div class="fact"><span class="k">必要なもの</span><span class="v">ブラウザだけ</span><span class="s">会員登録には <code>@example.com</code> などのアドレスと、認証コード確認用の Zerokara Mail</span></div>
+    <div class="fact"><span class="k">お金は</span><span class="v">かかりません</span><span class="s">決済・料金・レジストリはすべて演習用の疑似的なものです</span></div>
+  </div>
+</header>
+
+<!-- ================================================================ -->
+<!-- ===================== 第1部：ゼロからドメイン ===================== -->
+<!-- ================================================================ -->
+<div class="part" id="part-domain">
+  <span class="eyebrow">Part 1</span>
+  <h2>ゼロからドメイン（本体）</h2>
+  <p>ドメインを探して、申し込んで、つないで、管理するまで。ブラウザだけで使えます。</p>
+</div>
+
+<section id="d-about">
+  <h2><span class="n">1</span>これは何？</h2>
+  <p>「ゼロからドメイン」は、<strong>自分だけのドメイン（<span class="en">example.com</span> のような Web 上の住所）を探して取得し、ホームページやメールにつなぎ、期限を管理する</strong>ための Web サービスです。ブラウザで開くだけで使え、インストールは要りません。</p>
+  <div class="twocol">
+    <div class="card">
+      <h3><span class="dot ok" aria-hidden="true"></span>できること</h3>
+      <ul>
+        <li>22 種類の末尾（<span class="en">.com .net .xyz …</span>）で空きを一度に調べる</li>
+        <li>1〜5 年分をまとめて申し込む・更新する（自動更新も可）</li>
+        <li>ホームページやメールにつなぐ（ネームサーバ／DNS 設定）</li>
+        <li>他社からドメインを引っ越してくる・他社へ出す（移管）</li>
+        <li>使われている名前が空いたら知らせてもらう（空き待ち）</li>
+        <li>質問に答えるだけで進める「かんたんモード」と、画面内の AI アシスタント</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="dot no" aria-hidden="true"></span>できないこと・知っておくこと</h3>
+      <ul>
+        <li>本物のお金は動きません。決済はすべて<strong>疑似決済</strong>です</li>
+        <li>接続先のレジストリ（Kitaqsign / Kitaqnic）は演習用の疑似レジストリで、料金もダミーです</li>
+        <li>メールは一切送られません（認証コードは <a href="#m-about">Zerokara Mail</a> で確認します）</li>
+        <li>パスワードの再設定、アカウントの削除は画面から行えません</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note warn"><span><b>このサービスは学生ハッカソン（GMO インターネットグループ TeamC）の演習用です。</b>実際のドメインが取得されることはありません。</span></div>
+</section>
+
+<!-- ================================================================ -->
+<section id="d-screen">
+  <h2><span class="n">2</span>画面の全体像</h2>
+  <p>いちばん上のバー（ヘッダー）は全ページ共通です。左の「ゼロからドメイン」でいつでもトップに戻れます。</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>状態</th><th>ヘッダーに出るもの</th></tr></thead>
+    <tbody>
+      <tr><td>ログイン前</td><td>「かんたん」／右側に「ログイン」「会員登録」／AI アシスタントのアイコン</td></tr>
+      <tr><td>ログイン後</td><td>「ドメイン検索」「マイページ」「かんたん」／右側に「ログアウト」と認証状態の小さな表示／AI アシスタントのアイコン</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <h3>主なページ</h3>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>ページ</th><th>URL</th><th>何をする場所か</th><th>ログイン</th></tr></thead>
+    <tbody>
+      <tr><td>トップ（ドメイン検索）</td><td><code>/</code></td><td>名前を入れて空きを調べる。料金表もここ</td><td>不要</td></tr>
+      <tr><td>会員登録</td><td><code>/signup</code></td><td>5 ステップでアカウントを作る</td><td>不要</td></tr>
+      <tr><td>ログイン</td><td><code>/login</code></td><td>メール＋パスワード、または Google</td><td>不要</td></tr>
+      <tr><td>申込フォーム</td><td><code>/domains/new</code></td><td>選んだドメインの年数・設定・支払い</td><td>必要</td></tr>
+      <tr><td>注文状況</td><td><code>/orders/…</code></td><td>申し込み後の処理の進み具合</td><td>必要</td></tr>
+      <tr><td>マイページ</td><td><code>/mypage</code></td><td>持っているドメインの一覧・期限・お知らせ</td><td>必要</td></tr>
+      <tr><td>ドメイン詳細</td><td><code>/mypage/domains/…</code></td><td>更新・ロック・認証コード・解約</td><td>必要</td></tr>
+      <tr><td>ドメインをつなぐ</td><td><code>/domains/…/dns</code></td><td>ホームページ・メールへの接続設定</td><td>必要</td></tr>
+      <tr><td>移管する</td><td><code>/mypage/transfer</code></td><td>他社からドメインを引っ越す</td><td>必要</td></tr>
+      <tr><td>かんたんモード</td><td><code>/easy</code></td><td>質問に答えるだけで取得〜設定まで</td><td>途中から必要</td></tr>
+      <tr><td>第三者ライセンス</td><td><code>/legal/third-party-licenses</code></td><td>使用しているソフトウェア・AI モデルのライセンス</td><td>不要</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="small">ログインが必要なページを開くと、ログイン画面に「この先に進むにはログインが必要です」と案内が出ます。ログインすると元のページに自動で戻ります。</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="d-signup">
+  <h2><span class="n">3</span>アカウントを作る</h2>
+  <p class="lede">ヘッダーの「会員登録」から。5 ステップで、途中に 6 桁の認証コードの確認があります。</p>
+  <div class="note"><span><b>使えるメールアドレスについて</b>：このサービスでは安全のため <code>@example.com</code> <code>@example.net</code> <code>@example.org</code> のアドレスだけが登録できます（実在のアドレスには何も届きません）。<code>@</code> の前は自由です。</span></div>
+  <ol class="steps">
+    <li class="step"><span class="num" aria-hidden="true">1</span><div class="body">
+      <h3>アカウント情報を入れる（新規登録）</h3>
+      <p>氏名、フリガナ、メールアドレス、パスワード（<strong>8 文字以上 128 文字以内</strong>）、パスワード確認を入力し、「利用規約に同意します」にチェックして「新規登録」。</p>
+      <p>すでに登録済みのアドレスだと、この時点で「このメールアドレスはすでに登録されています。ログイン画面からお進みください。」と出ます。その場合は<a href="#d-login">ログイン</a>へ。</p>
+      <p class="small">「Google でサインイン」を選ぶと、ステップ 2 を飛ばしてステップ 3 相当の情報入力画面（追加情報）に進みます。</p>
+    </div></li>
+    <li class="step"><span class="num" aria-hidden="true">2</span><div class="body">
+      <h3>認証コードを入れる（メールアドレスを確認してください）</h3>
+      <p>「<em>あなたのアドレス</em> 宛の認証コードを発行しました。6桁のコードを入力してください。」と出ます。コードは本物のメールでは届きません。<strong>付属の確認アプリ「Zerokara Mail」</strong>（<a href="#m-usage">第2部 使い方</a>）で同じアドレスを登録すると、受信トレイにコードが表示されるので、コピーして貼り付け、「認証する」を押します。</p>
+      <ul>
+        <li>コードの有効期限は <strong>10 分</strong>。間違えられるのは <strong>5 回</strong>まで</li>
+        <li>「認証コードを再送する」は <strong>60 秒</strong>に 1 回。期限切れや回数超えのときはこれで作り直します</li>
+        <li>アドレスを打ち間違えたら「メールアドレスを変更する」でステップ 1 に戻れます</li>
+        <li>認証が済むと <strong>30 分間</strong>は次のステップに進めます。それを過ぎたらやり直しです</li>
+      </ul>
+    </div></li>
+    <li class="step"><span class="num" aria-hidden="true">3</span><div class="body">
+      <h3>契約者情報を入れる</h3>
+      <p>ドメインの登録者として記録される情報です。</p>
+      <ul>
+        <li><strong>基本情報</strong>：契約者種別（個人／個人事業主／法人）、氏名、フリガナ、生年月日、性別、お知らせメールの希望</li>
+        <li><strong>会社情報</strong>（個人事業主・法人のみ）：会社名または屋号、部署名（任意）、担当者名</li>
+        <li><strong>住所情報</strong>：電話番号、居住国。日本なら郵便番号・都道府県・市区町村・番地・建物名（任意）</li>
+      </ul>
+      <p>「確認画面へ」で次へ。「戻る」で前に戻れます。</p>
+    </div></li>
+    <li class="step"><span class="num" aria-hidden="true">4</span><div class="body">
+      <h3>入力内容の確認</h3>
+      <p>各項目の「編集する」でステップ 3 に戻って直せます。「この内容で登録する」を押した時点でアカウントが作られ、そのままログイン状態になります。</p>
+    </div></li>
+    <li class="step"><span class="num" aria-hidden="true">5</span><div class="body">
+      <h3>登録が完了しました</h3>
+      <p>「マイページへ」で完了です。かんたんモードの途中で登録した場合は「かんたんモードの続きに戻る」も出ます。</p>
+    </div></li>
+  </ol>
+</section>
+
+<!-- ================================================================ -->
+<section id="d-login">
+  <h2><span class="n">4</span>ログイン・ログアウト</h2>
+  <ul>
+    <li>ヘッダーの「ログイン」→ メールアドレスとパスワードを入れて「ログイン」。Google で登録した人は「Google でサインイン」。</li>
+    <li>間違えると「メールアドレスまたはパスワードが違います。」と出ます。安全のため、どちらが違うかは表示しません。</li>
+    <li>ログイン状態は <strong>5 日間</strong>保たれます。ログアウトはヘッダー右の「ログアウト」。</li>
+    <li>ページを開いたときに「ログイン状態を確認できませんでした。」と出たら通信の問題です。「再確認する」を押してください。</li>
+  </ul>
+  <div class="note warn"><span><b>パスワードを忘れた場合の再設定機能はありません。</b>このサービスではパスワードの再発行ができないので、登録時のパスワードは控えておいてください。</span></div>
+</section>
+
+<!-- ================================================================ -->
+<section id="d-search">
+  <h2><span class="n">5</span>ドメインを探す</h2>
+  <p class="lede">トップページの検索ボックスに「<span class="en">.com</span> より前の部分」だけを入れて「検索する」。ログインしなくても調べられます。</p>
+  <h3>入力のきまり</h3>
+  <ul>
+    <li>使えるのは<strong>半角英数字とハイフン（-）</strong>。全角で打っても自動で半角になります</li>
+    <li><strong>63 文字以内</strong>。ハイフンで始めたり終えたりはできません</li>
+    <li>「<span class="en">.com</span>」などの末尾（TLD）は<strong>入れません</strong>。1 回の検索で 22 種類すべての末尾を一度に調べます</li>
+  </ul>
+  <h3>結果の見方</h3>
+  <p>末尾ごとに 1 マスずつ結果が並びます。「初年度が安い順」「更新が安い順」で並べ替え、「空きのみ表示」で絞り込めます。</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>表示</th><th>意味</th><th>できること</th></tr></thead>
+    <tbody>
+      <tr><td>◯ 空きあり</td><td>取得できます</td><td>「申し込む」で申込フォームへ（要ログイン）</td></tr>
+      <tr><td>✕ 使用中</td><td>すでに誰かが使っています</td><td>「空いたら通知」で空き待ちに登録</td></tr>
+      <tr><td>？ 確認できませんでした</td><td>一時的な通信エラー</td><td>もう一度検索</td></tr>
+      <tr><td>⏳ 一時購入不可</td><td>その末尾のレジストリにつながりにくい状態</td><td>時間をおいて再検索。「空いたら通知」も可</td></tr>
+      <tr><td>🔧 メンテナンス中</td><td>レジストリが点検中（終了予定が出ることがあります）</td><td>終了後に再検索</td></tr>
+      <tr><td>− 取り扱いなし</td><td>この末尾は扱っていません</td><td>—</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>どの末尾でも使われていたときは、「似ている候補」として別の名前や末尾を提案します。候補は表示前に空きを確かめてあります。</p>
+  <h3>空いたら通知（空き待ち）</h3>
+  <p>使用中などのドメインで「空いたら通知」を押すと空き待ちに登録され、購入できる状態になるとマイページにお知らせが出ます（料金はかからず、予約でもありません）。登録できるのは <strong>1 人 10 件まで</strong>、<strong>30 日</strong>で自動的に解除されます。</p>
+  <h3>料金（税込・1 年あたり）</h3>
+  <p>初年度と 2 年目以降（更新）で料金が違います。長く使う予定なら更新料金で比べてください。</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>末尾</th><th>初年度</th><th>更新</th><th>末尾</th><th>初年度</th><th>更新</th></tr></thead>
+    <tbody>
+      <tr><td class="en">.com</td><td>¥1,480</td><td>¥1,980</td><td class="en">.fun</td><td>¥280</td><td>¥2,980</td></tr>
+      <tr><td class="en">.net</td><td>¥1,680</td><td>¥2,180</td><td class="en">.icu</td><td>¥98</td><td>¥1,280</td></tr>
+      <tr><td class="en">.org</td><td>¥1,680</td><td>¥2,180</td><td class="en">.cyou</td><td>¥98</td><td>¥1,180</td></tr>
+      <tr><td class="en">.info</td><td>¥980</td><td>¥2,480</td><td class="en">.sbs</td><td>¥198</td><td>¥1,780</td></tr>
+      <tr><td class="en">.xyz</td><td>¥98</td><td>¥1,980</td><td class="en">.bond</td><td>¥480</td><td>¥2,480</td></tr>
+      <tr><td class="en">.online</td><td>¥180</td><td>¥5,480</td><td class="en">.cfd</td><td>¥380</td><td>¥2,280</td></tr>
+      <tr><td class="en">.site</td><td>¥180</td><td>¥3,980</td><td class="en">.art</td><td>¥780</td><td>¥2,480</td></tr>
+      <tr><td class="en">.tech</td><td>¥480</td><td>¥5,980</td><td class="en">.build</td><td>¥1,480</td><td>¥4,980</td></tr>
+      <tr><td class="en">.space</td><td>¥280</td><td>¥2,980</td><td class="en">.ceo</td><td>¥3,980</td><td>¥6,980</td></tr>
+      <tr><td class="en">.store</td><td>¥280</td><td>¥5,980</td><td class="en">.website</td><td>¥380</td><td>¥3,480</td></tr>
+      <tr><td class="en">.press</td><td>¥980</td><td>¥7,980</td><td class="en">.host</td><td>¥1,280</td><td>¥6,980</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="small">解約後の復旧（<a href="#d-manage">8 章</a>）には別途 ¥3,300（<span class="en">.ceo</span> は ¥4,400）がかかります。<span class="en">.ceo</span> はプレミアム価格の末尾です。料金はすべて演習用のダミーです。</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="d-order">
+  <h2><span class="n">6</span>ドメインを申し込む</h2>
+  <p class="lede">検索結果の「申し込む」から。申込フォーム → 確認・支払い → 注文状況、の順に進みます。</p>
+  <ol class="steps">
+    <li class="step"><span class="num" aria-hidden="true">1</span><div class="body">
+      <h3>申込フォーム</h3>
+      <ul>
+        <li><strong>登録期間</strong>：1 / 2 / 3 / 5 年から選びます。合計金額がその場で変わります</li>
+        <li><strong>自動更新</strong>：チェックすると、期限が近づくと自動で 1 年ずつ更新されます（うっかり失効を防げるのでおすすめ）</li>
+        <li><strong>くわしい設定</strong>（折りたたみ）：ふつうは触らなくて大丈夫です
+          <ul>
+            <li>ネームサーバ：「いまは設定しない」（おすすめ。取得後に<a href="#d-dns">つなぐ設定</a>から行えます）か、他社のネームサーバを 2 つまで指定</li>
+            <li>認証コード（authInfo）：将来、他社へ移管するときに使う合言葉。自動生成されます（1〜64 文字で変更可）</li>
+            <li>コンタクト情報：登録者は会員本人。admin・tech・billing も同じにするのが既定です</li>
+          </ul>
+        </li>
+      </ul>
+    </div></li>
+    <li class="step"><span class="num" aria-hidden="true">2</span><div class="body">
+      <h3>お申し込み内容の確認・支払い</h3>
+      <p>内容を確かめ、支払い方法を選びます。クレジットカード／コンビニ決済／銀行振込／口座振替／キャリア決済／QR コード決済／PayPal／Amazon Pay の 8 種類から選べますが、<strong>どれを選んでも疑似決済で、実際の請求は発生しません</strong>。「支払う（疑似決済）」を押すと注文が確定します（二重に押しても 2 回申し込まれることはありません）。</p>
+    </div></li>
+    <li class="step"><span class="num" aria-hidden="true">3</span><div class="body">
+      <h3>注文状況</h3>
+      <div class="tablewrap">
+      <table>
+        <thead><tr><th>表示</th><th>意味</th></tr></thead>
+        <tbody>
+          <tr><td>ドメインの登録処理を行っています…</td><td>処理中。ページを閉じても処理は続きます</td></tr>
+          <tr><td>処理中です。自動で再試行しています。</td><td>一時的な不調で再試行中。「お支払いが二重に発生することはありません」</td></tr>
+          <tr><td>ドメインを取得しました</td><td>完了。有効期限・認証コード・次の一歩（つなぐ設定／マイページ）が出ます</td></tr>
+          <tr><td>処理できませんでした。</td><td>失敗。「このご注文の料金が請求されることはありません」。時間をおいて再度どうぞ</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="small">完了画面の認証コードは「他社への移管時に使用します。第三者には知られないようにしてください。」</p>
+    </div></li>
+  </ol>
+  <div class="note"><span>取得直後のドメインは「まだインターネットに公開されていません」の状態です。ネームサーバ（DNS）を設定すると公開されます（<a href="#d-dns">9 章</a>）。設定しなくてもドメインはあなたのものです。</span></div>
+</section>
+
+<!-- ================================================================ -->
+<section id="d-mypage">
+<h2><span class="n">7</span>マイページ</h2>
+  <p>ヘッダーの「マイページ」。持っているドメインの状態確認・期限の管理・各種設定の入口です。上から順に次のものが並びます（該当がなければ出ません）。</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>区画</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td>移管申請が来ています</td><td>他社があなたのドメインを引き取ろうとしています。「承認して移管する」か「拒否する」。<strong>放置すると申請から 20 分後に自動で承認</strong>されます</td></tr>
+      <tr><td>空き待ちのお知らせ</td><td>空き待ち中のドメインが購入できるようになったとき。「購入手続きへ進む」。他の人が先に取ることもあるのでお早めに</td></tr>
+      <tr><td>移管の進み具合</td><td>他社から引っ越し中のドメイン。承認待ちの間は「申請を取り下げる」ができます</td></tr>
+      <tr><td>アクティブ</td><td>使えているドメイン。残り日数のバー、自動更新の ON/OFF、有効期限。名前を押すと詳細へ</td></tr>
+      <tr><td>ライフサイクル終盤</td><td>解約手続き中・移管中のドメイン。解約後 45 日以内なら「復旧する」が押せます</td></tr>
+      <tr><td>空き待ち通知</td><td>登録中の空き待ち一覧。「解除」でやめられます</td></tr>
+      <tr><td>使用不可</td><td>移管済み・復旧不可で手を離れたドメイン。記録として残るだけです</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <h3>ドメインの状態ラベル</h3>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>ラベル</th><th>意味</th></tr></thead>
+    <tbody>
+      <tr><td>使えています</td><td>正常です</td></tr>
+      <tr><td>まだインターネットに公開されていません</td><td>ネームサーバ未設定。取得直後はこれが普通です</td></tr>
+      <tr><td>引っ越しの手続き中です</td><td>移管の処理中。設定変更はできません</td></tr>
+      <tr><td>解約手続き中です</td><td>削除を申し込んだ状態。45 日以内なら戻せます</td></tr>
+      <tr><td>いまなら復旧できます</td><td>失効後の復旧期間中</td></tr>
+      <tr><td>一時停止中です</td><td>レジストリ側で保留にされています</td></tr>
+      <tr><td>移管／変更／解約／更新をロック中</td><td>あなたが詳細画面で有効にしたロック（<a href="#d-manage">8 章</a>）</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="d-manage">
+  <h2><span class="n">8</span>ドメインを管理する（詳細画面）</h2>
+  <p>マイページでドメイン名を押すと詳細画面が開きます。カードごとに 1 つの操作です。</p>
+
+  <h3>8.1 期限と更新</h3>
+  <ul>
+    <li>「今すぐ更新する」→ 年数（1 / 2 / 3 / 5 年）を選ぶと、単価×年数と新しい有効期限が出ます。「支払って更新する」で疑似決済して完了。1 年ごとの更新は失効リスクが高いので、複数年まとめての更新がおすすめです。</li>
+    <li><strong>自動更新</strong>のスイッチもここにあります。OFF にすると「期限日に当サービスが廃止手続きを行い、ドメインは期限まで使ってそのまま終了します」。</li>
+  </ul>
+
+  <h3>8.2 保護・ロック設定</h3>
+  <p>4 つのスイッチを個別に ON/OFF できます。うっかり操作や第三者による変更を防ぐためのものです。</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>ロック</th><th>ON にすると</th></tr></thead>
+    <tbody>
+      <tr><td>移管ロック</td><td>他社へ移管できなくなる（引っ越す前に OFF が必要）</td></tr>
+      <tr><td>変更ロック</td><td>ネームサーバなどの設定変更ができなくなる</td></tr>
+      <tr><td>削除ロック</td><td>削除（解約）ができなくなる</td></tr>
+      <tr><td>更新ロック</td><td>更新ができなくなる</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>8.3 移管用の認証コード（authInfo）</h3>
+  <p>ふだんは伏せ字で表示され、コピーボタンで取り出せます。「再生成する」を押すと新しいコードに変わり、古いコードは使えなくなります。新しいコードはその場でクリップボードに入ります（できなかった場合はコピーボタンを使ってください）。第三者には教えないでください。</p>
+
+  <h3>8.4 このドメインをもう使わない（解約）</h3>
+  <p>2 つの選び方があります。</p>
+  <div class="twocol">
+    <div class="card">
+      <h3><span class="dot ok" aria-hidden="true"></span>期限まで使って、そのあと自動で終わりにする（おすすめ）</h3>
+      <ul><li>自動更新を OFF にするだけ。今すぐ止まらず、追加料金もありません</li></ul>
+    </div>
+    <div class="card">
+      <h3><span class="dot no" aria-hidden="true"></span>今すぐ削除する</h3>
+      <ul>
+        <li>「このドメインを使っている Web サイトとメールが止まります」</li>
+        <li>削除後 <strong>45 日間は復旧</strong>できます（復旧料金は 5 章参照）。過ぎると戻せず、数日で第三者が取得できる状態になります</li>
+      </ul>
+    </div>
+  </div>
+  <p class="small">解約手続き中はマイページと詳細画面に「あと N 日は戻せます」と「復旧する」が出ます。</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="d-dns">
+  <h2><span class="n">9</span>ドメインをつなぐ（DNS 設定）</h2>
+  <p class="lede">取得したドメインをホームページやメールに結びつける設定です。詳細画面の「つなぐ設定をはじめる」から。質問に答えていく形で進みます。</p>
+  <div class="note"><span><b>先に用意しておくもの</b>：ドメインは「名前」だけです。見せたい中身（ホームページを置くサービス＝ホスティング、あるいはメールサービス）は別に契約が必要で、その契約先から届いた「設定案内」を手元に開いておきます。</span></div>
+  <ol class="steps">
+    <li class="step"><span class="num" aria-hidden="true">1</span><div class="body">
+      <h3>「このドメインを、何に使いますか？」</h3>
+      <p>ホームページを見せたい／メールで使いたい／まだ何も用意していない、から選びます。「まだ何も用意していない」を選ぶと設定画面ではなく準備ガイドが出ます（例：Wix・STUDIO・Vercel・GitHub Pages・エックスサーバー、メールなら Google Workspace・Microsoft 365 など）。何も設定せず閉じてもドメインはあなたのものです。</p>
+    </div></li>
+    <li class="step"><span class="num" aria-hidden="true">2</span><div class="body">
+      <h3>「案内に書いてあるのは、どちらですか？」</h3>
+      <ul>
+        <li><strong>「ns1.〜」のような文字列が 2 つ</strong> → ネームサーバを変更する方式（ステップ 3A）</li>
+        <li><strong>数字の IP アドレスや案内先のホスト名</strong> → レコードを入力する方式（ステップ 3B）</li>
+        <li><strong>分からない</strong> → 見分け方の説明が出て、安全な 3B に進みます</li>
+      </ul>
+    </div></li>
+    <li class="step"><span class="num" aria-hidden="true">3A</span><div class="body">
+      <h3>ネームサーバを変更する</h3>
+      <p>案内どおりのホスト名を 2 つ（2 つ目は任意）入力します。必ず次の注意が出ます：「ネームサーバーを変更すると、このサービスで設定した DNS レコードは無効になります。メールも止まります。」反映には通常数分、長いと 48 時間ほどかかります。</p>
+    </div></li>
+    <li class="step"><span class="num" aria-hidden="true">3B</span><div class="body">
+      <h3>レコードを入力する</h3>
+      <p>入れ方は 3 通り：<strong>テンプレートから選ぶ</strong>（有名なサービスを選ぶと自動で埋まる）／<strong>案内文を貼り付ける</strong>（設定案内の文章を貼ると読み取る）／<strong>自分で入力する</strong>（A・AAAA・CNAME・MX・TXT・NS の各レコード）。保存すると<strong>そのドメインの設定がまるごと置き換わる</strong>ので、確認画面の内容をよく見てください。空のまま保存すると設定がすべて消えます。</p>
+    </div></li>
+    <li class="step"><span class="num" aria-hidden="true">4</span><div class="body">
+      <h3>「つながったか確認する」</h3>
+      <p>保存した内容が実際に返ってきているかを、このサービスの DNS で確かめます（未設定／反映待ち／確認できました／食い違いあり の 4 状態）。ネームサーバを他社に向けている場合は、ここで保存した内容は公開には使われない旨が表示されます。</p>
+    </div></li>
+  </ol>
+  <p class="small">すでにネームサーバの値を持っている人は、詳細画面の「ネームサーバーを変更」から直接変更できます。</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="d-transfer">
+  <h2><span class="n">10</span>移管（引っ越し）</h2>
+  <h3>他社からこのサービスへ持ってくる（移管する）</h3>
+  <p>マイページの「移管する」から。</p>
+  <ol>
+    <li>今そのドメインを管理している会社（移管元）の管理画面にログインします。</li>
+    <li>「AuthCode」「認証コード」「移管コード」などの名前のコードを発行・表示します。見つからないときは移管元のヘルプで「移管」「AuthCode」を検索してください。移管ロックが有効なら先に移管元で解除が必要です。</li>
+    <li>表示されたコードをコピーして、フォームの入力欄に貼り付けて申請します。</li>
+  </ol>
+  <p>申請後はマイページに「移管元の承認待ちです」と出ます。承認されると自動でドメイン一覧に追加されます（反映まで少し時間がかかることがあります）。「移管元がこの申請を承認しませんでした」と出たら、AuthCode や移管ロックの状態を移管元で確認して再申請してください。待っている間は「申請を取り下げる」ができます。</p>
+  <h3>このサービスから他社へ出す</h3>
+  <ol>
+    <li>詳細画面で「移管ロック」を OFF にします。</li>
+    <li>「移管用の認証コード（authInfo）」をコピーして、移管先の会社に入力します。</li>
+    <li>移管先が申請すると、マイページに「移管申請が来ています」が出るので「承認して移管する」を押します（取り消せません）。<strong>20 分間なにもしないと自動で承認</strong>されます。心当たりがなければ「拒否する」を押してください。</li>
+  </ol>
+</section>
+
+<!-- ================================================================ -->
+<section id="d-easy">
+  <h2><span class="n">11</span>かんたんモード</h2>
+  <p>「質問に答えるだけで、ドメインの取得と設定まで進められます。」ヘッダーの「かんたん」、またはトップページの切り替えスイッチから入ります。専門用語には平易な言い換えを添えてあり、慣れたら「通常モードに切り替える」で通常の画面に移れます。</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>ステップ</th><th>すること</th><th>ログイン</th></tr></thead>
+    <tbody>
+      <tr><td>1. 何に使いますか？</td><td>会社やお店の Web サイト／個人ブログ・ポートフォリオ／EC サイト／イベント／メールアドレスとして使う／まだ決まっていない、から 1 つ</td><td>不要</td></tr>
+      <tr><td>2. ドメイン名を決めましょう</td><td>使いたい名前を入れて「検索する」。思いつかないときは空のまま押すと、目的に合う「おすすめの名前」を提案します。結果から 1 つ選んで「次へ」</td><td>不要</td></tr>
+      <tr><td>3. 末尾を選ぶ</td><td>目的に合う末尾（TLD）を選びます。ここで会員登録・ログインを求められます</td><td>ここから必要</td></tr>
+      <tr><td>4. 確認 → 5. 支払い</td><td>通常モードと同じ申込内容の確認と疑似決済</td><td>必要</td></tr>
+      <tr><td>6. つなぐ設定 → 7. 完了</td><td>目的に合わせた DNS の設定と完了</td><td>必要</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="small">「保存してあとで続ける」を押すと途中経過がブラウザに残り、次に開いたときにその続きから再開できます。</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="d-assistant">
+  <h2><span class="n">12</span>AI アシスタント</h2>
+  <p>ヘッダー右のアイコンから、どのページでもチャット形式で質問できます（「.com と .net の違いは？」「DNS って何？」など）。</p>
+  <div class="note"><span><b>会話の内容は外部に送られません。</b>AI モデル（Qwen3-0.6B）はあなたのブラウザの中だけで動きます。そのため初回はモデルの読み込みに時間がかかり、性能の低い端末では動作が遅いことがあります。ライセンス表記は「第三者ライセンス」ページにあります。</span></div>
+</section>
+
+<!-- ================================================================ -->
+<section id="d-trouble">
+  <h2><span class="n">13</span>困ったとき</h2>
+  <p class="lede">画面に出たメッセージから探してください。</p>
+  <div class="qa">
+    <details open>
+      <summary>「認証コード」がどこにも届かない</summary>
+      <div class="a">
+        <p class="cause">このサービスはメールを送りません。コードは付属の確認アプリ「Zerokara Mail」で見ます。</p>
+        <p class="fix"><a href="#m-usage">第2部</a>の手順で Zerokara Mail に同じアドレスを登録し、受信トレイのコードをコピーします。10 分で期限切れになるので、切れていたら「認証コードを再送する」。</p>
+      </div>
+    </details>
+    <details>
+      <summary>「メールアドレスは @example.com / @example.net / @example.org のみ利用できます。」</summary>
+      <div class="a">
+        <p class="cause">演習用のため、実在のメールアドレスは登録できません。</p>
+        <p class="fix"><code>あなたの名前@example.com</code> のような形で登録してください。</p>
+      </div>
+    </details>
+    <details>
+      <summary>「このメールアドレスはすでに登録されています。」</summary>
+      <div class="a">
+        <p class="cause">同じアドレスのアカウントがあります。</p>
+        <p class="fix">「ログイン画面からお進みください」。パスワードを忘れた場合は再設定できないため、別のアドレスで登録し直してください。</p>
+      </div>
+    </details>
+    <details>
+      <summary>「メールアドレスまたはパスワードが違います。」</summary>
+      <div class="a">
+        <p class="cause">どちらかが違います（安全のためどちらかは表示しません）。Google で登録したアカウントにパスワードでは入れません。</p>
+        <p class="fix">入力を見直すか、登録時の方法（Google）でログインします。</p>
+      </div>
+    </details>
+    <details>
+      <summary>検索結果に「⏳ 一時購入不可」「🔧 メンテナンス中」「？ 確認できませんでした」が出る</summary>
+      <div class="a">
+        <p class="cause">その末尾を扱うレジストリに一時的につながらない、または点検中です。ドメインが使われているという意味ではありません。</p>
+        <p class="fix">時間をおいて再検索。メンテナンスは終了予定時刻が出ていればそれ以降に。「空いたら通知」で待つこともできます。</p>
+      </div>
+    </details>
+    <details>
+      <summary>「このドメインはすでに使われています。」</summary>
+      <div class="a">
+        <p class="cause">申し込みの直前に他の人が取得しました。</p>
+        <p class="fix">「似ている候補」から別の名前を選ぶか、「空いたら通知」に登録します。</p>
+      </div>
+    </details>
+    <details>
+      <summary>注文状況が「処理できませんでした。」になった</summary>
+      <div class="a">
+        <p class="cause">レジストリ側の処理に失敗しました。料金が請求されることはありません。</p>
+        <p class="fix">時間をおいて、検索からもう一度申し込んでください。</p>
+      </div>
+    </details>
+    <details>
+      <summary>取得したのに「まだインターネットに公開されていません」</summary>
+      <div class="a">
+        <p class="cause">ネームサーバ（DNS）が未設定です。取得直後はこれが普通です。</p>
+        <p class="fix">詳細画面の「つなぐ設定をはじめる」（<a href="#d-dns">9 章</a>）。何もしなくてもドメインが失われることはありません。</p>
+      </div>
+    </details>
+    <details>
+      <summary>「この操作は現在の状態では行えません。」</summary>
+      <div class="a">
+        <p class="cause">ロック（移管／変更／削除／更新）が有効か、移管・解約の手続き中です。</p>
+        <p class="fix">詳細画面のロックを OFF にするか、手続きの完了を待ちます。</p>
+      </div>
+    </details>
+    <details>
+      <summary>「認証コードが違うようです。移管元でもう一度確認してください。」</summary>
+      <div class="a">
+        <p class="cause">移管申請で入力した AuthCode が移管元のものと一致しません。</p>
+        <p class="fix">移管元で AuthCode を再発行・再表示してコピーし直します。移管ロックが有効なら先に解除します。</p>
+      </div>
+    </details>
+    <details>
+      <summary>「ドメインが見つかりません。」</summary>
+      <div class="a">
+        <p class="cause">そのドメインはあなたのアカウントの管理下にないか、すでに手を離れています。</p>
+        <p class="fix">マイページの一覧から開き直してください。「使用不可」に入っているものは操作できません。</p>
+      </div>
+    </details>
+    <details>
+      <summary>「時間をおいて再度お試しください。」</summary>
+      <div class="a">
+        <p class="cause">サーバー側の一時的なエラーです。</p>
+        <p class="fix">少し待ってからページを再読み込みして、同じ操作をやり直します。</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="d-limits">
+  <h2><span class="n">14</span>制限と注意事項</h2>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>項目</th><th>制限</th></tr></thead>
+    <tbody>
+      <tr><td>ドメイン名</td><td>半角英数字とハイフン、63 文字以内、先頭・末尾にハイフン不可</td></tr>
+      <tr><td>登録・更新の年数</td><td>1 / 2 / 3 / 5 年</td></tr>
+      <tr><td>認証コード（authInfo）</td><td>1〜64 文字</td></tr>
+      <tr><td>空き待ち</td><td>1 人 10 件まで、30 日で自動解除</td></tr>
+      <tr><td>削除後の復旧</td><td>45 日以内（有料）</td></tr>
+      <tr><td>移管申請への応答</td><td>20 分で自動承認</td></tr>
+      <tr><td>メール認証コード</td><td>有効 10 分、5 回まで、再送は 60 秒に 1 回</td></tr>
+      <tr><td>ログイン状態</td><td>5 日間</td></tr>
+      <tr><td>登録できるメールアドレス</td><td><code>@example.com</code> <code>@example.net</code> <code>@example.org</code> のみ</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="note danger"><span><b>移管用の認証コード（authInfo）は秘密の情報です。</b>これを知られると第三者にドメインを持ち出される可能性があります。共有の PC でコピーしたあとはクリップボードを上書きするなど注意してください。</span></div>
+  <ul>
+    <li>料金・レジストリはすべて演習用のダミーです。実際の請求・課金はなく、実際のドメインも取得されません。</li>
+    <li>メールは送信されません。期限のお知らせなどはマイページ上でのみ確認できます。<strong>期限はマイページで定期的に確認</strong>してください（自動更新を ON にしておくと安心です）。</li>
+    <li>パスワードの再設定、アカウントの削除は画面から行えません。</li>
+    <li>会員登録画面の「利用規約」に対応する規約ページは現在ありません。</li>
+    <li>ヘッダー右の「確認中／認証済み／未認証」の小さな表示と、フッターの「認証の動作確認」は開発用の表示です。使わなくて問題ありません。</li>
+  </ul>
+</section>
+
+<!-- ================================================================ -->
+<!-- ===================== 第2部：Zerokara Mail ======================= -->
+<!-- ================================================================ -->
+<div class="part" id="part-mail">
+  <span class="eyebrow">Part 2</span>
+  <h2>Zerokara Mail（認証コード確認アプリ）</h2>
+  <p class="lede">Zerokara Domain に登録するときに届く「6 桁の認証コード」を、メール受信画面のような見た目で確認するためのアプリです。このページは、はじめて触る人がひとりで起動して使えるようになることを目指して書いています。</p>
+  <div class="facts">
+    <div class="fact"><span class="k">できること</span><span class="v">認証コードを見る・コピーする</span><span class="s">メールアドレスを登録すると、そのアドレス宛のコードが 1 通のメールとして届きます</span></div>
+    <div class="fact"><span class="k">必要なもの</span><span class="v">Node.js と、発行側アプリ</span><span class="s">コードを発行する側（登録アプリ）のエミュレータが動いている必要があります</span></div>
+    <div class="fact"><span class="k">起動までの目安</span><span class="v en">5 min</span><span class="s">コマンドは 2 つだけ。<code>npm install</code> と <code>npm run dev</code></span></div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<section id="m-about">
+  <h2><span class="n">15</span>これは何？</h2>
+  <p>Web サービスに新しくアカウントを作るとき、「メールに届いた 6 桁のコードを入力してください」という画面をよく見かけます。Zerokara Domain（ドメイン登録サービス）にもこの仕組みがあり、<strong>Zerokara Mail はその認証コードを"受信箱"のような画面で見られるようにした閲覧専用アプリ</strong>です。</p>
+  <p>本物のメールは送りません。データベースには 6 桁のコードだけが保存されていて、送信元・件名・本文はこのアプリが決まった文面をあてはめて表示しています。</p>
+  <div class="twocol">
+    <div class="card">
+      <h3><span class="dot ok" aria-hidden="true"></span>できること</h3>
+      <ul>
+        <li>登録したメールアドレス宛の認証コードを一覧で見る</li>
+        <li>コードをワンクリックでコピーする</li>
+        <li>コードが発行・再発行されたら自動で画面に反映する</li>
+        <li>「期限切れ」「認証済み」などの状態を確かめる</li>
+        <li>認証が終わって消えたコードも、5 日間は控えを表示する</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="dot no" aria-hidden="true"></span>できないこと</h3>
+      <ul>
+        <li>メールを送る・返信する・削除する（ボタンは飾りです）</li>
+        <li>認証コードを作る・入力して認証する（発行側アプリの役目）</li>
+        <li>登録中の全アドレスを一覧する（安全のため禁止されています）</li>
+        <li>ログイン（アクセス制御は置き場所側で行います）</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="m-how">
+  <h2><span class="n">16</span>しくみ</h2>
+  <p>登場するのは 3 つです。コードを<strong>発行する側</strong>、コードを<strong>置いておく場所</strong>、そしてコードを<strong>見る側</strong>（このアプリ）。</p>
+  <div class="flow" role="img" aria-label="発行側アプリが Firestore にコードを書き、Zerokara Mail がそれを読んで表示する流れ">
+    <div class="box"><span class="t">発行側アプリ</span><span class="d">Zerokara Domain の登録画面。<br />アドレスごとに 6 桁コードを作って書き込む</span></div>
+    <div class="arrow" aria-hidden="true">→</div>
+    <div class="box"><span class="t">Firestore</span><span class="d">Firebase のデータベース。<br />開発中は手元 PC の「エミュレータ」が代わりを務める</span></div>
+    <div class="arrow" aria-hidden="true">→</div>
+    <div class="box here"><span class="t">Zerokara Mail</span><span class="d">このアプリ。アドレスを指定して<br />そのコードだけを読み、メール風に表示</span></div>
+  </div>
+  <div class="formula" aria-label="6桁コード ＋ 定型文 ＝ 画面上のメール">
+    <span class="term">データ <span class="en">481920</span></span>
+    <span class="op">+</span>
+    <span class="term">定型文（件名・本文）</span>
+    <span class="op">=</span>
+    <span class="term">画面上のメール 1 通</span>
+  </div>
+  <div class="note"><span><b>「エミュレータ」とは</b>：本物の Firebase の代わりに、自分の PC の中だけで動く練習用データベースです。発行側アプリを起動すると一緒に立ち上がり、Zerokara Mail は設定なしでそこに接続します。</span></div>
+  <p>安全上の理由で、データベースは「アドレスを指定して 1 件ずつ読む」ことしか許していません。だからこのアプリでは、<strong>見たいメールアドレスを自分で登録する</strong>必要があります（<a href="#m-usage">20. 使い方</a>）。</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="m-prep">
+  <h2><span class="n">17</span>準備するもの</h2>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>もの</th><th>説明</th><th>確認のしかた</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Node.js 18 以上</strong></td><td>JavaScript を PC 上で動かす道具。npm（パッケージ管理）も一緒に入ります</td><td>ターミナルで <code>node -v</code> → <code>v18</code> 以上が出れば OK</td></tr>
+      <tr><td><strong>このリポジトリ</strong></td><td>Zerokara Mail のソースコード一式</td><td>フォルダの中に <code>package.json</code> と <code>src/</code> があること</td></tr>
+      <tr><td><strong>発行側アプリ</strong></td><td>Zerokara Domain の登録アプリ（別リポジトリ）。Firebase エミュレータを立ち上げてくれます</td><td>エミュレータが <code>127.0.0.1:8080</code> で、プロジェクト ID <code>demo-teamc-2026</code> で起動していること</td></tr>
+      <tr><td><strong>ブラウザ</strong></td><td>Chrome / Edge / Safari / Firefox の新しいもの</td><td>コピー機能を使うので、<code>http://localhost</code> で開きます</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="note"><span><b>ターミナルの開き方</b>：Mac は「ターミナル」アプリ、Windows は「PowerShell」または VS Code の統合ターミナルを使います。以降のコマンドは、リポジトリのフォルダに移動（<code>cd</code>）してから打ちます。</span></div>
+</section>
+
+<!-- ================================================================ -->
+<section id="m-start">
+  <h2><span class="n">18</span>起動する</h2>
+  <p class="lede">初回は 4 ステップ、2 回目以降はステップ 1 と 3 だけで動きます。</p>
+  <ol class="steps">
+    <li class="step">
+      <span class="num" aria-hidden="true">1</span>
+      <div class="body">
+        <h3>発行側アプリのエミュレータを起動する</h3>
+        <p>別リポジトリ（Zerokara Domain 登録側）の手順に従って、Firebase エミュレータを立ち上げます。起動オプションが <code>--project=demo-teamc-2026</code> になっていることを確認してください。ここが違うと、つながるのにデータが 1 件も見えません。</p>
+        <p class="small">エミュレータを立ち上げずに進むと、アプリは「ダミーのメール 4 件」を表示します（練習用としては使えます）。</p>
+      </div>
+    </li>
+    <li class="step">
+      <span class="num" aria-hidden="true">2</span>
+      <div class="body">
+        <h3>必要なライブラリを入れる（初回のみ）</h3>
+        <div class="cmd"><button class="copy" type="button" data-copy="npm install">コピー</button><pre><span class="p">$ </span>npm install</pre></div>
+        <p>数十秒かかります。フォルダに <code>node_modules/</code> ができれば完了です。</p>
+      </div>
+    </li>
+    <li class="step">
+      <span class="num" aria-hidden="true">3</span>
+      <div class="body">
+        <h3>開発サーバーを立ち上げる</h3>
+        <div class="cmd"><button class="copy" type="button" data-copy="npm run dev">コピー</button><pre><span class="p">$ </span>npm run dev
+<span class="c">  VITE  ready in 300 ms
+  ➜  Local:   http://localhost:5173/</span></pre></div>
+        <p>ターミナルに <code>http://localhost:5173/</code> と出たら、それをブラウザで開きます。止めるときはターミナルで <kbd>Ctrl</kbd> + <kbd>C</kbd>。</p>
+      </div>
+    </li>
+    <li class="step">
+      <span class="num" aria-hidden="true">4</span>
+      <div class="body">
+        <h3>接続先を確かめる</h3>
+        <p>ブラウザで <kbd>F12</kbd>（Mac は <kbd>⌘</kbd> + <kbd>⌥</kbd> + <kbd>I</kbd>）を押して「コンソール」タブを開くと、次の 1 行が出ています。</p>
+        <div class="cmd"><pre><span class="c">Firestore エミュレータに接続します: 127.0.0.1:8080
+  (project: demo-teamc-2026, collection: verificationCodes)</span></pre></div>
+        <p><code>project</code> が発行側と同じなら準備完了です。「モックデータを表示します」という警告が出ている場合は、<a href="#m-trouble">23. 困ったとき</a>を見てください。</p>
+      </div>
+    </li>
+  </ol>
+</section>
+
+<!-- ================================================================ -->
+<section id="m-screen">
+  <h2><span class="n">19</span>画面の見方</h2>
+  <p>開くと、次のような画面になります。オレンジの番号は下の説明と対応しています。</p>
+
+  <div class="screen" role="img" aria-label="Zerokara Mail の画面構成の図。上にヘッダー、左にサイドバー、右にメール一覧">
+    <div class="bar">
+      <span class="logo"><span class="m" aria-hidden="true"></span>Zerokara Mail <span class="callout">1</span></span>
+      <span class="searchbox">メールを検索 <span class="callout">2</span></span>
+      <span class="tools"><span class="btn">↻</span><span class="callout">3</span><span class="av">Z</span></span>
+    </div>
+    <div class="body">
+      <div class="side">
+        <span class="f on"><span>受信トレイ</span><span>1</span></span>
+        <span class="f">スター付き</span>
+        <span class="f">スヌーズ中</span>
+        <span class="f">送信済み</span>
+        <span class="f">下書き</span>
+        <span class="h">表示するアドレス <span class="callout">4</span></span>
+        <span class="in"><span>you@example.com</span><span>追加</span></span>
+        <span class="addr"><span>taro@example.com</span><span class="st">コードあり</span><span class="x">×</span></span>
+        <span class="addr"><span>hanako@example.com</span><span class="st na">未発行</span><span class="x">×</span></span>
+      </div>
+      <div class="mainpane">
+        <div class="listhead"><span>受信トレイ</span><span>未読 1 件</span></div>
+        <div class="row unread">
+          <span>taro@example.com</span>
+          <span class="sub"><span>Zerokara Domainのアカウント認証</span><span class="ex">— 認証コード 481920 …</span></span>
+          <span class="t">10:42</span>
+          <span class="cp">⧉</span>
+        </div>
+        <div class="row">
+          <span>Zerokara Cloud</span>
+          <span class="sub"><span>【定期メンテナンス】コントロールパネル停止のお知らせ</span></span>
+          <span class="t">8:12</span>
+          <span class="cp hidden">⧉</span>
+        </div>
+        <div class="row">
+          <span>請求サポート</span>
+          <span class="sub"><span>ご利用明細（先月分）を発行しました</span></span>
+          <span class="t">8月27日</span>
+          <span class="cp hidden">⧉</span>
+        </div>
+        <div class="listhead" style="border-bottom:0;border-top:1px solid var(--line)"><span><span class="callout">5</span> 一覧（クリックで詳細）</span><span><span class="callout">6</span> コピー</span></div>
+      </div>
+    </div>
+  </div>
+
+  <ul class="legend">
+    <li><span class="callout">1</span><div><b>ロゴ・メニュー</b><span>スマホ幅では左に「≡」が出て、サイドバーを開閉します</span></div></li>
+    <li><span class="callout">2</span><div><b>検索ボックス</b><span>打った文字で一覧をその場で絞り込みます（宛先・件名・コードなど）</span></div></li>
+    <li><span class="callout">3</span><div><b>再読み込み</b><span>データベースからもう一度取り直します。普段は自動更新されるので不要です</span></div></li>
+    <li><span class="callout">4</span><div><b>表示するアドレス</b><span>ここに登録したメールアドレス宛のコードだけが受信トレイに並びます。いちばん大事な欄です</span></div></li>
+    <li><span class="callout">5</span><div><b>メール一覧</b><span>薄い緑の行が未読。行をクリックすると本文が開きます。認証コード以外の行は見た目を整えるためのダミーです</span></div></li>
+    <li><span class="callout">6</span><div><b>コピーボタン</b><span>行の右端。メールを開かずにコードだけコピーします</span></div></li>
+  </ul>
+  <p class="small">サイドバーの「スター付き」「スヌーズ中」「送信済み」「下書き」と、詳細画面の「アーカイブ」「削除」は見た目だけの項目で、押しても何も起きません。</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="m-usage">
+  <h2><span class="n">20</span>使い方</h2>
+
+  <h3>20.1 メールアドレスを登録する</h3>
+  <ol class="steps">
+    <li class="step"><span class="num" aria-hidden="true">1</span><div class="body"><h4>サイドバーの「表示するアドレス」の入力欄に、確認したいメールアドレスを入れる</h4><p>受信トレイの上に「認証コードを表示するには…」の案内バーが出ているときは、その「アドレスを追加」ボタンを押しても入力欄に移動できます。</p></div></li>
+    <li class="step"><span class="num" aria-hidden="true">2</span><div class="body"><h4>「追加」を押す（または <kbd>Enter</kbd>）</h4><p>大文字・小文字や前後の空白は自動でそろえられます（<code>Taro@Example.COM</code> → <code>taro@example.com</code>）。形式が違うときや登録済みのときは、その場に赤い文字で理由が出ます。</p></div></li>
+    <li class="step"><span class="num" aria-hidden="true">3</span><div class="body"><h4>アドレスの横に状態が出る</h4><p><span class="chip has">コードあり</span> なら受信トレイに 1 通届いています。<span class="chip none">未発行</span> は、そのアドレスにまだコードが作られていないだけなので、発行側アプリで登録操作をすると自動で届きます。</p></div></li>
+  </ol>
+  <div class="note"><span>登録したアドレスはブラウザに記憶され、次に開いたときも残っています。何件でも登録できます。</span></div>
+
+  <h3>20.2 コードを確認する・コピーする</h3>
+  <p>コピーの方法は 3 つあり、どれも結果は画面下のトースト（小さな通知）か、ボタンの文字で知らせます。</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>場所</th><th>操作</th><th>向いている場面</th></tr></thead>
+    <tbody>
+      <tr><td>一覧の行の右端</td><td>コピーアイコンをクリック</td><td>いちばん速い。メールを開く必要がありません</td></tr>
+      <tr><td>詳細画面の右上</td><td>「コードをコピー」ボタン</td><td>本文を読んでからコピーしたいとき</td></tr>
+      <tr><td>本文の大きなコード</td><td>数字そのものをクリック</td><td>スマホなど、ボタンが小さく感じるとき</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>コピーできたら、発行側アプリの入力欄に貼り付けて認証を進めてください。</p>
+
+  <h3>20.3 メールを開く・戻る</h3>
+  <ul>
+    <li>一覧の行をクリックすると本文が開き、そのメールは<strong>既読</strong>になります（薄緑の背景と太字が消えます）。</li>
+    <li>戻るには左上の「←」か、キーボードの <kbd>Esc</kbd>。</li>
+    <li>詳細画面には宛先（To:）、送信日時、有効期限、状態ラベルが並びます。</li>
+  </ul>
+
+  <h3>20.4 探す・絞り込む</h3>
+  <p>上部の検索ボックスに文字を入れると、その場で一覧が絞られます。メールアドレスの一部、件名、コードの数字、どれでも構いません。大文字・小文字は区別しません。消せば元に戻ります。</p>
+
+  <h3>20.5 アドレスをやめる</h3>
+  <p>サイドバーのアドレス右端の「×」を押すと一覧から外れ、そのアドレスのメールも受信トレイから消えます。ブラウザに控えていたコードも同時に消えるので、また見たいときは追加し直してください（発行側で消えていれば「未発行」に戻ります）。</p>
+
+  <h3>20.6 URL でアドレスを渡す</h3>
+  <p>次のように <code>?email=</code> を付けて開くと、そのアドレスが登録された状態で始まります。同じ端末で何度も使うときや、リンクを共有するときに便利です。</p>
+  <div class="cmd"><button class="copy" type="button" data-copy="http://localhost:5173/?email=taro@example.com&email=hanako@example.com">コピー</button><pre>http://localhost:5173/?email=taro@example.com&amp;email=hanako@example.com</pre></div>
+
+  <h3>20.7 スマホ・狭い画面で使う</h3>
+  <p>幅が狭いとサイドバーは隠れます。左上の「≡」で開き、背景をタップするか <kbd>Esc</kbd> で閉じます。一覧の抜粋文は省略されますが、行を開けば本文はすべて読めます。</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="m-labels">
+  <h2><span class="n">21</span>ラベルの意味</h2>
+  <h3>サイドバー（アドレスごとの状態）</h3>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>表示</th><th>意味</th><th>すること</th></tr></thead>
+    <tbody>
+      <tr><td><span class="chip has">コードあり</span></td><td>いま有効なコードが発行されている</td><td>受信トレイの行を開くかコピーする</td></tr>
+      <tr><td><span class="chip none">未発行</span></td><td>そのアドレスにはまだコードがない</td><td>発行側アプリで登録操作をして待つ（自動で届く）</td></tr>
+      <tr><td><span class="chip saved">保存済み</span></td><td>発行側では消えたが、ブラウザの控えを表示中</td><td>認証が終わった合図。5 日で自然に消える</td></tr>
+      <tr><td><span class="chip err">取得できません</span></td><td>読みに行ったが失敗した</td><td>エミュレータの起動と接続先を確認（<a href="#m-trouble">23 章</a>）</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <h3>メール一覧・詳細（1 通ごとの状態）</h3>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>表示</th><th>意味</th></tr></thead>
+    <tbody>
+      <tr><td>薄緑の行・太字</td><td><strong>未読</strong>。開くと既読になる。コードが再発行されると新しいメールとして未読に戻る</td></tr>
+      <tr><td><span class="chip saved">保存済み</span></td><td>データベースからは消えているが、ブラウザに控えたコードを表示している</td></tr>
+      <tr><td><span class="chip expired">期限切れ</span></td><td>コードの有効期限（発行から 10 分）を過ぎている。発行側で再発行すると新しいコードが届く</td></tr>
+      <tr><td><span class="chip verified">認証済み</span></td><td>このコードはすでに使われた</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="small">受信トレイ上部の「未読 N 件」「すべて既読」は認証コードのメールだけを数えます。ダミーメールは含みません。</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="m-know">
+  <h2><span class="n">22</span>知っておくこと</h2>
+  <div class="card">
+    <ul>
+      <li><strong>自動で更新されます。</strong>発行側でコードが作られたり作り直されたりすると、再読み込みしなくても画面に出ます。</li>
+      <li><strong>認証が終わるとコードは発行側で削除されます。</strong>それでも受信トレイから消えないよう、このアプリは表示できたコードをブラウザに控え、<span class="chip saved">保存済み</span> として <strong>5 日間</strong>表示し続けます。</li>
+      <li><strong>既読・アドレス・控えは、そのブラウザの中だけの情報です。</strong>別の PC や別のブラウザには引き継がれません。データベースには何も書き込みません。</li>
+      <li><strong>ダミーメールが 4 通まざっています。</strong>「Zerokara Cloud」「請求サポート」「サンプル通信」「勉強会事務局」からのメールは受信箱らしく見せるための架空のもので、常に既読、コピーボタンもありません。</li>
+      <li><strong>表示されるメールの文面は固定です。</strong>送信者は <code>no-reply &lt;support@zerokaradomain.com&gt;</code>、件名は「Zerokara Domainのアカウント認証」で、コードの部分だけがデータベースの値に置き換わります。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="m-trouble">
+  <h2><span class="n">23</span>困ったとき</h2>
+  <p class="lede">症状から探してください。多くはエミュレータの起動状態か、プロジェクト ID の食い違いです。</p>
+  <div class="qa">
+    <details open>
+      <summary>taro / hanako / jiro / saburo という 4 件のメールが出る</summary>
+      <div class="a">
+        <p class="cause">データベースにつながらなかったので、練習用のダミーデータ（モック）を表示しています。ブラウザのコンソールに「モックデータを表示します」と理由が出ています。</p>
+        <p class="fix">発行側アプリのエミュレータが起動しているか確かめて、起動したらヘッダーの再読み込みボタンを押します。<code>.env</code> を置いている場合は、その値が雛形（<code>your_...</code>）のままになっていないかも見てください。</p>
+      </div>
+    </details>
+    <details>
+      <summary>アドレスを追加したのに、ずっと「未発行」のまま</summary>
+      <div class="a">
+        <p class="cause">（1）まだ発行側で登録操作をしていない。（2）エミュレータにはつながっているが、<strong>プロジェクト ID が発行側と違う</strong>ため、別の空っぽの箱を見ている。（3）発行側で登録したアドレスと綴りが違う。</p>
+        <p class="fix">コンソールの <code>project:</code> が <code>demo-teamc-2026</code>（発行側の <code>--project</code> と同じ）か確認します。違うときは <code>.env</code> の <code>VITE_FIREBASE_PROJECT_ID</code> を直すか、<code>.env</code> を消して既定値に戻します。綴りを見直し、発行側で認証コードを発行してみてください。</p>
+      </div>
+    </details>
+    <details>
+      <summary>「取得できません」と赤く出る</summary>
+      <div class="a">
+        <p class="cause">エミュレータが途中で止まった、ポートが違う、またはセキュリティルールで読み取りが拒否されています。</p>
+        <p class="fix">エミュレータを起動し直し、再読み込みボタンを押します。コンソールに <code>PERMISSION_DENIED</code> が出ている場合は、発行側のルールで <code>get</code> が許可されているかを開発者に確認してください。</p>
+      </div>
+    </details>
+    <details>
+      <summary>「コピーできません」と出る</summary>
+      <div class="a">
+        <p class="cause">ブラウザがクリップボードへの書き込みを許可していません。<code>http://localhost</code> 以外のアドレス（<code>http://192.168.…</code> など）で開くと、多くのブラウザは安全のためコピーを止めます。</p>
+        <p class="fix"><code>http://localhost:5173/</code> で開き直します。それでも駄目なときは、詳細画面の大きな数字をドラッグして手動でコピーしてください。</p>
+      </div>
+    </details>
+    <details>
+      <summary>認証が終わったらメールが消えた／「保存済み」が消えた</summary>
+      <div class="a">
+        <p class="cause">認証済みのコードは発行側で削除され、このアプリは控えを 5 日間だけ表示します。5 日を過ぎたか、アドレスを × で外したか、別のブラウザで開いています。</p>
+        <p class="fix">仕様どおりの動きです。新しいコードが必要なら発行側アプリで再発行してください。</p>
+      </div>
+    </details>
+    <details>
+      <summary><code>npm run dev</code> で「Port 5173 is in use」と出る</summary>
+      <div class="a">
+        <p class="cause">前回のサーバーが残っているか、別のアプリが同じポートを使っています。</p>
+        <p class="fix">Vite は自動で <code>5174</code> など次のポートを使うので、ターミナルに表示された URL を開けば大丈夫です。古いサーバーを止めるには、そのターミナルで <kbd>Ctrl</kbd> + <kbd>C</kbd>。</p>
+      </div>
+    </details>
+    <details>
+      <summary>画面が真っ白／何も表示されない</summary>
+      <div class="a">
+        <p class="cause"><code>npm install</code> がまだ、または途中で失敗しています。もしくは古いブラウザです。</p>
+        <p class="fix">ターミナルのエラーを確認し、<code>npm install</code> をやり直してから <code>npm run dev</code>。<kbd>F12</kbd> のコンソールに赤いエラーがあれば、その文面を開発者に伝えてください。</p>
+      </div>
+    </details>
+    <details>
+      <summary>ダークモードになる／色が変わった</summary>
+      <div class="a">
+        <p class="cause">OS の外観設定（ダーク／ライト）に自動で合わせています。</p>
+        <p class="fix">不具合ではありません。OS の設定を変えれば追従します。</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="m-env">
+  <h2><span class="n">24</span>別の環境につなぐ</h2>
+  <p>ふだんの開発では設定ファイルは不要です。<strong>本番の Firebase</strong> や、<strong>別のエミュレータ</strong>を見たいときだけ <code>.env</code> を作ります。</p>
+  <ol class="steps">
+    <li class="step"><span class="num" aria-hidden="true">1</span><div class="body"><h4>雛形をコピーする</h4><div class="cmd"><button class="copy" type="button" data-copy="cp .env.example .env">コピー</button><pre><span class="p">$ </span>cp .env.example .env</pre></div></div></li>
+    <li class="step"><span class="num" aria-hidden="true">2</span><div class="body"><h4><code>.env</code> を開いて値を入れる</h4>
+      <p><strong>別のエミュレータ</strong>に向けるなら、次の 3 行だけで足ります。</p>
+      <div class="cmd"><pre>VITE_FIREBASE_PROJECT_ID=<span class="c">&lt;エミュレータのプロジェクトID&gt;</span>
+VITE_FIREBASE_API_KEY=dummy-key
+VITE_FIRESTORE_EMULATOR_HOST=127.0.0.1:8080</pre></div>
+      <p><strong>本番の Firebase</strong> に向けるなら、Firebase コンソール →「プロジェクトの設定」→「マイアプリ」の値を <code>VITE_FIREBASE_API_KEY</code> などに転記し、エミュレータの行は書きません。</p>
+    </div></li>
+    <li class="step"><span class="num" aria-hidden="true">3</span><div class="body"><h4>サーバーを立ち上げ直す</h4><p><code>.env</code> は起動時にしか読まれません。<kbd>Ctrl</kbd> + <kbd>C</kbd> で止めてから、もう一度 <code>npm run dev</code>。</p></div></li>
+  </ol>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>変数</th><th>意味</th></tr></thead>
+    <tbody>
+      <tr><td><code>VITE_DB_KIND</code></td><td><code>firestore</code>（既定）か <code>realtime</code>。データベースの種類</td></tr>
+      <tr><td><code>VITE_FIREBASE_PROJECT_ID</code></td><td>プロジェクト ID。<strong>これを書くと開発時の既定（エミュレータ）は使われなくなる</strong></td></tr>
+      <tr><td><code>VITE_FIREBASE_API_KEY</code> ほか</td><td>Firebase コンソールの値。エミュレータ相手ならダミーで可</td></tr>
+      <tr><td><code>VITE_FIREBASE_COLLECTION</code></td><td>コードが入っている場所の名前（既定 <code>verificationCodes</code>）</td></tr>
+      <tr><td><code>VITE_FIRESTORE_EMULATOR_HOST</code></td><td>エミュレータの <code>host:port</code>。Realtime DB なら <code>VITE_DATABASE_EMULATOR_HOST</code></td></tr>
+      <tr><td><code>VITE_GA_MEASUREMENT_ID</code></td><td>Google Analytics の測定 ID。書いたときだけ計測する</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="note warn"><span><code>.env</code> には秘密の値が入るので、<b>Git にコミットしない</b>でください（<code>.gitignore</code> で除外済み）。共有してよいのは雛形の <code>.env.example</code> だけです。</span></div>
+</section>
+
+<!-- ================================================================ -->
+<section id="m-dev">
+  <h2><span class="n">25</span>開発者向け</h2>
+  <h3>コマンド一覧</h3>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>コマンド</th><th>何をするか</th></tr></thead>
+    <tbody>
+      <tr><td><code>npm run dev</code></td><td>開発サーバー（<code>http://localhost:5173</code>）。保存すると即反映</td></tr>
+      <tr><td><code>npm test</code></td><td>ユニットテスト（Vitest / jsdom）。数秒で終わる</td></tr>
+      <tr><td><code>npm run test:watch</code></td><td>ユニットテストを監視実行</td></tr>
+      <tr><td><code>npm run test:e2e</code></td><td>E2E（Playwright）。テスト専用のエミュレータ（8099）と dev サーバー（5199）を自動で立ち上げるので、発行側の 8080 には触れない。Java と <code>npx playwright install chromium</code> が必要</td></tr>
+      <tr><td><code>npm run build</code></td><td>型チェック（tsc）のうえ <code>dist/</code> に本番用ファイルを出力。本番ビルドはエミュレータに接続しない</td></tr>
+      <tr><td><code>npm run preview</code></td><td>ビルド結果をローカルで確認</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>フォルダ構成（触る場所が 1 つに決まるように分けています）</h3>
+  <div class="cmd tree"><pre>src/
+├─ main.ts      <span class="c"># 配線：アドレスを管理し、データ層の結果を描画層へ渡す</span>
+├─ firebase.ts  <span class="c"># データ：接続・取得・正規化。DB を差し替えるならここだけ</span>
+├─ mail.ts      <span class="c"># 文面：Mail 型と本文テンプレート。文章を変えるならここ</span>
+├─ storage.ts   <span class="c"># 保存：アドレス一覧と受信済みコードの控え（localStorage・5 日）</span>
+├─ analytics.ts <span class="c"># 計測：GA4。測定 ID が無ければ何もしない</span>
+├─ ui.ts        <span class="c"># 描画：DOM 組み立て（一覧・詳細・トースト）</span>
+└─ style.css    <span class="c"># Tailwind v4 ＋ 配色トークン（やわらか若草）</span>
+docs/
+├─ SPEC.md        <span class="c"># 画面・動作の仕様</span>
+├─ DATA-MODEL.md  <span class="c"># 認証コードの読み取り仕様（ルール・正規化・控え）</span>
+├─ TESTING.md     <span class="c"># テスト仕様</span>
+└─ DESIGN_SYSTEM.md <span class="c"># 配色・書体の規約</span></pre></div>
+
+  <h3>データの読み方で守ること</h3>
+  <div class="card">
+    <ul>
+      <li>認証コードは <code>verificationCodes/{メールアドレス}</code> に 1 アドレス 1 件。ドキュメント ID は <code>trim + 小文字化</code> したアドレス。</li>
+      <li>発行側のルールは <code>get</code> のみ許可、<code>list</code> と <code>write</code> は禁止。<strong>コレクションを一覧取得すると <code>PERMISSION_DENIED (false for 'list')</code> になる</strong>ので、必ず <code>getDoc</code> / ドキュメント単位の <code>onSnapshot</code> で 1 件ずつ読む。</li>
+      <li>読むフィールドは <code>code</code>（<code>otp</code> / <code>value</code> も可）、日時は <code>updatedAt</code> → <code>createdAt</code> → <code>created_at</code> → <code>timestamp</code> の順、ほかに <code>expiresAt</code> と <code>verified</code>。</li>
+      <li><code>firebase init</code> はこのリポジトリでは行わない（ルール・Functions は発行側が持つ。誤って同じプロジェクトにルールをデプロイする事故を防ぐため）。</li>
+      <li>発行側のルールを変えたら、E2E 用の写し <code>tests/e2e/firestore.rules</code> も追随させる。</li>
+    </ul>
+  </div>
+  <p class="small">エミュレータの中身を直接確かめたいときは、管理者権限で REST を叩けます。</p>
+  <div class="cmd"><button class="copy" type="button" data-copy="curl -s -X POST &quot;http://127.0.0.1:8080/v1/projects/demo-teamc-2026/databases/(default)/documents:listCollectionIds&quot; -H &quot;Authorization: Bearer owner&quot; -H &quot;Content-Type: application/json&quot; -d '{}'">コピー</button><pre><span class="p">$ </span>curl -s -X POST "http://127.0.0.1:8080/v1/projects/demo-teamc-2026/databases/(default)/documents:listCollectionIds" \
+    -H "Authorization: Bearer owner" -H "Content-Type: application/json" -d '{}'</pre></div>
+</section>
+
+<!-- ================================================================ -->
+<section id="m-security">
+  <h2><span class="n">26</span>注意事項</h2>
+  <div class="note danger"><span><b>認証コードは秘密の情報です。</b>このアプリはインターネットに一般公開せず、社内ネットワークや開発環境など、アクセスが制限された場所でだけ使ってください。</span></div>
+  <div class="note warn"><span><b>共用の PC では使わないでください。</b>受け取ったコードはブラウザの <code>localStorage</code> に平文で最大 5 日間残ります。使い終わったらアドレスを × で外すと、控えも一緒に消えます。</span></div>
+  <ul>
+    <li>アクセス解析（GA4）は測定 ID を設定したときだけ動き、URL の <code>?email=</code> 部分は送信しません。同意取得が必要な地域で公開する場合は別途対応が要ります。</li>
+    <li>Gmail のロゴや名称は使っていません（独自の封筒アイコンと「Zerokara Mail」という名前です）。</li>
+    <li>本文の見た目は Web 表示用です。実際にメールとして配信する場合は、別途メール用のテンプレートが必要になります。</li>
+  </ul>
+</section>
+
+<footer>
+  <p>ゼロからドメイン 取扱説明書。第2部 Zerokara Mail の詳細な仕様は <code>docs/SPEC.md</code>、データの読み取りは <code>docs/DATA-MODEL.md</code>、テストは <code>docs/TESTING.md</code> を参照してください。</p>
+</footer>
+
+</main>
+</div>
+
+<script>
+(function () {
+  // コードブロックのコピー
+  document.querySelectorAll('.cmd .copy').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var text = btn.getAttribute('data-copy') || '';
+      var done = function (ok) {
+        var orig = 'コピー';
+        btn.textContent = ok ? 'コピーしました' : 'コピーできません';
+        setTimeout(function () { btn.textContent = orig; }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+      } else {
+        done(false);
+      }
+    });
+  });
+
+  // 目次：見ている章を強調
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var byId = {};
+  links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+  if ('IntersectionObserver' in window) {
+    var current = null;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          if (current) current.classList.remove('active');
+          current = byId[e.target.id];
+          if (current) current.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-10% 0px -70% 0px', threshold: 0 });
+    document.querySelectorAll('main section[id]').forEach(function (s) { io.observe(s); });
+  }
+})();
+</script>
+</body>
+</html>

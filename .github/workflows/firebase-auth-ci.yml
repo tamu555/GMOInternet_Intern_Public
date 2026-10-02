@@ -1,0 +1,217 @@
+name: Firebase Functions CI
+
+on:
+  push:
+    # `firebase-deploy` is excluded here on purpose. That branch is deploy-only
+    # and only ever advances through a merged pull request, which is already
+    # covered twice: once by the `pull_request` trigger below while the PR is
+    # open, and again by `firebase-deploy.yml` calling this workflow on merge.
+    # A direct push to it is not a supported way to deploy and deliberately
+    # runs nothing.
+    branches-ignore:
+      - firebase-deploy
+  pull_request:
+    # Base branches that gate a merge. This list is explicit (2026-08-27):
+    # the trigger previously carried no `branches:` filter, so CI ran for a PR
+    # against ANY base, including feature-to-feature PRs that nothing merges
+    # through.
+    #
+    # `firebase-deploy` MUST stay in this list. The `push` trigger above
+    # deliberately ignores that branch, and `firebase-deploy.yml` only calls
+    # this workflow once a PR into it is CLOSED — so while such a PR is OPEN,
+    # this entry is the only thing that checks it. Dropping it would silently
+    # remove the "covered twice" guarantee the comment above depends on.
+    #
+    # Note: GitHub's default activity types are opened/synchronize/reopened.
+    # Retargeting an existing PR fires `edited`, which is not among them, so
+    # changing a PR's base does not re-run CI by itself — reopen it or push a
+    # commit to get a run against the new base.
+    branches:
+      - main
+      - next-update
+      - firebase-deploy
+  workflow_call:
+    inputs:
+      ref:
+        description: >-
+          Git ref or SHA to check out. Callers triggered by a merged pull
+          request must pass the merge commit explicitly, because the PR's
+          `refs/pull/N/merge` ref can disappear once the PR is closed. Empty
+          means `actions/checkout`'s own default for the triggering event.
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint, build, and unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: functions
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          # Empty for `push` / `pull_request`, where `inputs` is not populated.
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+  integration:
+    name: Emulator-backed integration tests
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          # Empty for `push` / `pull_request`, where `inputs` is not populated.
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      # firebase-tools' Local Emulator Suite requires a JDK (21+ as of the
+      # current firebase-tools major version) to run the Auth/Firestore/Tasks
+      # emulators. The default `java` on ubuntu-latest is not guaranteed to
+      # satisfy this, so pin one explicitly rather than relying on the runner
+      # image's default.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install dependencies
+        working-directory: functions
+        run: npm ci
+
+      - name: Build integration tests
+        working-directory: functions
+        run: npm run build
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools@latest
+
+      - name: Run emulator-backed integration tests
+        run: >-
+          firebase emulators:exec
+          --project teamc-2026
+          --only auth,functions,firestore,tasks
+          'npm --prefix functions run test:integration'
+
+  registrar-integration:
+    name: Registrar suite (stub registries + Firestore emulator)
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          # Empty for `push` / `pull_request`, where `inputs` is not populated.
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      # Same emulator prerequisite as the `integration` job above. Only
+      # Firestore is needed: `functions/test/helpers/testEnv.ts` points both
+      # registries at in-process stubs and needs no Auth/Functions emulator.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install dependencies
+        working-directory: functions
+        run: npm ci
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools@latest
+
+      # `functions/test/` drives the registration / renew / lifecycle /
+      # transfer flows against the stub registries. Without the emulator the
+      # suite would still pass by skipping every Firestore-backed describe
+      # (HAS_EMULATOR), which is exactly the coverage this job exists to
+      # provide, so it runs inside emulators:exec.
+      - name: Run registrar integration tests
+        run: >-
+          firebase emulators:exec
+          --project teamc-2026
+          --only firestore
+          'npm --prefix functions run test:registrar'
+
+  ownership-integration:
+    name: Firestore-only ownership integration tests
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          # Empty for `push` / `pull_request`, where `inputs` is not populated.
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      # Same emulator prerequisite as the `integration` job above; this
+      # job only spins up Firestore, which is cheaper/faster than the
+      # full auth+functions+firestore+tasks stack.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install dependencies
+        working-directory: functions
+        run: npm ci
+
+      - name: Build integration tests
+        working-directory: functions
+        run: npm run build
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools@latest
+
+      - name: Run ownership Firestore-emulator integration tests
+        run: >-
+          firebase emulators:exec
+          --project teamc-2026
+          --only firestore
+          'npm --prefix functions run test:ownership:integration'

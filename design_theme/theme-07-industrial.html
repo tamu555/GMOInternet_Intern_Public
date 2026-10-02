@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>候補7 インダストリアル型 — ドメイン検索</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet" />
+<style>
+/*
+  候補7｜インダストリアル型（koyeb.com がベース）
+  ------------------------------------------------------------------
+  koyeb から採ったもの :
+    - 少しくすんだオフホワイトの紙地と、細いワイヤーフレームの地球儀
+    - 中央揃えの極太・横に詰めた大見出し（末尾にキャレット）
+    - 影を1方向にずらした厚みのあるボタン（オフセットシャドウ）
+    - 等幅の小さなナビゲーション、四隅のコーナーブラケット
+    - ヒーロー下端に食い込む黒いウィンドウ
+  自前にした（丸写しを避けた）もの :
+    - 浮かぶのはサーバー機ではなく、TLDと価格の小さなカード
+    - 黒いウィンドウの中身はCLIではなく、実際の検索結果の表
+    - ミントは koyeb より彩度を落とし、面ではなく線と小面積だけに使う
+  想定ユーザー : 硬派な道具として選びたい層
+  このページの唯一の仕事 : 中央の窓に打たせ、結果の見え方まで即座に見せる。
+*/
+:root{
+  --paper:#eeeeea;
+  --paper-2:#f7f7f4;
+  --ink:#0d0d0d;
+  --ink-2:#4a4a46;
+  --ink-3:#8a8a84;
+  --line:#d3d3cc;
+  --mint:#22e39a;
+  --mint-d:#0fae74;
+  --red:#d1462f;
+  --dark:#141414;
+  --radius:2px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:"Noto Sans JP",system-ui,sans-serif;
+  font-size:15px;line-height:1.85;-webkit-font-smoothing:antialiased;
+}
+a{color:inherit;text-decoration:none}
+.mono{font-family:"Space Mono",monospace}
+.wrap{max-width:1180px;margin:0 auto;padding:0 26px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+.topbar{background:var(--mint);color:#062f20;text-align:center;font-family:"Space Mono",monospace;font-size:12.5px;font-weight:700;padding:8px 16px}
+.topbar a{text-decoration:underline;text-underline-offset:3px}
+
+/* ---------- header ---------- */
+.site-header .wrap{display:flex;align-items:center;gap:22px;height:72px}
+.brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:900;letter-spacing:-.02em}
+.brand i{
+  width:24px;height:24px;display:block;background:var(--ink);
+  clip-path:polygon(50% 0,100% 42%,100% 62%,50% 20%,0 62%,0 42%);
+}
+.brand em{font-style:normal;font-weight:400;color:var(--ink-2)}
+.navbox{
+  margin:0 auto;display:flex;gap:4px;background:rgba(255,255,255,.6);border:1px solid var(--line);
+  padding:5px;font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.06em;
+}
+.navbox a{padding:5px 12px}
+.navbox a:hover{background:var(--paper)}
+.header-right{display:flex;align-items:center;gap:16px;font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.06em}
+.auth-chip{font-family:"Space Mono",monospace;font-size:11px;color:var(--ink-3);white-space:nowrap;letter-spacing:0}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;
+  font-family:"Space Mono",monospace;font-weight:700;font-size:13px;letter-spacing:.06em;
+  border:1.5px solid var(--ink);background:var(--ink);color:#fff;border-radius:var(--radius);
+  padding:10px 20px;line-height:1;box-shadow:4px 4px 0 rgba(13,13,13,.22);
+  transition:transform .08s, box-shadow .08s;
+}
+.btn:hover{transform:translate(1px,1px);box-shadow:3px 3px 0 rgba(13,13,13,.22)}
+.btn-line{background:transparent;color:var(--ink);box-shadow:4px 4px 0 rgba(13,13,13,.14)}
+.btn-line:hover{background:#fff}
+.btn-mint{background:var(--mint);color:#062f20;border-color:var(--ink)}
+.btn-sm{padding:7px 13px;font-size:11.5px;box-shadow:3px 3px 0 rgba(13,13,13,.18)}
+
+/* ---------- hero ---------- */
+.hero{position:relative;overflow:hidden;padding:56px 0 0;text-align:center}
+.globe{position:absolute;left:50%;top:-40px;transform:translateX(-50%);width:1000px;opacity:.5;pointer-events:none}
+.brackets{position:absolute;inset:24px 40px auto 40px;height:calc(100% - 48px);pointer-events:none}
+.brackets span{position:absolute;width:18px;height:18px;border:2px solid var(--ink-3);opacity:.5}
+.brackets span:nth-child(1){left:0;top:0;border-right:0;border-bottom:0}
+.brackets span:nth-child(2){right:0;top:0;border-left:0;border-bottom:0}
+.brackets span:nth-child(3){left:0;bottom:0;border-right:0;border-top:0}
+.brackets span:nth-child(4){right:0;bottom:0;border-left:0;border-top:0}
+.hero .wrap{position:relative;z-index:2}
+.hero h1{margin:0 0 20px;font-family:"Space Mono",monospace;font-size:11.5px;font-weight:700;letter-spacing:.24em;color:var(--ink-2)}
+.hero .head{
+  margin:0 auto 18px;font-size:52px;line-height:1.24;font-weight:900;letter-spacing:-.035em;
+  transform:scaleX(.95);max-width:20em;word-break:auto-phrase;
+}
+.hero .head .caret{display:inline-block;width:.06em;height:.86em;background:var(--ink);vertical-align:-.08em;margin-left:.08em}
+.hero .sub{margin:0 auto 30px;color:var(--ink-2);font-size:15px;max-width:38em;word-break:auto-phrase}
+form.q{display:flex;max-width:600px;margin:0 auto}
+form.q .field{
+  flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:#fff;
+  border:1.5px solid var(--ink);border-right:0;padding:0 16px;
+}
+form.q svg{width:17px;height:17px;color:var(--ink-3);flex:none}
+form.q input{
+  flex:1;min-width:0;border:0;outline:0;background:transparent;height:52px;
+  font-family:"Space Mono",monospace;font-size:16px;color:var(--ink);
+}
+form.q input::placeholder{color:#a4a49c}
+form.q .btn{height:52px;padding:0 26px;font-size:13.5px}
+.hint{margin:14px auto 0;max-width:600px;font-family:"Space Mono",monospace;font-size:11.5px;color:var(--ink-3)}
+.chips{position:relative;height:0}
+.chip{
+  position:absolute;background:#fff;border:1.5px solid var(--ink);padding:8px 12px;
+  box-shadow:4px 4px 0 rgba(13,13,13,.16);text-align:left;
+}
+.chip b{display:block;font-family:"Space Mono",monospace;font-size:13.5px;font-weight:700}
+.chip span{font-family:"Space Mono",monospace;font-size:11.5px;color:var(--ink-2)}
+.chip.c1{left:1%;top:-268px}
+.chip.c2{right:2%;top:-296px}
+.chip.c3{left:7%;top:-96px}
+.chip.c4{right:6%;top:-84px}
+@media (max-width:1100px){.chip{display:none}}
+
+/* 黒いウィンドウ */
+.winwrap{position:relative;z-index:2;margin-top:70px}
+.win{
+  max-width:1000px;margin:0 auto;background:var(--dark);border:1.5px solid var(--ink);
+  box-shadow:10px 10px 0 rgba(13,13,13,.2);text-align:left;
+}
+.win .bar{display:flex;align-items:center;gap:7px;padding:9px 14px;border-bottom:1px solid #262626}
+.win .bar i{width:9px;height:9px;border-radius:50%;display:block;background:#3a3a3a}
+.win .bar i.r{background:#ff5f57}.win .bar i.y{background:#febc2e}.win .bar i.g{background:#28c840}
+.win .bar span{margin-left:10px;font-family:"Space Mono",monospace;font-size:11.5px;color:#7a7a72}
+.win .body{padding:6px 0 10px}
+.win .row{display:flex;align-items:center;gap:16px;padding:12px 18px;border-bottom:1px solid #1f1f1f;color:#e9e9e4}
+.win .row:last-child{border-bottom:0}
+.win .row .d{font-family:"Space Mono",monospace;font-size:14px;min-width:180px}
+.win .row .s{font-family:"Space Mono",monospace;font-size:12px;font-weight:700;min-width:150px;color:var(--mint)}
+.win .row .s.ng{color:#ff8a76}
+.win .row .s.unk{color:#7a7a72}
+.win .row .p{margin-left:auto;font-family:"Space Mono",monospace;font-size:12.5px;color:#a8a8a0;text-align:right}
+.win .row .p small{display:block;font-size:10.5px;color:#6e6e68}
+.win .foot{padding:12px 18px;border-top:1px solid #262626;font-family:"Space Mono",monospace;font-size:11.5px;color:#7a7a72}
+
+/* ---------- セクション ---------- */
+section.block{padding:82px 0;border-top:1.5px solid var(--ink)}
+.sec-head{text-align:center;margin-bottom:36px}
+.sec-head h2{margin:0 auto 10px;font-size:34px;font-weight:900;letter-spacing:-.03em;transform:scaleX(.96);line-height:1.3;max-width:22em;word-break:auto-phrase}
+.sec-head p{margin:0 auto;color:var(--ink-2);font-size:14.5px;max-width:46em;word-break:auto-phrase}
+.tlds{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.tld{background:#fff;border:1.5px solid var(--ink);padding:15px 17px;box-shadow:4px 4px 0 rgba(13,13,13,.12)}
+.tld .t{font-family:"Space Mono",monospace;font-size:16px;font-weight:700}
+.tld .p{margin:6px 0 0;font-family:"Anton",sans-serif;font-size:24px;letter-spacing:.01em;line-height:1.1}
+.tld .p em{font-style:normal;font-family:"Noto Sans JP",sans-serif;font-size:11px;color:var(--ink-3);font-weight:400;margin-left:6px}
+.tld .r{font-family:"Space Mono",monospace;font-size:11.5px;color:var(--ink-3)}
+.tld .flag{display:inline-block;margin-top:8px;font-family:"Space Mono",monospace;font-size:10.5px;background:var(--mint);padding:1px 7px}
+.note{margin:24px auto 0;text-align:center;font-family:"Space Mono",monospace;font-size:11.5px;color:var(--ink-3);line-height:1.95;max-width:74em;word-break:auto-phrase}
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.tile{background:var(--paper-2);border:1.5px solid var(--ink);padding:24px 22px;box-shadow:5px 5px 0 rgba(13,13,13,.1)}
+.tile .n{font-family:"Anton",sans-serif;font-size:26px;line-height:1;color:var(--mint-d)}
+.tile h3{margin:10px 0 6px;font-size:18px;font-weight:700;letter-spacing:-.01em}
+.tile p{margin:0;color:var(--ink-2);font-size:14px;line-height:1.9;word-break:auto-phrase}
+.cta{border-top:1.5px solid var(--ink);padding:76px 0;text-align:center;background:var(--paper-2)}
+.cta h2{margin:0 auto 10px;font-size:34px;font-weight:900;letter-spacing:-.03em;transform:scaleX(.96);max-width:22em;line-height:1.3;word-break:auto-phrase}
+.cta p{margin:0 auto 26px;color:var(--ink-2);font-family:"Space Mono",monospace;font-size:13px}
+footer.site{border-top:1.5px solid var(--ink);padding:46px 0 58px;color:var(--ink-2)}
+.fcols{display:grid;grid-template-columns:repeat(4,1fr);gap:26px;margin-bottom:28px}
+.fcols h4{margin:0 0 10px;font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.14em;color:var(--ink-3)}
+.fcols ul{margin:0;padding:0;list-style:none}
+.fcols li{margin-bottom:7px}
+.fcols a{font-size:13.5px}
+.fcols a:hover{border-bottom:1.5px solid var(--ink)}
+.fbottom{border-top:1px solid var(--line);padding-top:18px;font-family:"Space Mono",monospace;font-size:11px;color:var(--ink-3);display:flex;flex-wrap:wrap;gap:16px}
+
+@media (max-width:1000px){
+  .navbox{display:none}
+  .globe{width:760px}
+  .hero .head{font-size:30px}
+  .sec-head h2,.cta h2{font-size:25px}
+  .tlds{grid-template-columns:repeat(2,1fr)}
+  .trio{grid-template-columns:1fr}
+  .fcols{grid-template-columns:repeat(2,1fr)}
+  form.q{flex-wrap:wrap}
+  form.q .field{flex-basis:100%;border-right:1.5px solid var(--ink)}
+  form.q .btn{width:100%;margin-top:10px}
+  .win .row{flex-wrap:wrap;gap:8px}
+  .win .row .d{flex-basis:100%;min-width:0}
+  .win .row .p{margin-left:0}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">演習用の疑似レジストラです。実際のドメイン登録は行われません <a href="#">詳しく →</a></div>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="#"><i></i><span>TeamC<em>.Com</em></span></a>
+    <nav class="navbox">
+      <a href="#">PRICING</a>
+      <a href="#">HOW IT WORKS</a>
+      <a href="#">TLDS</a>
+      <a href="#">SUPPORT</a>
+    </nav>
+    <div class="header-right">
+      <span class="auth-chip">AuthContext: 未認証</span>
+      <a href="#">▸ LOGIN ◂</a>
+      <a class="btn btn-sm" href="#">SIGN UP</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <svg class="globe" viewBox="0 0 1000 620" fill="none" stroke="#9a9a92" stroke-width="1" aria-hidden="true">
+      <circle cx="500" cy="330" r="290"/>
+      <ellipse cx="500" cy="330" rx="290" ry="96"/>
+      <ellipse cx="500" cy="330" rx="290" ry="190"/>
+      <ellipse cx="500" cy="330" rx="96" ry="290"/>
+      <ellipse cx="500" cy="330" rx="190" ry="290"/>
+      <path d="M210 330h580M240 210h520M240 450h520"/>
+    </svg>
+    <div class="brackets" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+    <div class="wrap">
+      <h1>ドメイン検索</h1>
+      <p class="head">22のTLDを、1回の入力で確認する<span class="caret"></span></p>
+      <p class="sub">空き状況・初年度・更新料をまとめて取得。ログインなしで、平均1.2秒で返ります。</p>
+
+      <form class="q" onsubmit="return false">
+        <div class="field">
+          <label class="sr" for="q">取得したいドメイン名</label>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+          <input id="q" type="text" placeholder="my-shop" autocomplete="off" />
+        </div>
+        <button class="btn btn-mint" type="submit">▸ 検索する</button>
+      </form>
+      <p class="hint">TLD（.com など）は含めず入力してください。全角文字は自動的に半角へ変換されます。</p>
+
+      <div class="chips" aria-hidden="true">
+        <div class="chip c1"><b>.com</b><span>¥1,480 / 更新 ¥1,980</span></div>
+        <div class="chip c2"><b>.dev</b><span>¥1,980 / 更新 ¥2,480</span></div>
+        <div class="chip c3"><b>.xyz</b><span>¥98 / 更新 ¥1,980</span></div>
+        <div class="chip c4"><b>.shop</b><span>¥280 / 更新 ¥4,980</span></div>
+      </div>
+    </div>
+
+    <div class="winwrap">
+      <div class="win" aria-hidden="true">
+        <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span>my-shop — 22 TLD checked in 1.18s</span></div>
+        <div class="body">
+          <div class="row"><span class="d">my-shop.com</span><span class="s">◯ 空きあり</span><span class="p">¥1,480<small>更新 ¥1,980</small></span></div>
+          <div class="row"><span class="d">my-shop.net</span><span class="s ng">✕ 使用中</span><span class="p">—<small>&nbsp;</small></span></div>
+          <div class="row"><span class="d">my-shop.dev</span><span class="s">◯ 空きあり</span><span class="p">¥1,980<small>更新 ¥2,480</small></span></div>
+          <div class="row"><span class="d">my-shop.io</span><span class="s unk">？ 確認できず</span><span class="p">¥5,980<small>更新 ¥6,980</small></span></div>
+        </div>
+        <div class="foot">available 14 / taken 7 / unknown 1 — 選択した3件を申込フォームへ</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>対応TLDと料金</h2>
+        <p>すべて税込・1年あたり。初年度が安いTLDほど2年目からの更新料が上がるため、両方を並べて表示しています。</p>
+      </div>
+      <div class="tlds" id="tlds"></div>
+      <p class="note">RESTORE ¥3,300–¥6,600 / .dev + .app = HSTS PRELOADED (HTTPS ONLY) / REGISTRY: KITAQSIGN, KITAQNIC</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>つくるときに決めた3つのこと</h2>
+      </div>
+      <div class="trio">
+        <div class="tile"><div class="n">01</div><h3>TLDを先に選ばせない</h3><p>対応する22のTLDすべてに毎回問い合わせます。「.com がだめなら次は .net」と試し直す必要はありません。</p></div>
+        <div class="tile"><div class="n">02</div><h3>取れる候補だけを提案</h3><p>希望がすべて埋まっていたときだけ似た候補を出します。その場で空き状況を再確認できたものに限って表示します。</p></div>
+        <div class="tile"><div class="n">03</div><h3>分からなかったと書く</h3><p>レジストリに接続できなかったTLDは、空きとも使用中とも表示しません。◯ / ✕ / ？ を記号と文字で区別します。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="wrap">
+      <h2>その名前、まだ空いているかもしれません</h2>
+      <p>NO LOGIN / NO CARD / 22 TLD IN ONE SHOT</p>
+      <a class="btn" href="#">▸ ドメインを検索する</a>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="fcols">
+      <div><h4>SEARCH</h4><ul><li><a href="#">ドメイン検索</a></li><li><a href="#">料金一覧</a></li><li><a href="#">対応TLD</a></li><li><a href="#">似た候補の提案</a></li></ul></div>
+      <div><h4>ACCOUNT</h4><ul><li><a href="#">ログイン</a></li><li><a href="#">会員登録</a></li><li><a href="#">マイページ</a></li><li><a href="#">ダッシュボード</a></li></ul></div>
+      <div><h4>SUPPORT</h4><ul><li><a href="#">よくある質問</a></li><li><a href="#">ネームサーバーの設定</a></li><li><a href="#">更新と自動更新</a></li><li><a href="#">ドメインを手放す</a></li></ul></div>
+      <div><h4>ABOUT</h4><ul><li><a href="#">概要</a></li><li><a href="#">レジストリ Kitaqsign</a></li><li><a href="#">レジストリ Kitaqnic</a></li><li><a href="#">利用規約</a></li></ul></div>
+    </div>
+    <div class="fbottom">
+      <span>TeamC.Com — GMO INTERNET GROUP 学生ハッカソン TeamC</span>
+      <span>料金・レジストリは演習用のダミーデータです。</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+const TLDS=[
+ ['.com',1480,1980,'人気No.1'],['.net',1680,2180,''],['.org',1680,2180,''],['.info',980,2480,''],
+ ['.dev',1980,2480,'HTTPS必須'],['.app',2980,3480,'HTTPS必須'],['.io',5980,6980,'プレミアム'],['.co',3980,4980,''],
+ ['.shop',280,4980,''],['.tech',480,5980,''],['.blog',1980,2980,''],['.site',180,3980,''],
+ ['.online',180,5480,''],['.store',280,5980,''],['.biz',1480,2980,''],['.club',780,2480,''],
+ ['.live',780,3480,''],['.studio',980,3980,''],['.work',180,2480,''],['.design',3980,6980,'プレミアム'],
+ ['.xyz',98,1980,''],['.top',98,1680,'']
+];
+const yen=n=>'¥'+n.toLocaleString('ja-JP');
+document.getElementById('tlds').innerHTML=TLDS.map(([t,f,r,flag])=>`
+  <div class="tld">
+    <div class="t">${t}</div>
+    <p class="p">${yen(f)}<em>初年度</em></p>
+    <div class="r">更新 ${yen(r)}</div>
+    ${flag?`<span class="flag">${flag}</span>`:''}
+  </div>`).join('');
+</script>
+</body>
+</html>

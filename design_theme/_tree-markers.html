@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>木のマーカー ＝ 期限までの距離（試作）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Poppins:wght@500;600&family=Zen+Maru+Gothic:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#fbfcf6; --paper-2:#f3f7ee; --ink:#17241c; --ink-soft:#465449; --ink-faint:#5f6c60;
+  --line:#e4ece0; --green:#1f6d45; --grass:#2f8f5b; --grass-1:#eef7ec; --grass-2:#dcefd6;
+  --grass-3:#cbe6c4; --card:#fff; --orange:#b5651d; --status-info-fg:#2f4f7a;
+  --status-hold-fg:#7a5a1a; --status-locked-fg:#55604f; --danger:#b23a26;
+  --shadow-soft:0 22px 48px -30px rgb(23 60 40 / 42%);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--grass-1);color:var(--ink);font:400 15px/1.7 'Noto Sans JP',sans-serif}
+h1{font:700 26px/1.4 'Zen Maru Gothic',sans-serif;margin:0 0 6px}
+.wrap{max-width:1160px;margin:0 auto;padding:28px 24px 64px}
+.lede{max-width:72ch;color:var(--ink-soft);font-size:14px;margin:0 0 22px}
+.panel{background:var(--card);box-shadow:var(--shadow-soft);padding:18px 20px;margin-bottom:18px}
+.row{display:flex;flex-wrap:wrap;gap:18px 26px;align-items:center}
+label{font-size:13px;color:var(--ink-soft);display:flex;gap:8px;align-items:center}
+input[type=range]{accent-color:var(--green)}
+select{font:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--line);background:var(--paper)}
+.stage{background:linear-gradient(180deg,var(--grass-1) 0%,var(--grass-1) 58%,var(--paper) 100%);padding:10px;max-width:620px;margin:0 auto 18px}
+.stage h2{font:600 13px/1.6 'Noto Sans JP';margin:0 0 6px;color:var(--ink-faint)}
+
+.tree{position:relative;width:100%;max-width:540px;margin:0 auto;aspect-ratio:960/1104}
+.tree .art{position:absolute;left:0;top:0;width:100%;height:92.39%;transition:opacity .16s ease-out}
+.tree.dim .art{opacity:.42}
+.ground{position:absolute;left:50%;top:93.1%;width:94.2%;height:13%;transform:translate(-50%,-50%);
+  background:radial-gradient(closest-side,var(--grass-2) 0%,rgb(220 239 214 / .9) 58%,rgb(220 239 214 / 0) 100%)}
+.bank{position:absolute;left:50%;top:92.4%;width:60.8%;height:8.3%;transform:translate(-50%,-50%);
+  border-radius:50%;background:var(--grass-3);opacity:.74;filter:blur(7px)}
+.rootshade{position:absolute;left:50%;top:91.3%;width:32%;height:4%;transform:translate(-50%,-50%);
+  border-radius:50%;background:rgb(15 34 22 / .3);filter:blur(6px)}
+
+.marker{position:absolute;cursor:pointer;line-height:0;transition:opacity .16s ease-out,transform .16s ease-out}
+.marker.anchor-center{transform:translate(-50%,-50%)}
+/* 地面のものは足もとを基準に。中心を基準に拡大すると、指した瞬間に土から浮く。 */
+.marker.anchor-bottom{transform:translate(-50%,-100%);transform-origin:50% 100%}
+.marker:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+.marker svg{display:block;overflow:visible;width:100%;height:100%}
+.tree.dim .marker{opacity:.24}
+.tree.dim .marker.on{opacity:1}
+.tree.dim .marker.on.anchor-center{transform:translate(-50%,-50%) scale(1.2)}
+.tree.dim .marker.on.anchor-bottom{transform:translate(-50%,-100%) scale(1.14)}
+
+/* 影。留まるものだけ接地させ、飛ぶものは下へ離してぼかす。 */
+.shade{position:absolute;left:50%;border-radius:50%;background:rgb(15 34 22 / .3);
+  transform:translateX(-50%);pointer-events:none;z-index:-1}
+.shade.sit{bottom:-4%;width:76%;height:15%;filter:blur(2px)}
+.shade.fly{bottom:-46%;width:58%;height:12%;filter:blur(4px);opacity:.5}
+.shade.root{bottom:-3%;width:64%;height:8%;filter:blur(2px);opacity:.55}
+
+.tip{position:absolute;z-index:9;background:var(--card);box-shadow:0 10px 28px -14px rgb(23 60 40/.5);
+  padding:8px 12px 8px 15px;pointer-events:none;white-space:nowrap;display:none}
+.tip b{font:600 14px 'Poppins',sans-serif;display:block}
+.tip span{font-size:12px;color:var(--ink-soft);display:block}
+.tip em{font-style:normal;font-size:11px;color:var(--ink-faint)}
+.tip::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--bar,var(--green))}
+
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{color:var(--ink-faint);font-weight:500;font-size:12px}
+td i{display:inline-block;width:34px;height:34px;vertical-align:middle;position:relative;flex:none}
+/* 名前が「熟した / 実」のように折れないように。アイコンと1行で組む。 */
+td:first-child{white-space:nowrap}
+td:first-child > span{display:flex;gap:8px;align-items:center}
+#legend th:nth-child(2),#legend td:nth-child(2){min-width:9.5em}
+#legend th:last-child,#legend td:last-child{text-align:right;white-space:nowrap}
+#legend th:nth-child(3),#legend td:nth-child(3){white-space:nowrap}
+td b{font-weight:700}
+.count{font:600 12px 'Poppins';color:var(--ink-faint)}
+.note{font-size:13px;color:var(--ink-soft);max-width:74ch}
+.note h3{font:700 15px 'Zen Maru Gothic';margin:22px 0 6px;color:var(--ink)}
+.note li{margin:3px 0}
+
+/* プレミアムの添え。マーカーの外側で小さく瞬く。 */
+.sparkle{position:absolute;left:-26%;top:-26%;width:152%;height:152%;pointer-events:none;overflow:visible}
+.sparkle path{animation:twinkle 2.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.marker.is-premium .shade{opacity:.34}
+.marker.is-premium::before{content:'';position:absolute;left:-30%;top:-30%;width:160%;height:160%;
+  border-radius:50%;background:radial-gradient(closest-side,rgb(226 191 106 / .34),rgb(226 191 106 / 0));
+  pointer-events:none;z-index:-1}
+@keyframes twinkle{0%,100%{opacity:.25;transform:scale(.6)}50%{opacity:1;transform:scale(1)}}
+
+/* 「木について」。木の下に控えめに置く。 */
+.about{display:flex;justify-content:center;margin-top:6px}
+.about button{font:500 13px 'Noto Sans JP';color:var(--green);background:none;border:none;
+  padding:6px 10px;cursor:pointer;display:flex;gap:6px;align-items:center}
+.about button:hover{background:var(--grass-1)}
+.about svg{width:16px;height:16px}
+
+dialog{border:none;padding:0;max-width:860px;width:calc(100% - 32px);background:var(--card);
+  box-shadow:var(--shadow-soft);color:var(--ink)}
+dialog::backdrop{background:rgb(23 36 28 / .38)}
+.dlg{padding:24px 26px 26px}
+.dlg h2{font:700 20px 'Zen Maru Gothic';margin:0 0 8px}
+.dlg p{font-size:14px;color:var(--ink-soft);margin:0 0 16px;max-width:60ch}
+.dlg .close{position:absolute;right:10px;top:10px;border:none;background:none;font-size:20px;
+  line-height:1;padding:8px;cursor:pointer;color:var(--ink-faint)}
+.dlg .prem{display:flex;gap:12px;align-items:flex-start;background:var(--grass-1);padding:12px 14px;margin-top:16px}
+.dlg .prem i{display:block;width:40px;height:40px;position:relative;flex:none}
+.dlg .prem b{display:block;font-size:14px}
+.dlg .prem span{font-size:13px;color:var(--ink-soft)}
+.dlg .foot{font-size:12px;color:var(--ink-faint);margin:14px 0 0}
+
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-9%)}}
+@keyframes flap{0%,100%{transform:scaleX(1)}50%{transform:scaleX(.42)}}
+@keyframes buzz{0%,100%{transform:scaleY(1) translateY(0)}50%{transform:scaleY(.7) translateY(-4%)}}
+@keyframes sway{0%,100%{transform:rotate(-4.5deg)}50%{transform:rotate(4.5deg)}}
+@keyframes creep{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-3%) rotate(1.5deg)}}
+@keyframes droop{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(1.5deg)}}
+.a-bob{animation:bob 3.6s ease-in-out infinite}
+.a-bob-fast{animation:bob 1.9s ease-in-out infinite}
+.a-sway{animation:sway 5.2s ease-in-out infinite;transform-origin:50% 100%}
+.a-droop{animation:droop 7s ease-in-out infinite;transform-origin:50% 100%}
+.a-creep{animation:creep 6s ease-in-out infinite;transform-origin:50% 90%}
+.a-hang{animation:sway 4.4s ease-in-out infinite;transform-origin:50% 4%}
+.wingL,.wingR{animation:flap 2.8s ease-in-out infinite}
+.wingR{animation-delay:.06s}
+.buzzL,.buzzR{animation:buzz .1s linear infinite}
+.fast .buzzL,.fast .buzzR{animation-duration:.07s}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style></head><body>
+<div class="wrap">
+<h1>木のマーカー ＝ 期限までの距離</h1>
+<p class="lede">
+  ドメイン1件＝1つのマーカーで、<strong>形が「期限までの距離」を表します</strong>。
+  <strong>余裕があるもの</strong>は熟した実・ちょうちょ・地面の花、
+  <strong>期限が近いもの</strong>はかたつむり（31〜90日）とはち（30日以内）、
+  <strong>期限が切れたもの</strong>は地面の枯れた花。<br>
+  §3.5 のステータス（未公開・引っ越し中・ロック中・一時停止中）は形には出さず、
+  吹き出しと <code>aria-label</code> の文言で伝えます。本番コードには入っていません。
+</p>
+
+<div class="panel">
+  <div class="row">
+    <label>件数 <input id="count" type="range" min="1" max="24" value="12"><b id="countv">12</b></label>
+    <label>大きさ <input id="size" type="range" min="16" max="44" value="30"><b id="sizev">30</b>px</label>
+    <label>期限のばらけ方 <select id="scene">
+      <option value="mix">いろいろ混ざっている（既定）</option>
+      <option value="allok">ぜんぶ余裕がある</option>
+      <option value="rough">期限が近い・切れたものが多い</option>
+    </select></label>
+  </div>
+</div>
+
+<div class="panel stage"><h2>木の上でドメインの状態を読む</h2>
+  <div class="tree" id="tree">
+    <div class="ground"></div><div class="bank"></div><div class="rootshade"></div>
+    <img class="art" alt="" src="../frontend/src/assets/hero-tree.webp">
+  </div>
+</div>
+
+<div class="about">
+  <button id="aboutBtn" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/>
+    </svg>この木について
+  </button>
+</div>
+
+<dialog id="aboutDlg"><div class="dlg">
+  <button class="close" id="aboutClose" aria-label="閉じる">×</button>
+  <h2>この木について</h2>
+  <p>
+    <strong>ドメインを取得すると、この木に実や生きものが増えます。</strong>1件が1つ。
+    何が出るかは<strong>更新期限までの距離</strong>で決まります。カーソルを合わせる（キーボードなら Tab）と、
+    そのドメインの名前と状態が出ます。
+  </p>
+  <table id="legend"><thead><tr><th>マーカー</th><th>期限の帯</th><th>置き場所</th><th>なぜそれか</th><th>いま</th></tr></thead><tbody></tbody></table>
+  <div class="prem">
+    <i id="premSample"></i>
+    <div><b>プレミアムドメインは金の実になります</b>
+      <span>まわりが小さく光ります。形は同じままなので、期限の読み方は変わりません。</span></div>
+  </div>
+  <p class="foot">表示は最大40件までで、超えたぶんは数だけ木の下に出ます。全件と手続きはマイページから。</p>
+</div></dialog>
+
+<div class="note">
+  <h3>設計のねらい</h3>
+  <ul>
+    <li><strong>健やかなものは同じ形にそろえる。</strong> 20件すべて元気なら赤い実が20個並ぶだけで、
+      違う形が1つでもあれば目が勝手にそこへ行きます。「異常が目立つ」は、正常を揃えることでしか作れません。</li>
+    <li><strong>期限は §3.5 のステータスではないので、別の軸として扱います。</strong> 残り日数は
+      <code>exDate</code> から出し、90日以内で「はち」に、30日以内は羽音を速く・色を濃くしています
+      （本番の <code>expiryIndicatorClass</code> と同じ 30 / 90 日のしきい値）。</li>
+    <li><strong>色だけに意味を持たせません（§3.5）。</strong> 形・置き場所・うごきの3つが同じことを言い、
+      正式な文言は必ず吹き出しと <code>aria-label</code> に出ます。</li>
+    <li>吹き出し左の帯は本番と同じ §3.5 のトーン色です。マーカー自体は自然物の色なので、
+      帯の色とは一致しません（形が意味、色は分類、という分担）。</li>
+  </ul>
+</div>
+</div>
+
+<div class="tip" id="tip"><b></b><span></span><em></em></div>
+
+<script>
+const POOLS = {"foliage": [{"x": 408, "y": 195}, {"x": 911, "y": 609}, {"x": 119, "y": 600}, {"x": 735, "y": 307}, {"x": 474, "y": 439}, {"x": 283, "y": 341}, {"x": 266, "y": 518}, {"x": 579, "y": 242}, {"x": 824, "y": 435}, {"x": 586, "y": 430}, {"x": 643, "y": 306}, {"x": 173, "y": 529}, {"x": 526, "y": 384}, {"x": 354, "y": 321}, {"x": 752, "y": 442}, {"x": 852, "y": 578}, {"x": 580, "y": 315}, {"x": 467, "y": 175}, {"x": 775, "y": 350}, {"x": 359, "y": 209}, {"x": 690, "y": 289}, {"x": 155, "y": 573}, {"x": 608, "y": 276}, {"x": 273, "y": 300}, {"x": 314, "y": 310}, {"x": 511, "y": 422}, {"x": 561, "y": 401}, {"x": 789, "y": 444}, {"x": 884, "y": 589}, {"x": 391, "y": 223}, {"x": 442, "y": 429}, {"x": 432, "y": 173}, {"x": 838, "y": 409}, {"x": 499, "y": 396}, {"x": 672, "y": 311}, {"x": 192, "y": 509}, {"x": 661, "y": 285}, {"x": 606, "y": 303}, {"x": 539, "y": 416}, {"x": 449, "y": 152}], "bark": [{"x": 529, "y": 797}, {"x": 434, "y": 964}, {"x": 455, "y": 656}, {"x": 470, "y": 904}, {"x": 503, "y": 969}, {"x": 479, "y": 758}, {"x": 480, "y": 799}, {"x": 532, "y": 765}, {"x": 456, "y": 943}, {"x": 483, "y": 778}, {"x": 529, "y": 780}, {"x": 441, "y": 949}]};
+const GROUND = [
+  {x:24.0,y:95.2,s:1.00},{x:76.5,y:94.6,s:1.00},{x:33.0,y:97.4,s:1.16},{x:67.5,y:97.8,s:1.18},
+  {x:15.0,y:93.4,s:.84},{x:86.0,y:93.0,s:.82},{x:45.0,y:98.6,s:1.24},{x:57.5,y:99.0,s:1.26},
+  {x:29.0,y:93.9,s:.90},{x:71.0,y:93.6,s:.90},{x:38.5,y:96.4,s:1.08},{x:62.0,y:96.6,s:1.10},
+];
+
+// ── マーカーの定義。kind が状態そのもの ─────────────────────────
+const KINDS = {
+  ripe:    {home:'foliage', anchor:'center', shade:'sit', scale:1.15, art:'berryRipe',
+            label:'熟した実', band:'余裕あり', bar:'var(--green)',
+            why:'実っている＝健やか。いちばん多く出る形'},
+  flying:  {home:'foliage', anchor:'center', shade:'fly', scale:1.30, art:'butterfly',
+            label:'ちょうちょ', band:'余裕あり', bar:'var(--green)',
+            why:'穏やかな木にだけ来る。同じ帯の中の彩り'},
+  bloom:   {home:'ground',  anchor:'bottom', shade:'root', scale:1.95, art:'flower',
+            label:'花', band:'余裕あり', bar:'var(--green)',
+            why:'足もとで咲いている。同じ帯の中の彩り'},
+  near:    {home:'bark',    anchor:'center', shade:'sit', scale:1.20, art:'snail',
+            label:'かたつむり', band:'期限が近い（31〜90日）', bar:'var(--status-hold-fg)',
+            why:'ゆっくり近づいてくる。まだ慌てなくてよい距離'},
+  soon:    {home:'foliage', anchor:'center', shade:'fly', scale:1.00, art:'bee',
+            label:'はち', band:'期限が近い（30日以内）', bar:'var(--orange)',
+            why:'ぶんぶん急かす。羽音が速く色も濃い'},
+  gone:    {home:'ground',  anchor:'bottom', shade:'root', scale:1.95, art:'wilted',
+            label:'枯れた花', band:'期限切れ・失効中', bar:'var(--danger)',
+            why:'木から落ちて枯れている。解約手続き中と復旧猶予中もここ'},
+  gold:    {home:'foliage', anchor:'center', shade:'sit', scale:1.20, art:'berryGold', premium:true,
+            label:'金の実', band:'余裕あり（プレミアム）', bar:'var(--orange)',
+            why:'プレミアムTLDの実。形は同じで素材だけ金にし、まわりが小さく光る'},
+  unknown: {home:'foliage', anchor:'center', shade:'sit', scale:1.00, art:'ladybug',
+            label:'てんとう虫', band:'期限が分からない', bar:'var(--ink-faint)',
+            why:'exDate が取れていないとき。実ではないので実りには数えない'},
+};
+
+/**
+ * 期限からマーカーを決める。しきい値は本番の expiryIndicatorClass と同じ 30 / 90 日。
+ * §3.5 の ending（解約手続き中・いまなら復旧できます）は残り日数に関わらず失効側へ
+ * 寄せる — 手続きが始まっている以上、日数が残っていても「失われかけている」ため。
+ */
+// 14 : 4 : 2 ＝ 実 : ちょうちょ : 花
+const CALM_MIX = [...Array(14).fill('ripe'), ...Array(4).fill('flying'), ...Array(2).fill('bloom')];
+
+function kindFor(d){
+  if (d.days === null) return 'unknown';
+  if (d.days <= 0 || d.tone === 'ending') return 'gone';
+  if (d.days <= 30) return 'soon';
+  if (d.days <= 90) return 'near';
+  // プレミアムは形ではなく素材で示す。余裕がある帯だけ実を金にし、
+  // それ以外の帯は形をそのままにして「きらめき」だけを足す（下の SPARKLE）。
+  if (d.premium) return 'gold';
+  // 余裕がある帯は3種から。ドメイン名から決めるので、同じドメインは毎回同じ姿になる。
+  // 実を厚めに配るのは、地面（花）と飛ぶもの（ちょうちょ）が増えると樹冠が
+  // 薄くなり、「実っている木」に見えなくなるため。
+  const h = [...d.name].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 9973, 7);
+  return CALM_MIX[h % CALM_MIX.length];
+}
+
+const SPIRAL = 'M38.0 28.5 L40.9 28.9 L43.6 29.6 L46.2 30.7 L48.7 32.1 L50.9 33.8 L52.8 35.8 L54.4 38.0 L55.7 40.4 L56.7 42.9 L57.3 45.5 L57.6 48.1 L57.5 50.8 L57.0 53.4 L56.3 55.8 L55.2 58.1 L53.8 60.3 L52.1 62.2 L50.3 63.8 L48.2 65.2 L46.0 66.3 L43.7 67.1 L41.3 67.5 L39.0 67.6 L36.6 67.5 L34.3 66.9 L32.1 66.1 L30.1 65.1 L28.3 63.7 L26.6 62.2 L25.2 60.5 L24.1 58.6 L23.2 56.6 L22.6 54.5 L22.3 52.3 L22.3 50.2 L22.6 48.1 L23.1 46.1 L24.0 44.3 L25.0 42.5 L26.2 40.9 L27.7 39.6 L29.3 38.4 L31.0 37.5 L32.8 36.8 L34.6 36.4 L36.5 36.2 L38.4 36.3 L40.2 36.7 L41.9 37.2 L43.5 38.0 L44.9 39.0 L46.2 40.1 L47.4 41.5 L48.3 42.9 L49.0 44.4 L49.5 46.0 L49.8 47.6 L49.8 49.2 L49.7 50.8 L49.3 52.3 L48.7 53.7 L48.0 55.0 L47.1 56.2 L46.0 57.3 L44.9 58.2 L43.6 58.9 L42.3 59.4 L41.0 59.7 L39.6 59.9 L38.3 59.9 L37.0 59.6 L35.7 59.2 L34.6 58.7 L33.5 58.0 L32.6 57.2 L31.8 56.3 L31.1 55.3 L30.6 54.3 L30.3 53.2 L30.1 52.1 L30.0 51.0 L30.1 49.9 L30.4 48.9 L30.8 47.9 L31.3 47.0 L31.9 46.3 L32.5 45.6 L33.3 45.0 L34.1 44.6 L35.0 44.2 L35.8 44.0 L36.7 44.0 L37.5 44.0 L38.3 44.1 L39.1 44.4 L39.7 44.8 L40.4 45.2 L40.9 45.7 L41.3 46.2 L41.7 46.8 L41.9 47.4 L42.1 48.0 L42.2 48.7 L42.1 49.3 L42.0 49.8 L41.8 50.4 L41.6 50.8 L41.3 51.2 L41.0 51.6 L40.6 51.9';
+const ART = {
+  berryRipe: (v) => `<svg viewBox="0 0 100 100" class="a-hang">
+    <path d="M50 2v20M50 14q10-5 15-2M50 20q-9-3-13 0" stroke="#6f5c3c" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+    <ellipse cx="36" cy="54" rx="17" ry="18" fill="#8f3535"/>
+    <ellipse cx="66" cy="47" rx="14" ry="15" fill="#a34141"/>
+    ${v % 2 ? '<ellipse cx="52" cy="76" rx="15.5" ry="16" fill="#7d2e2e"/>' : ''}
+    <ellipse cx="30" cy="47" rx="5" ry="3.4" fill="#fff" opacity=".38" transform="rotate(-30 30 47)"/>
+    <ellipse cx="61" cy="41" rx="4" ry="2.8" fill="#fff" opacity=".34" transform="rotate(-30 61 41)"/>
+  </svg>`,
+  bee: (v, urgent) => `<svg viewBox="0 0 100 100" class="${urgent ? 'a-bob-fast fast' : 'a-bob'}">
+    <g class="buzzL" style="transform-origin:38% 40%"><ellipse cx="33" cy="36" rx="21" ry="11" fill="#dfe9ec" opacity=".6" transform="rotate(-18 33 36)"/></g>
+    <g class="buzzR" style="transform-origin:62% 40%"><ellipse cx="67" cy="36" rx="21" ry="11" fill="#dfe9ec" opacity=".6" transform="rotate(18 67 36)"/></g>
+    <ellipse cx="50" cy="60" rx="23" ry="19" fill="${urgent ? '#c98426' : '#d3a03d'}"/>
+    <path d="M31 52q19 6 38 0" stroke="#3d3021" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <path d="M29 62q21 7 42 0" stroke="#3d3021" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <path d="M34 72q16 6 32 0" stroke="#3d3021" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="40" cy="52" rx="8" ry="4" fill="#fff" opacity=".2" transform="rotate(-20 40 52)"/>
+    <circle cx="50" cy="36" r="11.5" fill="#3d3021"/>
+    <path d="M44 26q-4-8-10-10M56 26q4-8 10-10" stroke="#3d3021" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <ellipse cx="50" cy="79" rx="4" ry="6" fill="#3d3021"/>
+  </svg>`,
+  butterfly: () => `<svg viewBox="0 0 100 100" class="a-bob">
+    <g class="wingL" style="transform-origin:50% 50%">
+      <path d="M47 48C29 20 5 24 9 43c3 15 22 16 38 8z" fill="#c9903f"/>
+      <path d="M47 52C31 76 11 78 13 63c2-12 18-14 34-11z" fill="#ab7331"/>
+      <circle cx="24" cy="38" r="4.5" fill="#f0e6cf" opacity=".8"/></g>
+    <g class="wingR" style="transform-origin:50% 50%">
+      <path d="M53 48C71 20 95 24 91 43c-3 15-22 16-38 8z" fill="#d69a45"/>
+      <path d="M53 52C69 76 89 78 87 63c-2-12-18-14-34-11z" fill="#b67b35"/>
+      <circle cx="76" cy="38" r="4.5" fill="#f0e6cf" opacity=".8"/></g>
+    <ellipse cx="50" cy="53" rx="4" ry="17" fill="#43331f"/>
+    <circle cx="50" cy="35" r="5" fill="#43331f"/>
+    <path d="M48 32q-6-10-13-13M52 32q6-10 13-13" stroke="#43331f" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  </svg>`,
+  snail: () => `<svg viewBox="0 0 100 100" class="a-creep">
+    <path d="M6 84q0-13 14-13h44q11 0 11 7t-11 7H22q-9 0-9 6z" fill="#d9cbab"/>
+    <path d="M62 78q7-3 9-12l3-13q1-6 7-5t5 7l-3 14q-4 16-19 18z" fill="#d9cbab"/>
+    <path d="M78 54q0-12-4-18M87 56q5-11 3-18" stroke="#c3b391" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+    <circle cx="73" cy="33" r="3.3" fill="#4b3e2c"/><circle cx="90" cy="35" r="3.3" fill="#4b3e2c"/>
+    <circle cx="38" cy="50" r="23" fill="#ad8845"/>
+    <path d="M38 27a23 23 0 0 1 20 12" stroke="#c9a765" stroke-width="6" fill="none" stroke-linecap="round" opacity=".7"/>
+    <path d="${SPIRAL}" fill="none" stroke="#8a682e" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <ellipse cx="30" cy="38" rx="7" ry="4.5" fill="#fff" opacity=".22" transform="rotate(-30 30 38)"/>
+  </svg>`,
+  // プレミアムTLDの実。同じ実の形のまま金色にする — 形は期限の帯が持っているので、
+  // プレミアムは「素材」だけを変えて、意味の軸をぶつけない。
+  berryGold: (v) => `<svg viewBox="0 0 100 100" class="a-hang">
+    <path d="M50 2v20M50 14q10-5 15-2M50 20q-9-3-13 0" stroke="#6f5c3c" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+    <ellipse cx="36" cy="54" rx="17" ry="18" fill="#c79a33"/>
+    <ellipse cx="66" cy="47" rx="14" ry="15" fill="#dcb04a"/>
+    ${v % 2 ? '<ellipse cx="52" cy="76" rx="15.5" ry="16" fill="#b98c28"/>' : ''}
+    <ellipse cx="30" cy="46" rx="5.6" ry="3.8" fill="#fff8e2" opacity=".72" transform="rotate(-30 30 46)"/>
+    <ellipse cx="61" cy="40" rx="4.4" ry="3" fill="#fff8e2" opacity=".66" transform="rotate(-30 61 40)"/>
+    ${v % 2 ? '<ellipse cx="46" cy="69" rx="4.6" ry="3.2" fill="#fff8e2" opacity=".6" transform="rotate(-30 46 69)"/>' : ''}
+  </svg>`,
+  // 元気な花。土から立ち上がるので下端が基準。
+  flower: () => `<svg viewBox="0 0 100 100" class="a-sway">
+    <path d="M50 100V44" stroke="#4f7a44" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <path d="M50 78q-15-4-19-16 15-2 19 12z" fill="#5d8a4c"/>
+    <path d="M50 66q14-5 18-16-14-1-18 12z" fill="#6d9a58"/>
+    <g style="transform-origin:50% 32%">
+      ${[0,60,120,180,240,300].map(a=>`<ellipse cx="50" cy="18" rx="9.5" ry="15" fill="#dfd3e0" transform="rotate(${a} 50 32)"/>`).join('')}
+      ${[30,150,270].map(a=>`<ellipse cx="50" cy="20" rx="7.5" ry="12.5" fill="#ece4ea" transform="rotate(${a} 50 32)"/>`).join('')}
+      <circle cx="50" cy="32" r="8.5" fill="#d3ad55"/>
+      <circle cx="50" cy="32" r="3.8" fill="#b8933f"/>
+    </g>
+  </svg>`,
+  // 枯れた花。うつむいた首・褪せた花びら・足もとに落ちた1枚。
+  wilted: () => `<svg viewBox="0 0 100 100" class="a-droop">
+    <path d="M52 100V56q0-10-8-14" stroke="#7d7a52" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <path d="M52 82q-14-5-17-16 14-1 17 12z" fill="#8a8757" opacity=".85"/>
+    <path d="M52 70q11-6 13-15-11 0-13 11z" fill="#96935f" opacity=".7"/>
+    <g style="transform-origin:44% 42%" transform="rotate(-26 44 42)">
+      ${[0,60,120,180,240,300].map(a=>`<ellipse cx="44" cy="30" rx="8" ry="13" fill="#c9bda0" transform="rotate(${a} 44 42)"/>`).join('')}
+      <circle cx="44" cy="42" r="7.5" fill="#9c7f3f"/>
+    </g>
+    <ellipse cx="72" cy="96" rx="9" ry="4" fill="#c9bda0" transform="rotate(18 72 96)" opacity=".9"/>
+    <ellipse cx="30" cy="98" rx="7.5" ry="3.4" fill="#bdb094" transform="rotate(-24 30 98)" opacity=".8"/>
+  </svg>`,
+  ladybug: () => `<svg viewBox="0 0 100 100" class="a-creep">
+    <path d="M28 62q-9 6-14 3M72 62q9 6 14 3M26 50q-10 1-14-3M74 50q10 1 14-3" stroke="#3a2a20" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <ellipse cx="50" cy="58" rx="31" ry="28" fill="#8f8a7a"/>
+    <path d="M50 30a31 28 0 0 0 0 56z" fill="#7b7667"/>
+    <path d="M50 30v56" stroke="#33221a" stroke-width="3"/>
+    <circle cx="37" cy="50" r="5.6" fill="#33221a"/><circle cx="63" cy="50" r="5.6" fill="#33221a"/>
+    <circle cx="41" cy="70" r="4.2" fill="#33221a"/><circle cx="59" cy="70" r="4.2" fill="#33221a"/>
+    <path d="M50 32a22 14 0 0 1-22-12 22 14 0 0 1 44 0 22 14 0 0 1-22 12z" fill="#33221a"/>
+    <path d="M40 12q-5-8-11-9M60 12q5-8 11-9" stroke="#33221a" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+  </svg>`,
+};
+
+// ── デモ用のドメイン。状態は決め打ちの並びで、少ない件数でも一通り見えるようにする ──
+const NAMES = ['shop.com','blog.site','move.net','bye.org','pause.xyz','lock.store','photo.com',
+  'note.net','cafe.org','team.site','lab.tech','shopping.store','diary.online','family.com',
+  'music.net','garden.org','recipe.site','travel.com','study.net','pet.org','club.site',
+  'news.com','game.net','book.org'];
+// §3.5 のステータスは形には出さない（形は期限の帯が持つ）。吹き出しの文言に出す。
+const TONES = {
+  ok:['使えています','var(--green)'], inactive:['まだインターネットに公開されていません','var(--grass)'],
+  pending:['引っ越しの手続き中です','var(--status-info-fg)'], hold:['一時停止中です','var(--status-hold-fg)'],
+  locked:['引っ越しをロック中','var(--status-locked-fg)'], ending:['いまなら復旧できます','var(--danger)'],
+};
+// [残り日数（負 = 期限切れ）, §3.5, プレミアムTLDか]。
+// 本番では premium は tldData の getTldMeta(tld)?.premium から取る（現在は .ceo だけ）。
+const SCENES = {
+  mix: [[210,'ok'],[168,'ok',true],[27,'ok'],[301,'ok'],[142,'inactive'],[240,'ok'],[64,'ok'],[196,'ok'],
+        [118,'locked'],[-12,'ending'],[275,'ok',true],[43,'hold'],[157,'ok'],[19,'ok'],[224,'ok'],[133,'inactive'],
+        [188,'ok'],[-4,'ending'],[259,'ok'],[96,'locked'],[171,'ok',true],[8,'ok'],[203,'ok'],[77,'pending']],
+  allok: Array.from({length:24}, (_,i) => [140 + i * 9, 'ok', i % 7 === 3]),
+  rough: [[12,'ok'],[-9,'ending'],[210,'ok',true],[58,'hold'],[24,'ok'],[81,'pending'],[-21,'ending'],[71,'locked'],
+          [6,'ok'],[188,'ok'],[133,'inactive'],[47,'hold'],[-3,'ending'],[16,'ok',true],[88,'pending'],[240,'ok'],
+          [63,'locked'],[29,'ok'],[-15,'ending'],[52,'hold'],[175,'ok',true],[21,'ok'],[144,'inactive'],[35,'ok']],
+};
+
+// プレミアムの添え。マーカーの形は変えず、まわりで小さく光るだけ。
+const SPARKLE = `<svg class="sparkle" viewBox="0 0 100 100" aria-hidden="true">
+  ${[[14,20,7,0],[84,34,5.5,.6],[70,84,4.5,1.2]].map(([x,y,r,d])=>
+    `<path d="M${x} ${y-r}Q${x+r*.22} ${y-r*.22} ${x+r} ${y}Q${x+r*.22} ${y+r*.22} ${x} ${y+r}Q${x-r*.22} ${y+r*.22} ${x-r} ${y}Q${x-r*.22} ${y-r*.22} ${x} ${y-r}Z"
+      fill="#e2bf6a" style="animation-delay:${d}s"/>`).join('')}
+</svg>`;
+
+const tip = document.getElementById('tip');
+const ART_H = 1020 / 1104;
+
+function showTip(el, name, label, when, color){
+  tip.querySelector('b').textContent = name;
+  tip.querySelector('span').textContent = label;
+  tip.querySelector('em').textContent = when;
+  tip.style.setProperty('--bar', color);
+  tip.style.display = 'block';
+  const r = el.getBoundingClientRect(), t = tip.getBoundingClientRect();
+  tip.style.left = Math.round(r.left + scrollX + r.width/2 - t.width/2) + 'px';
+  tip.style.top  = Math.round(r.top + scrollY - t.height - 10) + 'px';
+}
+const hideTip = () => { tip.style.display = 'none' };
+
+function render(){
+  const n = +count.value, base = +size.value, plan = SCENES[scene.value];
+  countv.textContent = n; sizev.textContent = base;
+  const tree = document.getElementById('tree');
+  tree.querySelectorAll('.marker').forEach(e => e.remove());
+  tree.classList.remove('dim');
+
+  const used = {foliage:0, bark:0, ground:0};
+  const placed = {foliage:[], bark:[], ground:[]};
+  const tally = {};
+  // 幹は細い縦帯なので、順番に取るだけだと かたつむり が縦に重なる。
+  // 置いたものから一定距離離れるまで候補を送る（％で持つ。舞台幅540px基準）。
+  const gap = base / 540 * 100 * 0.95;
+  const takeSpot = (home, list) => {
+    for (let tries = 0; tries < list.length; tries++){
+      const c = list[(used[home] + tries) % list.length];
+      const far = placed[home].every(q => Math.hypot(q.x - c.x, q.y - c.y) >= gap);
+      if (far || tries === list.length - 1){ used[home] += tries + 1; return c }
+    }
+  };
+  for (let i = 0; i < n; i++){
+    const [days, tone, premium] = plan[i % plan.length];
+    const d = {name: NAMES[i % NAMES.length], days, tone, premium: !!premium};
+    const key = kindFor(d);
+    const kind = KINDS[key];
+    tally[key] = (tally[key] || 0) + 1;
+    const urgent = key === 'soon';
+
+    let left, top, scale = 1;
+    if (kind.home === 'ground'){
+      const g = takeSpot('ground', GROUND);
+      left = g.x; top = g.y; scale = g.s;
+    } else {
+      // プールは 0-1000。舞台の％へ直してから間隔を測る。
+      const list = POOLS[kind.home].map(p => ({x: p.x / 10, y: p.y / 10 * ART_H}));
+      const p = takeSpot(kind.home, list);
+      left = p.x; top = p.y;
+    }
+    placed[kind.home].push({x: left, y: top});
+
+    const px = base * kind.scale * scale;
+    const el = document.createElement('div');
+    el.className = `marker anchor-${kind.anchor}`;
+    el.style.cssText = `left:${left}%;top:${top}%;width:${px}px;height:${px}px`;
+    el.tabIndex = 0; el.setAttribute('role','button');
+    const [label, bar] = TONES[tone];
+    const prem = d.premium ? 'プレミアムTLD・' : '';
+    const when = days === null ? '期限が分かりません'
+      : days <= 0 ? `期限を${-days}日過ぎています` : `更新まであと${days}日`;
+    el.setAttribute('aria-label', `${d.name}：${prem}${label}（${when}）`);
+    el.innerHTML = `<span class="shade ${kind.shade}"></span>${ART[kind.art](i, urgent)}`
+      + (d.premium ? SPARKLE : '');
+    if (d.premium) el.classList.add('is-premium');
+
+    const on = () => { tree.classList.add('dim'); el.classList.add('on'); showTip(el, d.name, prem + label, when, bar) };
+    const off = () => { tree.classList.remove('dim'); el.classList.remove('on'); hideTip() };
+    el.addEventListener('pointerenter', on); el.addEventListener('pointerleave', off);
+    el.addEventListener('focus', on); el.addEventListener('blur', off);
+    tree.appendChild(el);
+  }
+
+  document.querySelector('#legend tbody').innerHTML = Object.entries(KINDS).map(([k,v]) =>
+    `<tr><td><span><i>${ART[v.art](0, k === 'soon')}${v.premium ? SPARKLE : ''}</i><b>${v.label}</b></span></td><td>${v.band}</td>
+     <td>${{foliage:'葉',bark:'幹',ground:'地面'}[v.home]}</td><td>${v.why}</td>
+     <td class="count">${tally[k] ? tally[k] + '件' : '—'}</td></tr>`).join('');
+}
+
+document.getElementById('premSample').innerHTML = ART.berryGold(1) + SPARKLE;
+aboutBtn.addEventListener('click', () => aboutDlg.showModal());
+aboutClose.addEventListener('click', () => aboutDlg.close());
+aboutDlg.addEventListener('click', e => { if (e.target === aboutDlg) aboutDlg.close() });
+
+['count','size','scene'].forEach(id => document.getElementById(id).addEventListener('input', render));
+render();
+</script>
+</body></html>

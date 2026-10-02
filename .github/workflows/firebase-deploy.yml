@@ -1,0 +1,271 @@
+name: Firebase Deploy
+
+# Deploy-only pipeline for the dedicated `firebase-deploy` branch.
+#
+# Order of operations is deliberate:
+#   1. preflight   - cheap checks (credentials present, rate limit not hit) run
+#                    FIRST so a merge that cannot deploy never spends ~20
+#                    minutes of Actions minutes on the emulator-backed suite.
+#   2. ci          - the full existing test suite, reused via `workflow_call`.
+#   3. deploy      - `firebase deploy` for functions + Firestore only.
+#
+# Rate-limit semantics: a slot is consumed only by a run whose `deploy` job
+# concluded `success` -- deliberately the job's conclusion, not the run's. A run
+# whose jobs were all skipped (a pull request closed without merging) is not a
+# failure, so counting run conclusions would charge it a slot it never used. A
+# failed suite, a failed deploy, and a rate-limited run all leave `deploy`
+# unsuccessful or unrun, so none of them consume anything.
+
+# Deploys are reachable through exactly one door: a pull request into
+# `firebase-deploy` that gets merged.
+#
+# `branches` filters the PR's *base*, so this never fires for PRs aimed
+# elsewhere. Creating the branch, force-pushing to it, or pushing a commit
+# directly triggers nothing at all -- there is no `push` trigger. There is no
+# `workflow_dispatch` either, so a deploy cannot be started by hand; to retry a
+# failed merge-deploy, use GitHub's "Re-run jobs" on that run, which replays the
+# original merge event.
+#
+# GitHub has no "pull request merged" event, so this listens for `closed` and
+# every job is guarded by `merged == true`: a PR closed without merging must not
+# deploy. That guard is also why the rate-limit gate below counts the `deploy`
+# job's own conclusion rather than the run's.
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - firebase-deploy
+
+permissions:
+  contents: read
+  # Required by the rate-limit gate to read this workflow's own run history.
+  actions: read
+
+# Serialise deploys. Two concurrent `firebase deploy` runs against the same
+# project race each other, and they would also both read a stale success count.
+concurrency:
+  group: firebase-deploy
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Preflight (credentials + rate limit)
+    # Skipping here cascades: `ci` and `deploy` both depend on this job, so a
+    # pull request that was closed without merging runs nothing.
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      # Checked here rather than in `deploy` so a missing secret fails in
+      # seconds instead of after the full test suite has already run.
+      - name: Verify deploy credentials are configured
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::error::Repository secret FIREBASE_SERVICE_ACCOUNT is not set. See docs/firebase/deploy.md for the setup steps." >&2
+            exit 1
+          fi
+
+      - name: Check recent successful deploys
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const WINDOW_MINUTES = 60;
+            const MAX_DEPLOYS_PER_WINDOW = 5;
+            const WORKFLOW_FILE = 'firebase-deploy.yml';
+            // Must match the `deploy` job's display name. That job has no
+            // `name:` of its own, so GitHub reports its job id verbatim.
+            const DEPLOY_JOB_NAME = 'deploy';
+            const MILLIS_PER_MINUTE = 60 * 1000;
+
+            const now = Date.now();
+            const windowStart = now - WINDOW_MINUTES * MILLIS_PER_MINUTE;
+
+            // No `branch` filter: this workflow is triggered by `pull_request`,
+            // so a run's `head_branch` is the PR's *source* branch, never
+            // `firebase-deploy`. The base-branch filter in `on:` already
+            // guarantees every run of this workflow is a firebase-deploy run.
+            //
+            // A single page is enough: runs come back newest-first and 100 of
+            // them is far more than a one-hour window can hold.
+            let runs;
+            try {
+              const response = await github.rest.actions.listWorkflowRuns({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: WORKFLOW_FILE,
+                status: 'success',
+                per_page: 100,
+              });
+              runs = response.data.workflow_runs;
+            } catch (error) {
+              // Fail closed. The gate exists to protect the project from
+              // repeated deploys, so an unreadable history must block rather
+              // than silently grant unlimited attempts.
+              core.setFailed(
+                'デプロイ履歴を取得できなかったため、安全側に倒してデプロイを中止しました。' +
+                `再実行してください。(${error.message})`,
+              );
+              return;
+            }
+
+            // `updated_at` is the run's completion time, i.e. when the deploy
+            // actually landed. `run.id !== context.runId` guards against this
+            // very run being counted if it were ever re-read mid-flight.
+            const candidates = runs
+              .filter((run) => run.id !== context.runId)
+              .map((run) => ({ id: run.id, finishedAt: new Date(run.updated_at).getTime() }))
+              .filter((run) => run.finishedAt >= windowStart)
+              .sort((a, b) => b.finishedAt - a.finishedAt);
+
+            // A run whose jobs were all skipped -- a pull request closed
+            // without merging -- can still report a non-failure conclusion, and
+            // a run can be re-run with only some jobs replayed. Neither means a
+            // deploy happened, so confirm the deploy job itself succeeded
+            // instead of trusting the run-level conclusion. Only runs already
+            // inside the window are inspected, so this is a handful of calls at
+            // most.
+            const deployJobSucceeded = async (runId) => {
+              const { data } = await github.rest.actions.listJobsForWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: runId,
+                filter: 'latest',
+                per_page: 100,
+              });
+              return data.jobs.some(
+                (job) => job.name === DEPLOY_JOB_NAME && job.conclusion === 'success',
+              );
+            };
+
+            let verified;
+            try {
+              verified = await Promise.all(candidates.map((run) => deployJobSucceeded(run.id)));
+            } catch (error) {
+              core.setFailed(
+                'デプロイ履歴のジョブ情報を取得できなかったため、安全側に倒してデプロイを中止しました。' +
+                `再実行してください。(${error.message})`,
+              );
+              return;
+            }
+
+            const recentDeploys = candidates
+              .filter((_run, index) => verified[index])
+              .map((run) => run.finishedAt);
+
+            const formatJst = (millis) => new Date(millis).toLocaleString('ja-JP', {
+              timeZone: 'Asia/Tokyo',
+              dateStyle: 'short',
+              timeStyle: 'short',
+            });
+
+            if (recentDeploys.length < MAX_DEPLOYS_PER_WINDOW) {
+              const remaining = MAX_DEPLOYS_PER_WINDOW - recentDeploys.length;
+              core.info(
+                `直近${WINDOW_MINUTES}分の成功デプロイ: ${recentDeploys.length}/${MAX_DEPLOYS_PER_WINDOW} ` +
+                `(残り${remaining}回)`,
+              );
+              await core.summary
+                .addHeading('デプロイレートリミット: 通過', 3)
+                .addRaw(
+                  `直近 ${WINDOW_MINUTES} 分の成功デプロイ **${recentDeploys.length} / ${MAX_DEPLOYS_PER_WINDOW}** ` +
+                  `— 残り **${remaining}** 回`,
+                )
+                .write();
+              return;
+            }
+
+            // The window frees a slot when the oldest of the newest
+            // MAX_DEPLOYS_PER_WINDOW successes ages out of it.
+            const oldestCountedDeploy = recentDeploys[MAX_DEPLOYS_PER_WINDOW - 1];
+            const retryAt = oldestCountedDeploy + WINDOW_MINUTES * MILLIS_PER_MINUTE;
+            const waitMinutes = Math.max(1, Math.ceil((retryAt - now) / MILLIS_PER_MINUTE));
+
+            const message =
+              `デプロイのレートリミットに達しました: 直近${WINDOW_MINUTES}分で成功デプロイ ` +
+              `${recentDeploys.length}/${MAX_DEPLOYS_PER_WINDOW} 回。` +
+              `あと約 ${waitMinutes} 分待ってください (${formatJst(retryAt)} JST 以降に再実行可能)。`;
+
+            await core.summary
+              .addHeading('デプロイレートリミット: 超過', 3)
+              .addRaw(message)
+              .addBreak()
+              .addRaw(
+                '失敗したデプロイはリミットを消費しません。カウントされるのは成功したデプロイのみです。',
+              )
+              .write();
+
+            core.setFailed(message);
+
+  ci:
+    name: CI
+    needs: preflight
+    uses: ./.github/workflows/firebase-auth-ci.yml
+    with:
+      ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+  # Intentionally unnamed: the preflight gate matches recent runs on this job's
+  # display name, which GitHub derives from the job id when `name:` is absent.
+  deploy:
+    needs: [preflight, ci]
+    runs-on: ubuntu-latest
+    steps:
+      # For a merged pull request, `merge_commit_sha` is the commit that landed
+      # on `firebase-deploy`. The default checkout ref would be the PR's test
+      # merge commit, which GitHub may garbage-collect once the PR is closed.
+      - name: Check out the merged commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      # `firebase.json`'s functions `predeploy` hook runs `npm run lint` and
+      # `npm run build` inside functions/, so its dependencies must be present
+      # on the runner before `firebase deploy` is invoked.
+      - name: Install functions dependencies
+        working-directory: functions
+        run: npm ci
+
+      # Pinned deliberately, unlike the test suite's `@latest`. This step
+      # deploys: a firebase-tools release can change prompt semantics, cleanup
+      # policy handling, or image lifecycle with no change on our side, and a
+      # deploy pipeline must not move under us. Bump this consciously.
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools@15.28.1
+
+      - name: Authenticate to Google Cloud
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-service-account.json"
+          chmod 600 "$RUNNER_TEMP/firebase-service-account.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-service-account.json" >> "$GITHUB_ENV"
+
+      # `--only functions,firestore` is load-bearing, not a convenience:
+      # firebase.json also declares a `hosting` block, but this project's
+      # frontend is served from Cloudflare and deployed by its own main-branch
+      # pipeline. Hosting must never be deployed from here. Keeping the target
+      # list explicit also means the hosting `predeploy` (frontend build) never
+      # runs on this runner.
+      #
+      # `--non-interactive` (without `--force`) means functions that exist in
+      # the project but no longer exist in source are reported and skipped, not
+      # deleted. Removing a function is a deliberate manual step:
+      # `firebase functions:delete <name> --region asia-northeast2`.
+      - name: Deploy to Firebase
+        run: >-
+          firebase deploy
+          --only functions,firestore
+          --project teamc-2026
+          --non-interactive
+
+      - name: Remove service account credentials
+        if: always()
+        run: rm -f "$RUNNER_TEMP/firebase-service-account.json"

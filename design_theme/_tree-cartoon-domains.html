@@ -1,0 +1,1045 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>[試作] まるい樹冠のドメインの木 — 葉＝1ドメイン</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Zen+Maru+Gothic:wght@700;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet" />
+<style>
+/*
+  試作｜「まるい樹冠のドメインの木」
+  --------------------------------------------------------------------------
+  参考にした絵柄：もくもくした樹冠のかたまりを濃淡4トーンで重ね、輪郭線なし、
+  太い幹と根張り。樹冠は円を寄せて作る自前SVG（外部素材ゼロ＝ライセンス不要）。
+
+  ここでの決めごと
+  - 葉1枚＝ドメイン1件。ホバー／フォーカスでドメイン名・状態・期限が出る
+  - 葉の色は飾りではなく状態。色だけに頼らず記号と文字も併記する（spec準拠）
+  - 期限切れの葉は落ちて、根もとに散る。落ちてもホバーはできる（何が失効したか
+    あとから読めないと、落ち葉はただの飾りになる）
+  - 樹冠の緑と葉の緑が溶けないように、ドメインの葉だけ濃いインクの輪郭を持つ
+  - 配色は「若草（アプリのトークン）」と「参考画像に忠実」を右下で切り替え可能
+*/
+
+/* ===== tokens : frontend/src/styles/app.css :root の写し ===== */
+:root{
+  --paper:#fbfcf6; --paper-2:#f3f7ee;
+  --ink:#17241c; --ink-soft:#465449; --ink-faint:#5f6c60; --ink-hint:#8b9a8e;
+  --line:#e4ece0; --line-strong:#cbe6c4;
+  --green:#1f6d45; --green-deep:#175538;
+  --grass:#2f8f5b; --grass-1:#eef7ec; --grass-2:#dcefd6; --grass-3:#cbe6c4;
+  --green-contrast:#ffffff; --green-ring:rgb(31 109 69 / 22%);
+  --sun:#f6e6bd; --card:#ffffff; --danger:#b23a26;
+  --shadow-soft:0 22px 48px -30px rgb(23 60 40 / 42%);
+  --radius:0rem;
+
+  /* 木のトークン。アプリのヒーローにある淡いセージ調の木に合わせる。
+     樹冠は粒の細かい葉むらを5トーンで重ね、細い枝が隙間から透ける絵柄 */
+  --crown-1:#4f6f4a;   /* いちばん奥の影の葉むら */
+  --crown-2:#6b8f5e;
+  --crown-3:#8aab70;
+  --crown-4:#b3ca8d;
+  --crown-5:#d7e2b0;   /* 陽の当たる先端 */
+  --branch:#5f5747; --branch-dark:#463f33; --branch-light:#8a7f6a;
+  --bark:#6b6151; --bark-dark:#463f33; --bark-light:#9c8f78;
+  --ground:#dfe8c9; --ground-2:#c3d4a2; --grass:#9dba79;
+  --sky-blob:#eaf1e2;  /* 背景の淡いブロブ */
+
+  /* 葉＝状態。隣り合う状態は明度も1段ずつ空ける（P/D/T型でも融けない幅） */
+  /* 明度は実測で1段ずつ空けてある（元気/確認できません と 取得したて/更新が近い が
+     P型でほぼ同色になっていたのを 2026-08-27 に測り直して修正）。それでも塗りだけでは
+     隣接1.6:1が上限なので、状態は葉の上のグリフでも必ず伝える */
+  --leaf-new:#a6df5c; --leaf-ok:#49b871; --leaf-soon:#f0a81f;
+  --leaf-urgent:#d95a12; --leaf-expired:#9a6233; --leaf-unknown:#c9d0c7;
+  --leaf-stroke:#16281d;
+  /* 葉のふち。樹冠のどのトーンに乗っても境界が消えないための明るいハロー */
+  --leaf-halo:#fbfcf6; --leaf-glyph-on-dark:#f6ead9;
+  --leaf-shadow:drop-shadow(0 6px 6px rgb(15 40 26 / 34%));
+}
+/* 参考画像に忠実な配色（明るいカートゥーン緑＋黄土色の幹） */
+body.pal-ref{
+  /* 参考画像そのままの #2fae2f / #4caf3f / #7cb342 は隣り合うトーンの比が 1.04〜1.12 しかなく、
+     もくもくの立体感が消えていた（実測）。色相はそのままに明度差だけ開けてある */
+  --crown-1:#1a7a1a; --crown-2:#2f9a2f; --crown-3:#4aa832; --crown-4:#74ad2c;
+  --bark:#a0691a; --bark-dark:#7d4f0f; --bark-light:#b5822c;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#121a14; --paper-2:#17211a;
+    --ink:#e9f0e7; --ink-soft:#a8b8a9; --ink-faint:#93a294; --ink-hint:#5b6a5d;
+    --line:#27332a; --line-strong:#3a4a3d;
+    --green:#6cc38c; --green-deep:#86d3a1;
+    --grass:#58b57c; --grass-1:#1b2a1f; --grass-2:#223528; --grass-3:#2c4433;
+    --green-contrast:#0e1a12; --green-ring:rgb(108 195 140 / 26%);
+    --sun:#3a3116; --card:#1a241d; --danger:#f3a294;
+    --shadow-soft:0 22px 48px -30px rgb(0 0 0 / 62%);
+    --crown-1:#33452f; --crown-2:#455c3c; --crown-3:#5b784b; --crown-4:#7b975f;
+    --crown-5:#9bb178;
+    --branch:#4a4438; --branch-dark:#2e2a22; --branch-light:#6d6353;
+    --bark:#4f483c; --bark-dark:#2e2a22; --bark-light:#7a705d;
+    --ground:#243021; --ground-2:#2f3d28; --grass:#4e6640;
+    --sky-blob:#1a231a;
+    --leaf-stroke:#07110b;
+    --leaf-halo:#e9f0e7;
+    --leaf-shadow:drop-shadow(0 6px 6px rgb(0 0 0 / 48%));
+  }
+  body.pal-ref{ --crown-1:#12570f; --crown-2:#1f7a1c; --crown-3:#357f28; --crown-4:#568a24; }
+}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:'Noto Sans JP','Poppins',system-ui,sans-serif;
+  font-size:15px; line-height:1.9; font-feature-settings:'palt';
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:'Zen Maru Gothic','Poppins',sans-serif;font-weight:700;margin:0}
+a{color:var(--green)}
+:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.font-en{font-family:'Poppins','Noto Sans JP',sans-serif}
+.wrap{max-width:1060px;margin:0 auto;padding:0 20px}
+@media(min-width:640px){.wrap{padding:0 28px}}
+
+header.site{position:sticky;top:0;z-index:40;background:var(--card);border-bottom:1px solid var(--line)}
+header.site .wrap{display:flex;align-items:center;gap:24px;height:62px}
+.brand{display:flex;align-items:center;gap:9px;font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:17px;color:var(--ink);text-decoration:none}
+.brand i{display:block;width:14px;height:14px;flex:none;transform:rotate(8deg);border-radius:0 80% 0 80%;background:var(--grass)}
+.brand em{font-style:normal;font-weight:700;font-size:12.5px;color:var(--ink-faint)}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:18px;font-size:13.5px;color:var(--ink-soft)}
+.auth-chip{font-family:'Poppins',sans-serif;font-size:11.5px;color:var(--ink-faint)}
+
+main{padding:36px 0 96px}
+.page-head{margin-bottom:22px}
+.page-head h1{font-size:26px;font-weight:900;margin-bottom:6px}
+.page-head p{margin:0;color:var(--ink-soft);font-size:14px}
+.card{background:var(--card);box-shadow:var(--shadow-soft);padding:24px 26px;margin-bottom:20px}
+.card > h2{font-size:18px;margin-bottom:4px}
+.card > p.sub{margin:0 0 16px;color:var(--ink-faint);font-size:13px}
+
+/* ===== 木のステージ ===== */
+.stage{position:relative;background:linear-gradient(180deg,var(--grass-1) 0%,var(--card) 80%);
+  height:clamp(280px,86vw,620px)}
+.stage svg{display:block;width:100%;height:100%}
+.tree-sway{transform-origin:500px 940px}
+body:not(.reduce) .tree-sway{animation:sway 11s ease-in-out infinite alternate}
+@keyframes sway{from{transform:rotate(-.7deg)}to{transform:rotate(.7deg)}}
+
+/* 葉。位置と回転は transform 属性、アニメは内側のグループに CSS で当てる
+   （SVGの transform 属性は CSS transform に丸ごと上書きされて消えるため） */
+.leaf{cursor:pointer}
+.leaf .lf{filter:var(--leaf-shadow);transition:transform .16s ease}
+.leaf:hover .lf,.leaf:focus-visible .lf{transform:scale(1.16) translateY(-2px)}
+.leaf:focus{outline:none}
+.leaf:focus-visible .focus-ring,.leaf:focus-visible .focus-ring-in{opacity:1}
+/* 明帯と暗帯の2本。ライトでもダークでも、どちらか片方は必ず背景に勝つ。
+   葉自身の輪郭(1.3)とハロー(3.0)より外に出す幅にしないと1pxも見えない */
+.focus-ring{opacity:0;fill:none;stroke:var(--paper);stroke-width:14;stroke-linejoin:round}
+.focus-ring-in{opacity:0;fill:none;stroke:var(--ink);stroke-width:9.5;stroke-linejoin:round}
+/* 常時出す明るいふち。葉の塗りが樹冠と同輝度でも境界だけは残る */
+.halo{fill:none;stroke:var(--leaf-halo);stroke-width:4.6;stroke-linejoin:round}
+.hit{fill:transparent;pointer-events:all}
+body:not(.reduce) .leaf.sprout .lf{animation:sprout .6s cubic-bezier(.34,1.56,.64,1) backwards}
+@keyframes sprout{from{transform:scale(.1) rotate(-28deg);opacity:0}to{transform:scale(1)}}
+body:not(.reduce) .leaf .breathe{animation:breathe var(--bd,5s) ease-in-out infinite alternate;animation-delay:var(--dl,0s)}
+@keyframes breathe{from{transform:rotate(-3deg)}to{transform:rotate(3deg)}}
+
+/* 落ち葉：外側の包みだけを動かす（内側は位置指定の transform 属性を持つ） */
+.fall{transform-origin:var(--fox,500px) var(--foy,500px);
+  animation:fall var(--fdur,2.6s) cubic-bezier(.45,.05,.55,.95) forwards}
+@keyframes fall{
+  0%{transform:translate(0,0) rotate(0)}
+  25%{transform:translate(calc(var(--fdx,40px)*-.5),calc(var(--fdy,300px)*.22)) rotate(-38deg)}
+  55%{transform:translate(calc(var(--fdx,40px)*.7),calc(var(--fdy,300px)*.56)) rotate(34deg)}
+  80%{transform:translate(calc(var(--fdx,40px)*-.2),calc(var(--fdy,300px)*.84)) rotate(-16deg)}
+  100%{transform:translate(var(--fdx,40px),var(--fdy,300px)) rotate(var(--frot,72deg))}
+}
+body.reduce .fall{animation:none;transform:translate(var(--fdx,40px),var(--fdy,300px)) rotate(var(--frot,72deg))}
+
+/* ===== 空気感レイヤー：背景ブロブ・光・舞い落ちる装飾葉 =====
+   木の絵の「まわりの空気」だけを持つ独立レイヤー。ドメインの葉とは無関係の
+   ただの飾りなので、ポインタも読み上げも受け取らない。
+   ぼかしは filter:blur() を使わず、薄い塗りを2〜3枚重ねて段で作る
+   （blur は再描画のたびにコストが乗るうえ、SVG フィルタは低速機で目に見えて落ちる） */
+.atmo-back,.atmo-front{pointer-events:none}
+/* 回転はこのグループ自身のバウンディングボックスの中心まわり。
+   既定の transform-box は view-box なので、指定しないと viewBox の
+   まんなか(500,500)を軸にして葉が大きく振り回される */
+.atmo-front .aspin{transform-box:fill-box;transform-origin:50% 50%}
+/* 動かすのは transform と opacity だけ。位置(x,y)は外側の <g> の
+   transform 属性が持っていて、CSS transform はそこに触れない */
+body:not(.reduce) .atmo-front .adrift{animation:atmoDrift var(--adur,14s) linear var(--adly,0s) infinite}
+body:not(.reduce) .atmo-front .aspin{animation:atmoSpin var(--asdur,11s) linear var(--asly,0s) infinite}
+@keyframes atmoDrift{
+  0%  {transform:translate(0,0);opacity:0}
+  12% {opacity:1}
+  32% {transform:translate(calc(var(--adx,50px)*  .55),calc(var(--ady,200px)*.30))}
+  56% {transform:translate(calc(var(--adx,50px)* -.35),calc(var(--ady,200px)*.56))}
+  80% {transform:translate(calc(var(--adx,50px)*  .70),calc(var(--ady,200px)*.80));opacity:1}
+  100%{transform:translate(calc(var(--adx,50px)*  .15),var(--ady,200px));opacity:0}
+}
+@keyframes atmoSpin{from{transform:rotate(0deg)}to{transform:rotate(var(--asr,360deg))}}
+/* 軽減時は落とさず、空中に散らばった1枚として止める（消さない）。
+   アニメが止まると opacity は既定の1に戻り、外側 <g> の opacity 属性だけが残る */
+body.reduce .atmo-front .adrift,body.reduce .atmo-front .aspin{animation:none}
+/* OS 側の設定も直接見る。読み込み時に JS が body.reduce を付けるが、
+   設定を途中で変えた人には再読み込みまで届かない。ここは上の
+   body:not(.reduce)… と同じ詳細度で後ろに置かないと打ち消せない */
+@media (prefers-reduced-motion:reduce){
+  body:not(.reduce) .atmo-front .adrift,
+  body:not(.reduce) .atmo-front .aspin{animation:none}
+}
+/* --sun はダークだと暗い黄土(#3a3116)。そのまま重ねると茶色いにじみに見えるので、
+   陽だまりだけ薄くして「わずかに温かい面」に留める */
+@media (prefers-color-scheme:dark){
+  .atmo-back .atmo-sun{opacity:.14}
+}
+
+/* ===== ツールチップ ===== */
+.tip{
+  position:absolute;z-index:60;pointer-events:none;opacity:0;transform:translate(-50%,-100%) translateY(-6px);
+  background:var(--ink);color:var(--paper);padding:8px 12px;min-width:150px;max-width:250px;
+  box-shadow:0 12px 26px -12px rgb(0 0 0 / 45%);transition:opacity .12s ease;
+}
+.tip.on{opacity:1}
+.tip b{display:block;font-family:'Poppins','Noto Sans JP',sans-serif;font-size:13.5px;font-weight:600;line-height:1.5;word-break:break-all}
+.tip .st{display:flex;align-items:center;gap:6px;font-size:11.5px;margin-top:3px}
+.tip .st i{width:9px;height:9px;flex:none;border-radius:0 100% 0 100%;background:currentColor}
+.tip .ex{font-size:11px;color:var(--ink-hint);font-family:'Poppins',sans-serif}
+.tip:after{content:'';position:absolute;left:var(--ax,50%);top:100%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--ink)}
+.tip.below{transform:translate(-50%,0) translateY(6px)}
+.tip.below:after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:var(--ink)}
+@media (prefers-color-scheme: dark){
+  /* ダークでは --ink がほぼ白なので、反転させず暗いカード面のままにする。
+     そうしないと黄色い「更新が近い」が白地に乗って 1.3:1 になる */
+  .tip{background:var(--card);color:var(--ink);box-shadow:0 12px 26px -12px rgb(0 0 0 / 70%),0 0 0 1px var(--line-strong)}
+  .tip:after{border-top-color:var(--card)}
+  .tip.below:after{border-top-color:transparent;border-bottom-color:var(--card)}
+}
+.tip .st{color:var(--ink)}
+.tip .st i{border:1px solid var(--leaf-stroke)}
+
+.empty-note{position:absolute;left:50%;top:34%;transform:translate(-50%,-50%);text-align:center;max-width:20em;
+  color:var(--ink-soft);font-size:13.5px;background:var(--card);padding:14px 18px;box-shadow:var(--shadow-soft)}
+.empty-note b{display:block;font-family:'Zen Maru Gothic',sans-serif;font-size:17px;color:var(--ink);margin-bottom:4px}
+
+/* ===== 凡例・一覧 ===== */
+.legend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 20px;margin-top:16px;font-size:12px;color:var(--ink-soft)}
+@media(max-width:760px){.legend{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:460px){.legend{grid-template-columns:1fr}}
+.legend span{display:grid;grid-template-columns:20px 1fr;gap:0 8px;align-items:start;line-height:1.55}
+.legend i{grid-row:1;width:20px;height:13px;border-radius:0 100% 0 100%;border:1.2px solid var(--leaf-stroke);margin-top:.35em}
+.legend b{grid-column:2;font-weight:700;color:var(--ink);font-size:11.5px}
+.legend em{grid-column:2;font-style:normal;font-size:11px;color:var(--ink-faint)}
+
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:12px;color:var(--ink-faint);font-weight:700;padding:0 0 10px;border-bottom:1px solid var(--line)}
+td{padding:11px 0;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+tr.hot td{background:var(--grass-1)}
+td.dom{font-family:'Poppins',sans-serif;font-weight:500;overflow-wrap:anywhere}
+td.st{width:auto;min-width:8.5em}
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:2px 10px;background:var(--grass-1);color:var(--ink-soft)}
+.tag i{width:10px;height:10px;flex:none;border-radius:0 100% 0 100%;border:1px solid var(--leaf-stroke)}
+td.exp{width:auto;white-space:nowrap;font-family:'Poppins',sans-serif;font-size:13px;color:var(--ink-faint)}
+@media(max-width:520px){
+  table,thead,tbody,tr,td{display:block;width:100%}
+  thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  tr{border-bottom:1px solid var(--line);padding:10px 0}
+  td{border-bottom:0;padding:1px 0}
+}
+
+/* ===== 試作コントロール ===== */
+.rev{position:fixed;right:14px;bottom:14px;z-index:99;background:var(--card);border:1px solid var(--line-strong);
+  padding:12px 14px;box-shadow:var(--shadow-soft);font-size:12px;max-width:330px;line-height:1.7}
+.rev b.h{display:block;font-size:11px;color:var(--ink-faint);margin-bottom:8px}
+.rev .row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.rev input[type=range]{flex:1;accent-color:var(--grass)}
+.rev .n{font-family:'Poppins',sans-serif;font-weight:600;min-width:52px;text-align:right}
+.rev .r{display:flex;flex-wrap:wrap;gap:5px}
+.rev button{font:inherit;font-weight:700;cursor:pointer;border:1px solid var(--line-strong);background:var(--grass-1);color:var(--ink);padding:4px 11px}
+.rev button:hover{background:var(--grass-2)}
+.rev button[aria-pressed=true]{background:var(--green);color:var(--green-contrast);border-color:var(--green)}
+.rev .cap{margin:8px 0 0;font-size:10.5px;color:var(--ink-faint);line-height:1.6}
+@media(max-width:860px){.rev{display:none}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="#"><i></i><span>TeamC<em>.Com</em></span></a>
+    <div class="hdr-right">
+      <span class="auth-chip">AuthContext: 認証済み</span>
+      <a href="#">マイページ</a><a href="#">ログアウト</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="page-head">
+      <h1>マイページ</h1>
+      <p>持っているドメインが、そのまま1本の木になります。葉にカーソルを合わせると、その葉のドメインが出ます。</p>
+    </div>
+
+    <section class="card">
+      <h2 id="treeTitle">あなたの木</h2>
+      <p class="sub" id="treeSub"></p>
+      <div class="stage" id="stage">
+        <svg id="tree" viewBox="42 16 916 960" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="treeTitle" aria-describedby="treeDesc"></svg>
+        <p id="treeDesc" class="sr"></p>
+        <div class="tip" id="tip" aria-hidden="true"></div>
+        <div class="empty-note" id="emptyNote" hidden>
+          <b>まだ葉が1枚もありません</b>
+          ドメインを1件取得すると、この木に葉が1枚つきます。
+        </div>
+      </div>
+      <div class="legend" id="legend"></div>
+    </section>
+
+    <section class="card">
+      <h2>ドメイン一覧</h2>
+      <p class="sub">木の葉と同じ並び・同じ色です。色が見分けられなくても、記号と文字で同じことが分かります。</p>
+      <table>
+        <thead><tr><th>ドメイン</th><th>状態</th><th>期限</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </section>
+  </div>
+</main>
+
+<div class="rev">
+  <b class="h">試作コントロール（本番には出ません）</b>
+  <div class="row">
+    <span>件数</span>
+    <input id="count" type="range" min="0" max="24" value="12" />
+    <span class="n font-en" id="countN">12件</span>
+  </div>
+  <div class="r">
+    <button id="btnAdd">＋1件取得</button>
+    <button id="btnAge">状態を1つ進める</button>
+    <button id="btnExpire">1枚を期限切れに</button>
+    <button id="btnReset">はじめから</button>
+  </div>
+  <div class="r" style="margin-top:6px">
+    <button id="btnPal" aria-pressed="false">配色：若草</button>
+    <button id="btnMotion" aria-pressed="false">アニメ軽減</button>
+  </div>
+  <p class="cap">葉＝1ドメイン。ホバー／Tabで名前が出ます。期限切れの葉は落ちて根もとに残ります。</p>
+</div>
+
+<script>
+/* ============================================================
+   データ
+   ============================================================ */
+const STATUS = {
+  new:     {label:'取得したて', sym:'✦', v:'--leaf-new',     note:'今日〜30日以内に取得'},
+  ok:      {label:'元気',       sym:'●', v:'--leaf-ok',      note:'更新まで余裕があります'},
+  soon:    {label:'更新が近い', sym:'◐', v:'--leaf-soon',    note:'90日以内に更新'},
+  urgent:  {label:'まもなく期限', sym:'▲', v:'--leaf-urgent', note:'30日以内に更新'},
+  expired: {label:'期限切れ',   sym:'✕', v:'--leaf-expired', note:'失効しました'},
+  unknown: {label:'確認できません', sym:'？', v:'--leaf-unknown', note:'状態を取得できませんでした'},
+};
+const AGE_ORDER = ['new','ok','soon','urgent','expired'];
+
+const SEED_DOMAINS = [
+  ['kitaq-cafe.com','ok','2027-04-01'],
+  ['mojiko-retro.jp','new','2028-01-12'],
+  ['yahata-steel-works.net','soon','2026-11-02'],
+  ['kokura-castle.jp','urgent','2026-09-18'],
+  ['tobata-gion.com','ok','2027-06-30'],
+  ['wakamatsu-port.jp','expired','2026-07-31'],
+  ['sarakurayama-view.com','ok','2027-02-14'],
+  ['kanmon-strait.net','soon','2026-10-25'],
+  ['team-c-hackathon-2026.com','new','2028-02-01'],
+  ['gmo-internet-ic.jp','ok','2027-09-09'],
+  ['hirao-dai.com','unknown','—'],
+  ['moji-banana.jp','ok','2027-12-24'],
+  ['kokura-tonchan.com','urgent','2026-09-05'],
+  ['yakiudon-honpo.jp','soon','2026-11-20'],
+  ['zenrin-map.net','ok','2028-03-03'],
+  ['tanga-market.com','new','2028-02-20'],
+  ['nishitetsu-line.jp','ok','2027-07-07'],
+  ['kaikyo-plaza.com','expired','2026-06-15'],
+  ['space-world-memory.jp','ok','2027-05-05'],
+  ['chikuho-line.net','soon','2026-12-01'],
+  ['kurate-yakei.com','ok','2028-04-18'],
+  ['kitakyushu-airport.jp','urgent','2026-09-29'],
+  ['adachi-park-sakura.com','ok','2027-03-28'],
+  ['a-very-long-domain-name-for-testing.com','ok','2027-08-08'],
+];
+
+/* ============================================================
+   木のかたち
+   ------------------------------------------------------------
+   樹冠は「もくもく」を円の寄せ集めで作る。ロープごとに1トーン、
+   奥から手前へ4トーン重ねると参考画像の階調になる。
+   ============================================================ */
+const NS='http://www.w3.org/2000/svg';
+function rng(seed){ let s=seed>>>0||1; return ()=>{ s^=s<<13;s>>>=0;s^=s>>17;s^=s<<5;s>>>=0; return s/4294967296; }; }
+
+const D2R = Math.PI/180;
+const f1 = n => Math.round(n*10)/10;
+function wrapAng(a){ while(a> Math.PI*0.5) a-=Math.PI*2; while(a< -Math.PI*1.5) a+=Math.PI*2; return a; }
+
+/* 枝ひとつ分の輪郭。中心線は2次ベジエ、両側に法線方向のふとさを持たせて閉じる。
+   stroke-linecap:round の等幅ではないので、先へ行くほど本当に細くなる */
+function limbPath(x0,y0,cx,cy,x1,y1,w0,w1){
+  const a0 = Math.atan2(cy-y0, cx-x0);
+  const a1 = Math.atan2(y1-cy, x1-cx);
+  const am = Math.atan2(Math.sin(a0)+Math.sin(a1), Math.cos(a0)+Math.cos(a1));
+  const wm = (w0+w1)*0.5;
+  const px = a => -Math.sin(a), py = a => Math.cos(a);
+  const P = (x,y,a,w,s) => `${f1(x+px(a)*w*s)} ${f1(y+py(a)*w*s)}`;
+  return 'M'+P(x0,y0,a0,w0,1)+'Q'+P(cx,cy,am,wm,1)+' '+P(x1,y1,a1,w1,1)
+       + 'L'+P(x1,y1,a1,w1,-1)+'Q'+P(cx,cy,am,wm,-1)+' '+P(x0,y0,a0,w0,-1)+'Z';
+}
+
+/* 葉の房。回転させた小さなだ円（＝葉の粒）をひとつの d にまとめる。
+   同色の粒が重なって、輪郭のふわふわしたひとかたまりに見える */
+function puffPath(cx,cy,R,n,rand,grain,squash){
+  const sq = squash ?? 0.78;
+  let d = '';
+  for(let i=0;i<n;i++){
+    const a = rand()*Math.PI*2;
+    const t = 0.26 + Math.sqrt(rand())*0.74;      // ふちに寄せて置くと輪郭が粒立つ
+    const gx = cx + Math.cos(a)*R*t;
+    const gy = cy + Math.sin(a)*R*t*sq;
+    const rx = R*grain*(0.76+rand()*0.52);
+    const ry = rx*(0.50+rand()*0.28);
+    const rot = Math.round(rand()*180);
+    const ux = Math.cos(rot*D2R)*rx, uy = Math.sin(rot*D2R)*rx;
+    d += `M${f1(gx-ux)} ${f1(gy-uy)}`
+       + `a${f1(rx)} ${f1(ry)} ${rot} 1 0 ${f1(ux*2)} ${f1(uy*2)}`
+       + `a${f1(rx)} ${f1(ry)} ${rot} 1 0 ${f1(-ux*2)} ${f1(-uy*2)}`;
+  }
+  return d;
+}
+
+/* 樹冠のシルエット：横長のだ円。枝はここからはみ出すと内へ戻される */
+const CROWN = {x:500, y:372, rx:412, ry:272};
+/* 幹から出る太枝。x,y は付け根、a は角度（度・-90が真上） */
+const MAIN_LIMBS = [
+  {x:487,y:706,a:-136,len:180,w:31},
+  {x:494,y:690,a:-106,len:196,w:34},
+  {x:506,y:690,a:-74, len:196,w:34},
+  {x:513,y:706,a:-44, len:180,w:31},
+  {x:479,y:752,a:-168,len:150,w:21},   // 下枝（左）
+  {x:521,y:752,a:-12, len:150,w:21},   // 下枝（右）
+];
+const LIMB_TONE = ['--branch','--branch-dark','--branch-dark','--branch-dark','--branch-dark','--branch-dark'];
+
+function buildTree(){
+  const rand = rng(20260827);
+  const limbs = [];      // {d, depth}
+  const nodes = [];      // 房を置く候補
+  const MAXD = 4;
+
+  /* シルエットの外へ出た枝を中心へ引き戻す。これで横長の雲形に収まる */
+  function edge(ox, oy){   // 方角ごとに半径を揺らして、上辺を不規則にする
+    const th = Math.atan2(oy, ox);
+    return 0.78 + 0.19*Math.sin(th*3.1+1.15) + 0.12*Math.sin(th*5.7-0.6) - 0.07*Math.sin(th*2.0)
+         + 0.06*Math.sin(th*8.3+2.1);
+  }
+  function steer(a, x, y){
+    const ox = (x-CROWN.x)/CROWN.rx, oy = (y-CROWN.y)/CROWN.ry;
+    const over = Math.hypot(ox, oy) - edge(ox, oy);
+    if(over <= 0) return a;
+    let dd = Math.atan2(-oy*CROWN.ry, -ox*CROWN.rx) - a;
+    while(dd> Math.PI) dd -= Math.PI*2;
+    while(dd<-Math.PI) dd += Math.PI*2;
+    return a + dd*Math.min(0.72, over*1.9);
+  }
+
+  function grow(x,y,ang,len,w,depth){
+    const bend = (rand()-0.5)*0.58;
+    const cx = x + Math.cos(ang)*len*0.55, cy = y + Math.sin(ang)*len*0.55;
+    const ea = ang + bend;
+    const ex = cx + Math.cos(ea)*len*0.5, ey = cy + Math.sin(ea)*len*0.5;
+    const w1 = w*(depth===0 ? 0.56 : 0.64);
+    limbs.push({p:[x,y,cx,cy,ex,ey,w*0.5,w1*0.5], depth});
+    if(depth>=2) nodes.push({x:cx,y:cy,a:ang,depth,kind:'mid'});
+    if(depth>=MAXD){ nodes.push({x:ex,y:ey,a:ea,depth,kind:'tip'}); return; }
+    const n = rand()<0.24 ? 3 : 2;
+    for(let i=0;i<n;i++){
+      let ca = wrapAng(ea + (i-(n-1)/2)*(0.60+rand()*0.46));
+      ca += (-Math.PI*0.5 - ca)*0.13;                 // すこし上へ起こす
+      ca = steer(ca, ex, ey);
+      grow(ex,ey,ca,len*(0.70+rand()*0.12),w1,depth+1);
+    }
+  }
+  MAIN_LIMBS.forEach(m => grow(m.x,m.y,m.a*D2R,m.len,m.w,0));
+
+  /* 下ぶちから垂れる枝。外側・下寄りの枝先を選んで真下へ伸ばす */
+  const droopers = nodes.filter(nd => nd.kind==='tip'
+    && nd.y > CROWN.y+CROWN.ry*0.30 && Math.abs(nd.x-CROWN.x) > CROWN.rx*0.28);
+  for(let i=0;i<droopers.length;i++){
+    if(rand()>0.30) continue;
+    const nd = droopers[i];
+    const len = 46+rand()*46;
+    const ang = Math.PI*0.5 + (nd.x<CROWN.x ? -1 : 1)*(0.16+rand()*0.42);
+    const ex = nd.x+Math.cos(ang)*len, ey = nd.y+Math.sin(ang)*len;
+    limbs.push({p:[nd.x,nd.y,nd.x+Math.cos(ang-0.25)*len*0.55,nd.y+Math.sin(ang-0.25)*len*0.55,ex,ey,2.4,1.1], depth:4});
+    nodes.push({x:ex,y:ey,a:ang,depth:MAXD,kind:'droop'});
+  }
+
+  /* --- 房を置く。枝先と外側の枝の途中。密になりすぎないよう間隔で間引く --- */
+  const raw = [];
+  nodes.forEach(nd=>{
+    const take = nd.kind==='droop' ? true
+               : nd.kind==='tip'   ? true
+               : (nd.depth>=2 && rand()<0.52);
+    if(!take) return;
+    const R = nd.kind==='droop' ? 16+rand()*11
+            : nd.kind==='tip'   ? 26+rand()*18
+            :                     31+rand()*20;
+    raw.push({x:nd.x+Math.cos(nd.a)*R*0.36, y:nd.y+Math.sin(nd.a)*R*0.36, R, kind:nd.kind});
+    // ときどき衛星の小房を足して、房と房がつながった大きな塊をつくる
+    if(nd.kind!=='droop' && rand()<0.42){
+      const sa = rand()*Math.PI*2, sd = R*(0.7+rand()*0.5);
+      raw.push({x:nd.x+Math.cos(sa)*sd, y:nd.y+Math.sin(sa)*sd*0.7, R:R*(0.55+rand()*0.3), kind:'sat'});
+    }
+  });
+  const puffs = [];
+  for(const p of raw){
+    let ok = p.kind==='tip' || p.kind==='droop';   // 枝先は必ず葉をつける（裸の枝を出さない）
+    if(!ok){
+      ok = true;
+      for(const q of puffs){
+        if(Math.hypot(p.x-q.x, (p.y-q.y)*1.15) < (p.R+q.R)*0.40){ ok=false; break; }
+      }
+    }
+    if(ok) puffs.push(p);
+  }
+  // 房に覆われないまま外へ出た枝先は、背景の上で枯れ枝に見える。覆いを足す
+  limbs.filter(l=>l.depth>=2).forEach(l=>{
+    const ex=l.p[4], ey=l.p[5];
+    if(!puffs.some(q=>Math.hypot(ex-q.x, ey-q.y) < q.R*0.92))
+      puffs.push({x:ex, y:ey, R:19+rand()*12, kind:'cover'});
+  });
+  puffs.forEach(p=>{
+    const nx = (p.x-CROWN.x)/CROWN.rx, ny = (p.y-CROWN.y)/CROWN.ry;
+    const rim = Math.min(1.15, Math.hypot(nx, ny*0.9));
+    // 光は左上から。高い房・外の房ほど明るく、内側と下は暗い
+    const lum = -ny*0.58 - nx*0.19 + rim*0.14 + (rand()-0.5)*0.62;
+    p.t = Math.max(1, Math.min(5, Math.round(2.55 + lum*1.95)));
+  });
+
+  /* --- 奥の影。太枝の分岐点に大きめの暗い房を先に敷く --- */
+  const shade = nodes.filter(nd => nd.depth===2 && nd.kind==='mid' && rand()<0.62)
+    .map(nd => `<path d="${puffPath(CROWN.x+(nd.x-CROWN.x)*0.82, nd.y+10, 44+rand()*24, 12, rand, 0.36)}"`
+             + ` fill="var(--crown-${rand()<0.55?1:2})"/>`)
+    .join('');
+
+  const body = puffs.slice().sort((a,b)=>a.t-b.t).map(p=>{
+    let s = `<path d="${puffPath(p.x, p.y, p.R, p.R<24?8:12, rand, 0.34)}" fill="var(--crown-${p.t})"/>`;
+    if(p.t>=3) s += `<path d="${puffPath(p.x-p.R*0.22, p.y-p.R*0.26, p.R*0.58, 6, rand, 0.42)}"`
+                 +  ` fill="var(--crown-${Math.min(5,p.t+1)})"/>`;
+    return s;
+  }).join('');
+
+  const branchMarkup = limbs.map(l=>{
+    const q = l.p;
+    let s = `<path d="${limbPath(...q)}" fill="var(${LIMB_TONE[Math.min(l.depth,5)]})"/>`;
+    if(l.depth<=1){   // 太枝は右下に陰、左上に光。幹と同じ当たりかたにする
+      const sh = [q[0],q[1],q[2],q[3],q[4],q[5],q[6]*0.44,q[7]*0.44];
+      const nx0=-Math.sin(Math.atan2(q[3]-q[1],q[2]-q[0])), ny0=Math.cos(Math.atan2(q[3]-q[1],q[2]-q[0]));
+      const o = (k)=>[sh[0]+nx0*q[6]*k,sh[1]+ny0*q[6]*k,sh[2]+nx0*q[6]*k,sh[3]+ny0*q[6]*k,sh[4]+nx0*q[7]*k,sh[5]+ny0*q[7]*k,q[6]*0.42,q[7]*0.42];
+      s += `<path d="${limbPath(...o(0.56))}" fill="var(--branch-dark)" opacity=".34"/>`
+        +  `<path d="${limbPath(...o(-0.56))}" fill="var(--branch-light)" opacity=".20"/>`;
+    }
+    return s;
+  }).join('');
+  // ドメインの葉は、実際に生成された房の上にだけ置く。座標を手で持つと
+  // 樹冠を作り直すたびに葉が空中へ取り残される
+  SLOTS = pickSlots(puffs);
+  return `<g class="branches">${branchMarkup}</g><g class="canopy">${shade}${body}</g>`;
+}
+
+/* 房から24か所を選ぶ。幹の真上と暗い房は外し、最遠点順に並べて
+   「1件目から24件目まで、増えるほど全体に散る」ようにする */
+function pickSlots(puffs){
+  // 樹冠のふちぎりぎりは葉が半分はみ出すので、内側 95% までに限る
+  const inside = p => Math.hypot((p.x-CROWN.x)/CROWN.rx, (p.y-CROWN.y)/CROWN.ry) <= 0.95;
+  const cand = puffs.filter(p => p.t>=2 && p.R>=16 && inside(p)
+                              && !(Math.abs(p.x-500)<62 && p.y>545));
+  if(!cand.length) return [[500,300,0]];
+  const picked = [cand.reduce((a,b)=> (b.y<a.y?b:a))];   // まず樹冠のてっぺん
+  while(picked.length < 24 && picked.length < cand.length){
+    let best=null, bestD=-1;
+    for(const c of cand){
+      if(picked.includes(c)) continue;
+      let d=Infinity;
+      for(const q of picked) d=Math.min(d, Math.hypot(c.x-q.x,(c.y-q.y)*1.1));
+      if(d>bestD){ bestD=d; best=c; }
+    }
+    if(!best || bestD<58) break;
+    picked.push(best);
+  }
+  return picked.map(p=>{
+    const rot = Math.max(-92, Math.min(84,
+      (p.x-CROWN.x)/CROWN.rx*58 - 8 + (p.y-CROWN.y)/CROWN.ry*14));
+    return [Math.round(p.x), Math.round(p.y), Math.round(rot)];
+  });
+}
+
+/* render() は毎回呼ぶ。形は seed 固定なので一度作って使い回す */
+let CROWN_CACHE = null;
+function buildCrown(){ return CROWN_CACHE || (CROWN_CACHE = buildTree()); }
+
+/* 草むら。根もとを隠す明るい黄緑の房 */
+function grassTuft(rand, xa, xb, base, hMin, hMax, n, col, op){
+  let d='';
+  for(let i=0;i<n;i++){
+    const x = xa + (xb-xa)*(i+rand()*0.92)/n;
+    const h = hMin + rand()*(hMax-hMin);
+    const bend = (rand()-0.5)*h*0.86;
+    const w = 3.0 + rand()*3.6;
+    d += `M${f1(x-w)} ${f1(base)}`
+       + `Q${f1(x+bend*0.22)} ${f1(base-h*0.62)} ${f1(x+bend)} ${f1(base-h)}`
+       + `Q${f1(x+bend*0.1+w*0.8)} ${f1(base-h*0.48)} ${f1(x+w)} ${f1(base)}Z`;
+  }
+  return `<path d="${d}" fill="var(${col})"${op?` opacity="${op}"`:''}/>`;
+}
+
+/* 幹：地際で広がる板根、縦の筋、右が陰・左が明るい。輪郭線は持たない */
+function buildTrunk(){
+  const rand = rng(90210);
+  const body = 'M336 950C368 898 400 886 424 844C446 802 458 750 466 688'
+             + 'L538 688C548 750 562 802 584 844C610 886 642 898 672 950'
+             + 'L604 950C586 918 556 916 542 950L468 950C450 916 420 918 400 950Z';
+  let grain='';
+  for(let i=0;i<12;i++){
+    const t = (i+0.5)/12;
+    const xt = 470 + t*64;
+    const xb = 372 + t*262;
+    const ya = 690 + rand()*30, yb = 890 + rand()*58;
+    const w  = 3.6 + rand()*5.0;
+    const dark = t > 0.42;
+    grain += `<path d="${limbPath(xt,ya,(xt+xb)/2+(rand()-0.5)*22,(ya+yb)/2,xb,yb,w*0.5,w*0.20)}"`
+          +  ` fill="var(${dark?'--bark-dark':'--bark-light'})"`
+          +  ` opacity="${(dark?0.12+rand()*0.13:0.11+rand()*0.12).toFixed(2)}"/>`;
+  }
+  const grass =
+      grassTuft(rand, 296, 706, 952, 18, 40, 26, '--ground-2')
+    + grassTuft(rand, 320, 686, 954, 26, 62, 30, '--grass')
+    + grassTuft(rand, 354, 650, 950, 30, 58, 12, '--crown-4', '.85');
+  return `<g class="trunk">
+    <clipPath id="tclip"><path d="${body}"/></clipPath>
+    <path d="${body}" fill="var(--bark)"/>
+    <g clip-path="url(#tclip)">
+      <path fill="var(--bark-dark)" opacity=".30" d="M514 674C522 756 536 818 558 860C582 904 614 918 644 964L706 964L706 674Z"/>
+      <path fill="var(--bark-light)" opacity=".24" d="M290 964C326 916 358 898 382 854C406 810 420 752 426 674L504 674C500 754 488 814 464 860C442 906 410 920 384 964Z"/>
+      ${grain}
+    </g>
+    ${grass}
+  </g>`;
+}
+const TRUNK = buildTrunk();
+
+/* 地面：木の後ろの淡いブロブ、やわらかい影、遠くの草 */
+function buildGround(){
+  const rand = rng(4711);
+  return `<g class="ground">
+    <path fill="var(--sky-blob)" d="M498 132C688 132 852 226 866 372C880 518 792 636 652 678C536 712 428 712 324 678C178 632 110 512 128 370C148 222 310 132 498 132Z"/>
+    <ellipse cx="500" cy="944" rx="320" ry="29" fill="var(--ground)"/>
+    <ellipse cx="496" cy="950" rx="192" ry="17" fill="var(--ground-2)"/>
+    ${grassTuft(rand, 200, 320, 946, 12, 30, 11, '--ground-2')}
+    ${grassTuft(rand, 682, 812, 946, 12, 30, 11, '--ground-2')}
+  </g>`;
+}
+const GROUND = buildGround();
+
+/* 葉：茎が左（原点）、先端が右。ローカル約 48×26 */
+const LEAF_D = 'M 0 0 C 9 -14 27 -19 45 -10 C 33 6 13 12 0 0 Z';
+const VEIN_D = 'M 4 -1 C 9 -2.6 13 -3.8 17 -4.8';
+const STEM_D = 'M 0 0 L -9 4';
+
+/* 葉の上の状態グリフ。凡例・表・ツールチップと同じ記号を、木の上でも見せる。
+   色（塗り）は樹冠と溶けることがあるので、状態を運ぶ最後の砦はこの形。
+   葉の内側の余白 x 15〜31 / y -11〜3 に収める */
+const GLYPH = {
+  new:     '<path d="M 23 -10 L 23 2 M 17 -4 L 29 -4 M 19 -8 L 27 0 M 27 -8 L 19 0" fill="none" stroke="{i}" stroke-width="2" stroke-linecap="round"/>',
+  ok:      '<circle cx="23" cy="-4" r="4.6" fill="{i}"/>',
+  soon:    '<circle cx="23" cy="-4" r="4.8" fill="none" stroke="{i}" stroke-width="1.9"/><path d="M 23 -8.8 A 4.8 4.8 0 0 1 23 0.8 Z" fill="{i}"/>',
+  urgent:  '<path d="M 23 -9.6 L 28.6 1 L 17.4 1 Z" fill="{i}"/>',
+  expired: '<path d="M 18 -9 L 28 1 M 28 -9 L 18 1" fill="none" stroke="{i}" stroke-width="2.4" stroke-linecap="round"/>',
+  unknown: '<path d="M 19.2 -6.4 A 4 4 0 0 1 26.2 -4.2 C 26.2 -1.6 23 -1.6 23 0.4" fill="none" stroke="{i}" stroke-width="2.1" stroke-linecap="round"/><circle cx="23" cy="3.4" r="1.35" fill="{i}"/>',
+};
+/* 濃い葉（期限切れ）の上では暗いインクが沈むので、グリフだけ明るい側へ反転 */
+const GLYPH_INK = {expired:'var(--leaf-glyph-on-dark)'};
+const glyphOf = st => GLYPH[st].replaceAll('{i}', GLYPH_INK[st] || 'var(--leaf-stroke)');
+
+/* 葉を置くスロット。樹冠のふちと手前の面。順番は「増えたときに散らばる」順 */
+/* 葉を置くスロット。buildCrown() が樹冠を組んだときに、実際の房の座標から
+   pickSlots() が埋める（下の初期化で必ず1度は走る） */
+let SLOTS = [[500,300,0]];
+buildCrown();   // 描画前に一度組んで SLOTS を確定させる（let の TDZ を避けてここで呼ぶ）
+
+/* ============================================================
+   空気感（木のまわりの背景ブロブ・光・舞い落ちる葉・足もと）
+   ------------------------------------------------------------
+   参考の絵は、木そのものより「まわり」で雰囲気が決まっていた。
+   クリーム地に淡いミントの大きなブロブが右上に寄って敷いてあり、
+   左右の空中を小さな葉が10枚ほどゆっくり回りながら落ちてくる。
+   ここはその2枚のレイヤーだけを持つ。木（樹冠・幹・地面）には触らない。
+
+   影とにじみは filter:blur() ではなく薄い塗りの重ねで作る。ぼかしは
+   毎フレーム再合成が要るので、舞い落ちる葉と同じ画面に置くと落ちる。
+   かたちは rng(seed) で決めるので、読み込み直しても毎回同じ絵になる。
+   ============================================================ */
+
+/* 角のない不定形。だ円上の点を半径ごとにゆらし、Catmull-Rom を3次ベジェに
+   直して閉じる。同じ seed・同じ n なら比率が同じ形が出るので、ひとまわり
+   大きい halo を重ねると、ぼかさずに柔らかいふちになる */
+function blobPath(cx, cy, rx, ry, n, jit, seed){
+  const rand = rng(seed), p = [], f = v => v.toFixed(1);
+  for(let i=0;i<n;i++){
+    const a = (i/n)*Math.PI*2, k = 1 + (rand()-0.5)*jit*2;
+    p.push([cx+Math.cos(a)*rx*k, cy+Math.sin(a)*ry*k]);
+  }
+  let d = `M ${f(p[0][0])} ${f(p[0][1])}`;
+  for(let i=0;i<n;i++){
+    const a=p[(i-1+n)%n], b=p[i], c=p[(i+1)%n], e=p[(i+2)%n];
+    d += ` C ${f(b[0]+(c[0]-a[0])/6)} ${f(b[1]+(c[1]-a[1])/6)}`
+       + ` ${f(c[0]-(e[0]-b[0])/6)} ${f(c[1]-(e[1]-b[1])/6)} ${f(c[0])} ${f(c[1])}`;
+  }
+  return d + ' Z';
+}
+
+/* 木の後ろに敷く1枚。ブロブ → 陽だまり → 足もとの柔らかい影 の順 */
+const ATMO_BACK = (()=>{
+  const BX=566, BY=358, RX=424, RY=352, N=9, J=0.075, S=20260901;
+  const blob = (k,c,o) =>
+    `<path d="${blobPath(BX,BY,RX*k,RY*k,N,J,S)}" fill="var(${c})"${o?` opacity="${o}"`:''} />`;
+  return `
+  <g class="atmo-back" pointer-events="none" aria-hidden="true">
+    ${blob(1.10,'--sky-blob','.55')}${blob(1.05,'--grass-2','.45')}${blob(1,'--grass-2')}
+    <path class="atmo-sun" d="${blobPath(700,244,190,158,8,0.16,S+7)}"  fill="var(--sun)" opacity=".30" />
+    <path class="atmo-sun" d="${blobPath(722,220,104,88,8,0.20,S+13)}" fill="var(--sun)" opacity=".26" />
+    <ellipse cx="500" cy="944" rx="472" ry="48" fill="var(--ground)" opacity=".22" />
+    <ellipse cx="500" cy="943" rx="416" ry="40" fill="var(--ground)" opacity=".40" />
+  </g>`;
+})();
+
+/* 舞い落ちる装飾葉。ドメインの葉（LEAF_D）とは別物なので形も別に持つ。
+   状態を持たず、ホバーもフォーカスもしない — 数えられると困る */
+const ATMO_LEAF_D = 'M 0 0 C 7 -10 20 -13.5 33 -7.5 C 24 4.5 9 9 0 0 Z';
+const ATMO_LEAF_V = 'M 3 -0.8 C 10 -3 17 -4.6 25 -5.4';
+
+/* [x, y, 手前らしさ 0=遠い〜1=近い, 流れる向き ±1]。
+   樹冠が x 73〜927 / y 69〜618 をほぼ埋めるので、空いている空は左右の上すみと
+   樹冠の下の左右しかない。そこに散らす（樹冠の上に重ねると塗りが沈んで見えない）。
+   13点あるが、落ちきった瞬間は透明なので同時に見えるのは平均9枚ほど */
+const ATMO_SPOTS = [
+  [144, 116, 0.30,  1], [258, 182, 0.52, -1],
+  [862, 128, 0.34, -1], [746, 190, 0.26,  1],
+  [ 62,  98, 0.22,  1], [944, 104, 0.24, -1],
+  [ 78, 640, 0.56,  1], [200, 726, 0.86, -1], [304, 652, 0.38,  1],
+  [126, 800, 0.44, -1],
+  [916, 634, 0.50, -1], [792, 740, 0.82,  1], [938, 804, 0.30,  1],
+];
+
+const ATMO_FRONT = (()=>{
+  const rand = rng(3140807);
+  const leaves = ATMO_SPOTS.map(([x,y,d,dir],i)=>{
+    const sc  = (0.70 + d*0.85).toFixed(2);           // 手前ほど大きい
+    const op  = (0.42 + d*0.48).toFixed(2);           // 遠いものほど薄い
+    const tn  = d>0.60 ? 3 : 4;                       // 手前は濃く、遠くは明るく沈める
+    const rot = Math.round(-180 + rand()*360);
+    const adx = Math.round((36 + rand()*46) * dir);
+    // 地面より下へは行かせない（落ち葉＝失効ドメイン と読み違えられる）
+    const ady = Math.min(Math.round(150 + d*130 + rand()*60), Math.max(80, 900-y));
+    const dur = (16.5 - d*6.5 + rand()*3).toFixed(1); // 手前ほど速く落ちる
+    const asd = (8 + rand()*7).toFixed(1);
+    return `<g transform="translate(${x},${y})" opacity="${op}">
+      <g class="adrift" style="--adx:${adx}px;--ady:${ady}px;--adur:${dur}s;--adly:${(-rand()*dur).toFixed(1)}s">
+        <g class="aspin" style="--asdur:${asd}s;--asly:${(-rand()*asd).toFixed(1)}s;--asr:${i%2?'-':''}360deg">
+          <g transform="rotate(${rot}) scale(${sc})">
+            <path d="${ATMO_LEAF_D}" fill="var(--crown-${tn})" />
+            <path d="${ATMO_LEAF_V}" fill="none" stroke="var(--crown-${tn-2})"
+                  stroke-width="1.4" stroke-linecap="round" opacity=".5" />
+          </g>
+        </g>
+      </g>
+    </g>`;
+  }).join('');
+
+  /* 足もとの明るい黄緑の草。幹の根張り(x 300〜700)は避けて左右に置く */
+  const g2 = rng(551234);
+  const blade = (x,y,h,w,dir) =>
+    `M ${x.toFixed(1)} ${y.toFixed(1)}`
+    + ` Q ${(x+dir*w*0.35).toFixed(1)} ${(y-h*0.62).toFixed(1)} ${(x+dir*w).toFixed(1)} ${(y-h).toFixed(1)}`
+    + ` Q ${(x+dir*w*0.05).toFixed(1)} ${(y-h*0.50).toFixed(1)} ${(x+2.6).toFixed(1)} ${y.toFixed(1)} Z`;
+  let gd = '';
+  [[146,336],[664,858]].forEach(([x0,x1])=>{
+    for(let i=0;i<11;i++){
+      const x = x0 + (x1-x0)*(i/10) + (g2()-0.5)*14;
+      const y = 936 + (g2()-0.5)*13;
+      gd += blade(x, y, 11+g2()*15, 4+g2()*7, g2()<0.5?-1:1);
+    }
+  });
+
+  // 草は幹（buildTrunk）と地面（buildGround）がすでに持っている。ここで3層目を
+  // 重ねると帯になるので置かない（gd は残してあるが未使用）
+  return `
+  <g class="atmo-front" pointer-events="none" aria-hidden="true">
+    <g class="atmo-fall">${leaves}</g>
+  </g>`;
+})();
+
+/* ============================================================
+   状態
+   ============================================================ */
+let items = [];
+let falling = [];  // 落下中。木からは外れ、まだ着地していない
+let fallen = [];   // 落ちた葉（根もとに残す）
+let paletteRef = false, reduce = false;
+
+function reset(n){
+  items = SEED_DOMAINS.slice(0, n).map(([name,status,exp],i)=>({name,status,exp,slot:i}));
+  falling.forEach(it=>clearTimeout(it.fall && it.fall.timer));
+  falling = [];
+  fallen = [];
+  render(true);
+}
+
+function hash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+
+/* ============================================================
+   描画
+   ============================================================ */
+const svg = document.getElementById('tree');
+const stage = document.getElementById('stage');
+const tip = document.getElementById('tip');
+
+function leafMarkup(it, idx, kind){
+  const st = STATUS[it.status];
+  const [x,y,rot] = kind==='fallen' ? it.pos : SLOTS[it.slot % SLOTS.length];
+  // 落下中の葉は再描画でDOMごと作り直される。経過ぶんだけ animation-delay を
+  // 負にして続きから再生し、回転の支点(--fox/--foy)も葉の位置に置く
+  let wrapAttr = ' class="fallwrap"';
+  if(kind==='falling'){
+    const f = it.fall, ago = (performance.now() - f.t0)/1000;
+    wrapAttr = ` class="fallwrap fall" style="--fdx:${f.dx}px;--fdy:${f.dy}px;--frot:${f.rot}deg;`
+             + `--fdur:${f.dur}s;--fox:${x}px;--foy:${y}px;animation-delay:${-ago}s"`;
+  }
+  const h = hash(it.name);
+  const sc = 1.02 + (h % 7)/32;                 // 名前で決まる大きさ（再訪しても同じ）
+  const bd = (4.2 + (h>>3 & 7)*0.42).toFixed(1);
+  const dl = ((h>>6 & 15)*0.13).toFixed(2);
+  const aria = `${it.name}、${st.label}${it.exp!=='—'?`、期限 ${it.exp}`:''}`;
+  return `
+  <g${wrapAttr} data-i="${idx}">
+    <g class="leaf" tabindex="-1" role="button" data-name="${it.name}" data-status="${it.status}"
+       data-exp="${it.exp}" aria-label="${aria}" transform="translate(${x},${y}) rotate(${rot}) scale(${sc.toFixed(2)})">
+      <g class="breathe" style="--bd:${bd}s;--dl:${dl}s">
+        <g class="lf">
+          <circle class="hit" cx="21" cy="-4" r="21" />
+          <path class="focus-ring" d="${LEAF_D}" />
+          <path class="focus-ring-in" d="${LEAF_D}" />
+          <path class="halo" d="${LEAF_D}" />
+          <path d="${STEM_D}" fill="none" stroke="var(--leaf-stroke)" stroke-width="3.4" stroke-linecap="round" />
+          <path d="${LEAF_D}" fill="var(${st.v})" stroke="var(--leaf-stroke)" stroke-width="2.6" stroke-linejoin="round" />
+          <path d="${VEIN_D}" fill="none" stroke="var(--leaf-stroke)" stroke-width="1.6" stroke-linecap="round" opacity=".5" />
+          ${glyphOf(it.status)}
+        </g>
+      </g>
+    </g>
+  </g>`;
+}
+
+function render(fresh){
+  const n = items.length;
+  // innerHTML の総入れ替えでホバー中／フォーカス中の要素が消える。mouseleave が
+  // 来ないのでツールチップが残り、activeElement は body に落ちる。両方拾い直す
+  const focused = document.activeElement && document.activeElement.closest
+    ? document.activeElement.closest('.leaf') : null;
+  const keepName = focused ? focused.dataset.name : null;
+  hideTip();
+  svg.innerHTML = `
+    ${ATMO_BACK}
+    ${GROUND}
+    <g class="tree-sway">
+      ${TRUNK}
+      <g class="crown">${buildCrown()}</g>
+      <g class="leaves">${items.map((it,i)=>leafMarkup(it,i,'tree')).join('')}</g>
+    </g>
+    ${ATMO_FRONT}
+    <g class="fallen">${fallen.map((it,i)=>leafMarkup(it,'f'+i,'fallen')).join('')}${falling.map((it,i)=>leafMarkup(it,'x'+i,'falling')).join('')}</g>`;
+
+  document.getElementById('emptyNote').hidden = n>0;
+  const counts = {};
+  items.forEach(it=>counts[it.status]=(counts[it.status]||0)+1);
+  const warn = (counts.soon||0)+(counts.urgent||0);
+  document.getElementById('treeSub').textContent =
+    n===0 ? 'まだ葉はありません。' :
+    `葉${n}枚＝ドメイン${n}件${warn?`。うち${warn}件が更新時期です`:''}${fallen.length+falling.length?`。落ち葉${fallen.length+falling.length}枚は失効したドメインです`:''}`;
+  document.getElementById('treeDesc').textContent = n===0
+    ? 'まだ葉のない木のイラストです。'
+    : `ドメイン${n}件を葉として表した木のイラストです。内訳は`
+      + Object.entries(counts).map(([k,v])=>`${STATUS[k].label}が${v}件`).join('、')
+      + '。1件ずつの詳細は下のドメイン一覧の表にあります。';
+
+  document.getElementById('rows').innerHTML = items.concat(falling, fallen).map(it=>{
+    const st=STATUS[it.status];
+    return `<tr data-name="${it.name}"><td class="dom">${it.name}</td>
+      <td class="st"><span class="tag"><i style="background:var(${st.v})" aria-hidden="true"></i><span aria-hidden="true">${st.sym}</span> ${st.label}</span></td>
+      <td class="exp">${it.exp}</td></tr>`;
+  }).join('');
+
+  bindLeaves();
+  if(keepName){
+    const back = svg.querySelector(`.leaf[data-name="${CSS.escape(keepName)}"]`);
+    if(back){ svg.querySelectorAll('.leaf').forEach(o=>o.setAttribute('tabindex','-1'));
+              back.setAttribute('tabindex','0'); back.focus(); }
+  }
+  // 葉が0枚のときは「葉＝ドメイン」の説明と絵が食い違うので樹冠を落とす
+  const crown = svg.querySelector('.crown');
+  if(crown) crown.style.opacity = n===0 ? '.3' : '';
+}
+
+/* 葉は24枚あるので、全部をタブ止まりにすると表に着くまで24回 Tab を押すことになる。
+   葉むら全体で1タブ止まりにし、中は矢印キーで移動する（roving tabindex） */
+function bindLeaves(){
+  const leaves = [...svg.querySelectorAll('.leaf')];
+  leaves.forEach((g,i)=>{
+    g.setAttribute('tabindex', i===0 ? '0' : '-1');
+    g.addEventListener('mouseenter', ()=>showTip(g));
+    g.addEventListener('mouseleave', hideTip);
+    g.addEventListener('focus', ()=>showTip(g));
+    g.addEventListener('blur', hideTip);
+    g.addEventListener('keydown', e=>{
+      const k=e.key, last=leaves.length-1;
+      let n=-1;
+      if(k==='ArrowRight'||k==='ArrowDown') n = i>=last ? 0 : i+1;
+      else if(k==='ArrowLeft'||k==='ArrowUp') n = i<=0 ? last : i-1;
+      else if(k==='Home') n = 0;
+      else if(k==='End') n = last;
+      else return;
+      e.preventDefault();
+      leaves.forEach(o=>o.setAttribute('tabindex','-1'));
+      leaves[n].setAttribute('tabindex','0');
+      leaves[n].focus();
+    });
+  });
+}
+
+function showTip(g){
+  const st = STATUS[g.dataset.status];
+  tip.innerHTML = `<b>${g.dataset.name}</b>
+    <span class="st"><i style="background:var(${st.v})"></i>${st.sym} ${st.label}</span>
+    <span class="ex">${g.dataset.exp==='—'?'期限を取得できませんでした':'期限 '+g.dataset.exp}</span>`;
+  tip.classList.add('on');   // 幅・高さを測るために先に出す
+  const r = g.getBoundingClientRect(), s = stage.getBoundingClientRect();
+  const hb = document.querySelector('header.site').getBoundingClientRect().bottom;
+  const tw = tip.offsetWidth, th = tip.offsetHeight, M = 8;
+  const leafCx = r.left + r.width/2 - s.left;
+  // 左右はビューポート基準でクランプ。上に置くとヘッダに潜る葉は下側へ反転する
+  const cx = Math.max(M - s.left + tw/2, Math.min(innerWidth - M - s.left - tw/2, leafCx));
+  const below = (r.top - th - 6) < hb + M;
+  tip.classList.toggle('below', below);
+  tip.style.left = cx + 'px';
+  tip.style.top  = (below ? r.bottom - s.top : r.top - s.top) + 'px';
+  // クランプで本体がずれても、矢印だけは葉を指したままにする
+  tip.style.setProperty('--ax', Math.max(12, Math.min(tw - 12, tw/2 + (leafCx - cx))) + 'px');
+  const row = document.querySelector(`tr[data-name="${CSS.escape(g.dataset.name)}"]`);
+  document.querySelectorAll('tr.hot').forEach(t=>t.classList.remove('hot'));
+  if(row) row.classList.add('hot');
+}
+function hideTip(){ tip.classList.remove('on'); document.querySelectorAll('tr.hot').forEach(t=>t.classList.remove('hot')); }
+
+/* 期限切れ → 落ちる */
+function expire(it){
+  if(!it || !items.includes(it)) return;
+  it.status='expired';
+  const [x,y] = SLOTS[it.slot % SLOTS.length];
+  const h = hash(it.name);
+  const rot = 70 + (h%40);
+  // 着地点は先に決めてクランプする（あとからクランプすると落下の終点と着地位置が
+  // ずれて、着地の瞬間に葉が横へ飛ぶ）。地面のだ円は 170〜830
+  const landX = Math.max(170, Math.min(830, x + ((h%2?1:-1)*(60 + h%120))));
+  const landY = 916 + (h>>4 & 7)*3;
+  it.pos  = [landX, landY, rot];
+  it.fall = {dx:landX-x, dy:landY-y, rot, dur:2.2 + (h%9)*0.16, t0:performance.now()};
+  items = items.filter(o=>o!==it);
+  falling.push(it);
+  render();
+  // 着地は animationend ではなくタイマーで確定させる。落下中に再描画されると
+  // 要素ごと作り直されて animationend が永久に来ない
+  const land = ()=>{
+    if(!falling.includes(it)) return;
+    falling = falling.filter(o=>o!==it);
+    fallen.push(it);
+    render();
+  };
+  it.fall.timer = setTimeout(land, reduce ? 0 : it.fall.dur*1000 + 80);
+}
+
+/* ============================================================
+   凡例・コントロール
+   ============================================================ */
+document.getElementById('legend').innerHTML = Object.entries(STATUS).map(([k,s])=>
+  `<span><i style="background:var(${s.v})" aria-hidden="true"></i><b><span aria-hidden="true">${s.sym}</span> ${s.label}</b><em>${s.note}</em></span>`).join('');
+
+const countEl = document.getElementById('count'), countN = document.getElementById('countN');
+countEl.addEventListener('input', ()=>{ countN.textContent = countEl.value+'件'; reset(+countEl.value); });
+
+document.getElementById('btnAdd').addEventListener('click', ()=>{
+  if(items.length + falling.length + fallen.length >= SEED_DOMAINS.length) return;
+  const used = new Set(items.concat(falling, fallen).map(i=>i.name));
+  const next = SEED_DOMAINS.find(d=>!used.has(d[0]));
+  if(!next) return;
+  items.push({name:next[0], status:'new', exp:next[2], slot:items.length+falling.length+fallen.length});
+  countEl.value = items.length; countN.textContent = items.length+'件';
+  render();
+  const g = svg.querySelector(`.fallwrap[data-i="${items.length-1}"] .leaf`);
+  if(g) g.classList.add('sprout');
+});
+
+document.getElementById('btnAge').addEventListener('click', ()=>{
+  const cand = items.filter(i=>AGE_ORDER.indexOf(i.status)>=0 && i.status!=='expired');
+  if(!cand.length) return;
+  const it = cand[hash(cand.map(c=>c.name+':'+c.status).join())%cand.length];
+  const nx = AGE_ORDER[AGE_ORDER.indexOf(it.status)+1];
+  if(nx==='expired'){ expire(it); } else { it.status=nx; render(); }
+});
+
+document.getElementById('btnExpire').addEventListener('click', ()=>{
+  const it = items.find(o=>o.status!=='expired');
+  if(it) expire(it);
+});
+
+document.getElementById('btnReset').addEventListener('click', ()=>{
+  countEl.value=12; countN.textContent='12件'; reset(12);
+});
+
+const btnPal = document.getElementById('btnPal');
+btnPal.addEventListener('click', ()=>{
+  paletteRef=!paletteRef;
+  document.body.classList.toggle('pal-ref', paletteRef);
+  btnPal.setAttribute('aria-pressed', String(paletteRef));
+  btnPal.textContent = '配色：' + (paletteRef?'参考画像':'若草');
+});
+const btnMotion = document.getElementById('btnMotion');
+btnMotion.addEventListener('click', ()=>{
+  reduce=!reduce;
+  document.body.classList.toggle('reduce', reduce);
+  btnMotion.setAttribute('aria-pressed', String(reduce));
+});
+if(matchMedia('(prefers-reduced-motion: reduce)').matches){ reduce=true; document.body.classList.add('reduce'); btnMotion.setAttribute('aria-pressed','true'); }
+
+reset(12);
+/* 読み込み直後、すでに期限切れの葉は少し遅れて落ちる */
+setTimeout(()=>{
+  items.filter(it=>it.status==='expired').forEach((it,k)=>{
+    setTimeout(()=>expire(it), k*700);
+  });
+}, 1400);
+</script>
+</body>
+</html>

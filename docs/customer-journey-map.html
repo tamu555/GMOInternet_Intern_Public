@@ -1,0 +1,241 @@
+<title>佐藤悠のカスタマージャーニー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;700&family=Noto+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper: #FAFBFA;
+    --ink: #1E2A32;
+    --ink-soft: #51626D;
+    --line: #DCE4E2;
+    --teal: #0F766E;
+    --teal-soft: #E4F0EE;
+    --orange: #D9530B;
+    --orange-soft: #FBEDE3;
+    --card: #FFFFFF;
+    --mono-bg: #EEF3F2;
+    --grey-curve: #9AAAB0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #14191D; --ink: #E6ECEA; --ink-soft: #9FAFB4; --line: #2C363C;
+      --teal: #4CC5B9; --teal-soft: #17302E; --orange: #F08A4B; --orange-soft: #38271B;
+      --card: #1B2227; --mono-bg: #222B30; --grey-curve: #5E6E75;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #14191D; --ink: #E6ECEA; --ink-soft: #9FAFB4; --line: #2C363C;
+    --teal: #4CC5B9; --teal-soft: #17302E; --orange: #F08A4B; --orange-soft: #38271B;
+    --card: #1B2227; --mono-bg: #222B30; --grey-curve: #5E6E75;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    font-size: 14px; line-height: 1.75; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 44px 24px 64px; }
+
+  header { margin-bottom: 30px; }
+  .team-mark {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700; letter-spacing: .12em; color: var(--ink-soft);
+  }
+  .team-mark::before {
+    content: ""; width: 22px; height: 4px;
+    background: linear-gradient(90deg, var(--orange) 50%, var(--teal) 50%);
+    border-radius: 2px;
+  }
+  h1 {
+    font-family: "Shippori Mincho", serif;
+    font-size: 30px; font-weight: 700; line-height: 1.4; margin: 8px 0 6px; text-wrap: balance;
+  }
+  .lede { color: var(--ink-soft); margin: 0; max-width: 52em; }
+  .lede b { color: var(--ink); font-weight: 700; }
+
+  /* ---- journey grid ---- */
+  .scroll { overflow-x: auto; margin-top: 26px; padding-bottom: 8px; }
+  .cjm {
+    display: grid;
+    grid-template-columns: 108px repeat(6, minmax(178px, 1fr));
+    min-width: 1180px;
+    border: 1px solid var(--line); border-radius: 12px;
+    background: var(--card); overflow: hidden;
+  }
+  .cell { padding: 12px 14px; border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+  .cell:nth-child(7n+1) { border-left: none; }
+  .row-label {
+    font-size: 11.5px; font-weight: 700; letter-spacing: .08em; color: var(--ink-soft);
+    display: flex; align-items: flex-start; padding-top: 14px;
+  }
+
+  /* phase header */
+  .phase { border-top: none; background: var(--teal-soft); }
+  .phase.lbl { background: var(--teal-soft); border-top: none; }
+  .phase .num {
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 500;
+    color: var(--teal); letter-spacing: .05em;
+  }
+  .phase h2 { font-size: 15px; font-weight: 700; margin: 2px 0 2px; line-height: 1.45; }
+  .phase .goal { font-size: 12px; color: var(--ink-soft); margin: 0; }
+
+  .cell p { margin: 0; font-size: 13px; }
+  .cell ul { margin: 0; padding-left: 16px; font-size: 12.5px; }
+  .cell li { margin-bottom: 3px; }
+  .touch { font-size: 12px; color: var(--ink-soft); }
+
+  .say {
+    font-size: 12.5px; background: var(--mono-bg); border-radius: 8px;
+    padding: 8px 10px; position: relative; margin: 0;
+  }
+  .say::before { content: "“"; color: var(--teal); font-weight: 700; }
+  .say::after { content: "”"; color: var(--teal); font-weight: 700; }
+
+  .pain { font-size: 12.5px; color: var(--ink-soft); }
+  .pain strong { color: var(--orange); font-weight: 700; }
+
+  .act ul { list-style: none; padding: 0; }
+  .act li {
+    font-size: 12.5px; margin-bottom: 5px; padding-left: 14px; position: relative;
+  }
+  .act li::before {
+    content: ""; position: absolute; left: 0; top: 8px;
+    width: 7px; height: 7px; border-radius: 2px; background: var(--teal);
+  }
+  .act .ref { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: var(--ink-soft); white-space: nowrap; }
+
+  /* emotion curve row */
+  .emotion-band { grid-column: 2 / 8; padding: 0; border-left: 1px solid var(--line); border-top: 1px solid var(--line); }
+  .emotion-band svg { display: block; width: 100%; height: 128px; }
+  .legend {
+    display: flex; gap: 18px; font-size: 11.5px; color: var(--ink-soft);
+    padding: 0 14px 10px;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .key { width: 20px; height: 0; border-top: 2.5px solid var(--teal); border-radius: 2px; }
+  .key.old { border-top-style: dashed; border-top-color: var(--grey-curve); }
+
+  footer { margin-top: 26px; font-size: 12.5px; color: var(--ink-soft); }
+  .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; background: var(--mono-bg); padding: 1px 6px; border-radius: 4px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="team-mark">GMOインターネット ハッカソン — TeamC</span>
+    <h1>佐藤悠のカスタマージャーニー</h1>
+    <p class="lede">ペルソナ <b>佐藤 悠</b>（19歳・大学1年・ドメイン未経験）が「就活用ポートフォリオを独自ドメインで公開したい」と思い立ってから、公開して安心して維持するまで。感情曲線は<b>従来サービス</b>と<b>本サービス（簡単モード）</b>を対比している — 分岐点はフェーズ③、サービスに到達した瞬間。</p>
+  </header>
+
+  <div class="scroll">
+    <div class="cjm">
+
+      <!-- phase header row -->
+      <div class="cell row-label phase lbl">フェーズ</div>
+      <div class="cell phase"><span class="num">01</span><h2>思い立つ</h2><p class="goal">独自URLにしたい</p></div>
+      <div class="cell phase"><span class="num">02</span><h2>調べて迷う</h2><p class="goal">どこで・何を買う？</p></div>
+      <div class="cell phase"><span class="num">03</span><h2>やりたいことを伝える</h2><p class="goal">目的が決まる</p></div>
+      <div class="cell phase"><span class="num">04</span><h2>選んで買う</h2><p class="goal">納得して決済</p></div>
+      <div class="cell phase"><span class="num">05</span><h2>つなぐ</h2><p class="goal">DNS設定が完了</p></div>
+      <div class="cell phase"><span class="num">06</span><h2>使い続ける</h2><p class="goal">安心して維持・卒業</p></div>
+
+      <!-- 行動 -->
+      <div class="cell row-label">行動</div>
+      <div class="cell"><p>友人のポートフォリオを見て、自分も独自URLで公開したいと思う</p></div>
+      <div class="cell"><p>「ドメイン 取得 方法」を検索。比較記事と生成AIの答えを行き来する</p></div>
+      <div class="cell"><p>会員登録し、「やりたいこと」をチップから選ぶ or 自由文で書く</p></div>
+      <div class="cell"><p>候補3件から選び、期間と総額を確認して決済する</p></div>
+      <div class="cell"><p>公開先サービス（Vercel等）を選び、レコードを入れて「確認する」を押す</p></div>
+      <div class="cell"><p>公開を確認。ときどきダッシュボードを見る。慣れたら通常モードも触る</p></div>
+
+      <!-- タッチポイント -->
+      <div class="cell row-label">タッチ<br>ポイント</div>
+      <div class="cell touch">友人のサイト、SNS</div>
+      <div class="cell touch">検索結果、比較記事、生成AI、各社料金ページ</div>
+      <div class="cell touch">簡単モード入口（目的チップ＋自由入力欄）</div>
+      <div class="cell touch">候補提案画面、価格表示、疑似決済</div>
+      <div class="cell touch">DNSレシピ、貼り付けパーサ、確認ボタン</div>
+      <div class="cell touch">完了画面、維持ダッシュボード、更新通知</div>
+
+      <!-- 思考 -->
+      <div class="cell row-label">思考・<br>つぶやき</div>
+      <div class="cell"><p class="say">yuu-portfolio.com みたいなURLかっこいい</p></div>
+      <div class="cell"><p class="say">.comと.netって何が違うの…？1円って本当？</p></div>
+      <div class="cell"><p class="say">『サイトを公開したい』って書くだけでいいんだ</p></div>
+      <div class="cell"><p class="say">おすすめの理由が書いてある。3年でいくらかも見えるから安心</p></div>
+      <div class="cell"><p class="say">Vercelを選んだら勝手に埋まった。「反映待ち」って出てるから焦らない</p></div>
+      <div class="cell"><p class="say">「公開されました✓」が出た！更新も自動なら忘れなそう</p></div>
+
+      <!-- 感情曲線 -->
+      <div class="cell row-label">感情</div>
+      <div class="emotion-band">
+        <svg viewBox="0 0 1200 128" preserveAspectRatio="none" role="img" aria-label="感情曲線: 従来サービスは設定段階で大きく落ち込むが、本サービスは目的入力以降高い状態を保つ">
+          <line x1="200" y1="0" x2="200" y2="128" stroke="var(--line)" stroke-width="1"/>
+          <line x1="400" y1="0" x2="400" y2="128" stroke="var(--line)" stroke-width="1"/>
+          <line x1="600" y1="0" x2="600" y2="128" stroke="var(--line)" stroke-width="1"/>
+          <line x1="800" y1="0" x2="800" y2="128" stroke="var(--line)" stroke-width="1"/>
+          <line x1="1000" y1="0" x2="1000" y2="128" stroke="var(--line)" stroke-width="1"/>
+          <polyline points="100,42 300,84 500,72 700,60 900,112 1100,92"
+            fill="none" stroke="var(--grey-curve)" stroke-width="2.5" stroke-dasharray="7 5"
+            stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+          <polyline points="100,42 300,84 500,40 700,32 900,40 1100,22"
+            fill="none" stroke="var(--teal)" stroke-width="3"
+            stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+          <circle cx="100" cy="42" r="4" fill="var(--teal)"/>
+          <circle cx="300" cy="84" r="4" fill="var(--teal)"/>
+          <circle cx="500" cy="40" r="4" fill="var(--teal)"/>
+          <circle cx="700" cy="32" r="4" fill="var(--teal)"/>
+          <circle cx="900" cy="40" r="4" fill="var(--teal)"/>
+          <circle cx="1100" cy="22" r="4" fill="var(--teal)"/>
+          <circle cx="900" cy="112" r="4" fill="var(--grey-curve)"/>
+        </svg>
+        <div class="legend">
+          <span><span class="key"></span>本サービス（簡単モード）</span>
+          <span><span class="key old"></span>従来サービス — 設定段階（CNAME・NSの壁）で最も深く落ち込む</span>
+        </div>
+      </div>
+
+      <!-- ペインポイント -->
+      <div class="cell row-label">従来の<br>ペイン</div>
+      <div class="cell"><p class="pain">何から始めればいいか<strong>入口が分からない</strong></p></div>
+      <div class="cell"><p class="pain"><strong>専門用語の壁</strong>。初年度1円の裏の<strong>更新料</strong>に気づけない</p></div>
+      <div class="cell"><p class="pain">到達しても<strong>検索ボックスだけ</strong>置かれ、目的を聞いてくれない</p></div>
+      <div class="cell"><p class="pain">TLDが多すぎて<strong>選べない</strong>。全項目入力を求められる</p></div>
+      <div class="cell"><p class="pain">「ネームサーバー」「CNAME」が突然出る。<strong>赤いエラーでパニック</strong>になり設定をいじり壊す</p></div>
+      <div class="cell"><p class="pain"><strong>更新忘れ・カード期限切れ</strong>でドメイン失効。削除の実態が分からない</p></div>
+
+      <!-- 本サービスの施策 -->
+      <div class="cell row-label">本サービス<br>の施策</div>
+      <div class="cell act"><ul>
+        <li>「事前知識ゼロでOK」を掲げる入口 <span class="ref">§1.1</span></li>
+      </ul></div>
+      <div class="cell act"><ul>
+        <li>初年度／更新料を同格表示、3年合計も <span class="ref">§6.2.5</span></li>
+        <li>専門用語は消さず併記 <span class="ref">§1.4</span></li>
+      </ul></div>
+      <div class="cell act"><ul>
+        <li>目的起点ウィザード（新規／移管INの2択から） <span class="ref">§6.2.1</span></li>
+        <li>自由文はAIが解釈→分類、チップ併置 <span class="ref">§6.2.2</span></li>
+      </ul></div>
+      <div class="cell act"><ul>
+        <li>おすすめTLD3件＋推薦理由1行 <span class="ref">§6.2.4</span></li>
+        <li>隠した項目はデフォルト値で充填 <span class="ref">§6.2.6</span></li>
+        <li>失敗時は自動リカバリ・二重課金なし <span class="ref">§6.7</span></li>
+      </ul></div>
+      <div class="cell act"><ul>
+        <li>レシピ選択＋貼り付けパーサ <span class="ref">§6.3.3</span></li>
+        <li>確認ボタンは4状態（反映待ちを明示） <span class="ref">§6.3.3d</span></li>
+        <li>NS変更時は影響を警告 <span class="ref">§6.3.3e</span></li>
+      </ul></div>
+      <div class="cell act"><ul>
+        <li>進捗は実データ判定・再ログインで復帰 <span class="ref">§6.2.3</span></li>
+        <li>残り期間・自動更新・支払い状態を同格表示 <span class="ref">§6.4</span></li>
+        <li>状態別の色分け一覧 <span class="ref">§6.5</span></li>
+        <li>通常モードへの卒業導線 <span class="ref">§1.3</span></li>
+      </ul></div>
+
+    </div>
+  </div>
+
+  <footer>
+    <p>§番号はチーム作成の仕様書草案 v0.3.1（公開版では非収録）の該当節。感情曲線の従来サービス側は要件定義時のペルソナ調査（佐藤悠の「不安」「最大の壁」）に基づく仮説であり、ユーザーテストで検証する。</p>
+  </footer>
+</div>

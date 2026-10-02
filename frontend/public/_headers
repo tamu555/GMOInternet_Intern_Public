@@ -1,0 +1,48 @@
+# Cloudflare Pages response headers.
+#
+# The security headers in firebase.json's `hosting.headers` block have NEVER
+# applied in production: this project's frontend ships from Cloudflare Pages
+# and the deploy pipeline is pinned to `--only functions,firestore`
+# (docs/firebase/deploy.md), so Firebase Hosting - and everything configured
+# under it - is never deployed. This file is the Cloudflare-side counterpart,
+# the same way frontend/functions/api/session/[[path]].ts is the counterpart of
+# that block's `/api/session/*` rewrites.
+#
+# Vite copies public/ verbatim into dist/, which is the Pages build output, so
+# this lands at the deployment root where Pages looks for it.
+#
+# The directive-by-directive evidence for the CSP below lives in
+# .agents/docs/research/browser-ai-csp.md (S1-S7). Two deliberate differences
+# from the firebase.json value it is derived from:
+#
+#   1. GA4 origins are added. src/main.tsx calls startAnalytics(), and
+#      src/firebase/analytics.ts loads the Analytics SDK whenever
+#      VITE_FIREBASE_MEASUREMENT_ID is set - which injects a tag from
+#      www.googletagmanager.com and beacons to *.google-analytics.com /
+#      *.analytics.google.com. The firebase.json value predates that wiring and
+#      would silently kill GA4 on any deployment that configured it. Harmless
+#      allowlist entries where no measurement id is set: nothing loads at all.
+#      Two more origins belong to the same SDK, not to GA4 itself:
+#        - https://firebase.googleapis.com: getAnalytics() fetches
+#          /v1alpha/projects/-/apps/<appId>/webConfig to resolve the
+#          measurement id dynamically (fetchDynamicConfig). Without it the SDK
+#          logs "Failed to fetch this Firebase app's measurement ID" and falls
+#          back to the local measurementId, but only after a CSP violation.
+#        - https://firebaseinstallations.googleapis.com: @firebase/installations
+#          registers a Firebase Installation ID before any event is sent.
+#          Blocking it rejects the Analytics bootstrap promise outright
+#          ("TypeError: Failed to fetch") and no GA4 events are ever sent.
+#   2. `connect-src 'self'` now also covers /api/session/*, which reaches Cloud
+#      Functions through the same-origin Pages Function rather than directly.
+#
+# Not covered here: if this Pages project enables Cloudflare Web Analytics,
+# Cloudflare injects a beacon from https://static.cloudflareinsights.com, which
+# `script-src` below blocks. Add that origin only if that feature is turned on.
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://apis.google.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.google-analytics.com; connect-src 'self' https://asia-northeast2-teamc-2026.cloudfunctions.net https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://huggingface.co https://*.hf.co https://raw.githubusercontent.com; worker-src 'self'; frame-src https://teamc-2026.firebaseapp.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+  Strict-Transport-Security: max-age=31536000; includeSubDomains

@@ -1,0 +1,134 @@
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "asia-northeast2",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint",
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ],
+  "emulators": {
+    "auth": {
+      "host": "0.0.0.0",
+      "port": 9099
+    },
+    "functions": {
+      "host": "0.0.0.0",
+      "port": 5001
+    },
+    "firestore": {
+      "host": "0.0.0.0",
+      "port": 8080
+    },
+    "pubsub": {
+      "host": "0.0.0.0",
+      "port": 8085
+    },
+    "tasks": {
+      "host": "0.0.0.0",
+      "port": 9499
+    },
+    "ui": {
+      "enabled": true,
+      "host": "0.0.0.0",
+      "port": 4000
+    },
+    "singleProjectMode": true
+  },
+  "auth": {
+    "providers": {
+      "emailPassword": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "zerokaradomain",
+        "supportEmail": "support@example.com"
+      }
+    }
+  },
+  "hosting": {
+    "public": "frontend/dist",
+    "predeploy": [
+      "npm --prefix frontend run build"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/session/login",
+        "function": {
+          "functionId": "sessionLogin",
+          "region": "asia-northeast2"
+        }
+      },
+      {
+        "source": "/api/session/logout",
+        "function": {
+          "functionId": "sessionLogout",
+          "region": "asia-northeast2"
+        }
+      },
+      {
+        "source": "/api/session/me",
+        "function": {
+          "functionId": "sessionMe",
+          "region": "asia-northeast2"
+        }
+      },
+      {
+        "source": "/api/session/csrf",
+        "function": {
+          "functionId": "issueCsrfToken",
+          "region": "asia-northeast2"
+        }
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Content-Security-Policy",
+            "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://asia-northeast2-teamc-2026.cloudfunctions.net https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://huggingface.co https://*.hf.co https://raw.githubusercontent.com; worker-src 'self'; frame-src https://teamc-2026.firebaseapp.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+          },
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "Referrer-Policy",
+            "value": "strict-origin-when-cross-origin"
+          },
+          {
+            "key": "Permissions-Policy",
+            "value": "camera=(), microphone=(), geolocation=()"
+          },
+          {
+            "key": "Cross-Origin-Opener-Policy",
+            "value": "same-origin-allow-popups"
+          },
+          {
+            "key": "Strict-Transport-Security",
+            "value": "max-age=31536000; includeSubDomains"
+          }
+        ]
+      }
+    ]
+  }
+}

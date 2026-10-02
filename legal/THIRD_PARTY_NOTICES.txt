@@ -1,0 +1,53 @@
+THIRD-PARTY NOTICES
+===================
+
+This file lists the third-party software and AI model components bundled
+with, or downloaded at runtime by, this service's browser-in-tab AI
+assistant feature (docs/仕様/browser-ai.md §19). It exists to satisfy the
+NOTICE-retention obligation of the Apache License, Version 2.0 (§4(d)) for
+these components, and is displayed to end users at the in-app page
+/legal/third-party-licenses (frontend/src/pages/ThirdPartyLicensesPage.tsx).
+
+This service does not modify the licensed works listed below; it uses them
+unmodified as a library dependency (web-llm) and as downloaded model
+weights (Qwen3-0.6B / Qwen3.5-0.8B), fetched directly by the end user's
+browser from Hugging Face and raw.githubusercontent.com (docs/仕様/browser-ai.md
+§18.1). No conversation content is sent to any external service.
+
+------------------------------------------------------------------------
+
+1. @mlc-ai/web-llm
+   Version:    0.2.84 (installed, npm)
+   Copyright:  Copyright (c) the MLC-LLM / WebLLM contributors.
+   License:    Apache License 2.0
+   Source:     https://github.com/mlc-ai/web-llm
+   Full text:  legal/WEBLLM_LICENSE.txt (verbatim copy of the package's
+               own LICENSE file)
+   Role:       In-browser LLM inference runtime used to run the AI
+               assistant entirely on the user's device (no server-side
+               inference; docs/仕様/browser-ai.md §4).
+
+2. Qwen3-0.6B (model id: Qwen3-0.6B-q4f16_1-MLC)
+   Copyright:  Copyright (c) Alibaba Cloud / Qwen Team.
+   License:    Apache License 2.0
+   Source:     https://huggingface.co/Qwen/Qwen3-0.6B
+   Full text:  legal/QWEN_LICENSE.txt
+   Role:       First-candidate model shipped in v1 (docs/仕様/browser-ai.md
+               §5.1). Provenance details: legal/MODEL_PROVENANCE.md.
+
+3. Qwen3.5-0.8B (model id: Qwen3.5-0.8B-q4f16_1-MLC)
+   Copyright:  Copyright (c) Alibaba Cloud / Qwen Team.
+   License:    Apache License 2.0
+   Source:     https://huggingface.co/Qwen/Qwen3.5-0.8B
+   Full text:  legal/QWEN_LICENSE.txt
+   Role:       Future candidate model, evaluated but not shipped in v1
+               (docs/仕様/browser-ai.md §5.2). Listed here in advance so
+               this NOTICE stays accurate if it is adopted later.
+               Provenance details: legal/MODEL_PROVENANCE.md.
+
+------------------------------------------------------------------------
+
+The full text of the Apache License, Version 2.0 is reproduced verbatim in
+legal/WEBLLM_LICENSE.txt (for @mlc-ai/web-llm) and legal/QWEN_LICENSE.txt
+(for the Qwen model family). Reproducing the license text here as well is
+unnecessary and is avoided to keep this NOTICE file readable.

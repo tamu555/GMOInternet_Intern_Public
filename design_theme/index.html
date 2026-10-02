@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>デザインテーマ候補 — TeamC.Com</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+:root{--ink:#15181a;--ink-2:#4c5457;--ink-3:#7d868a;--line:#e3e6e7;--bg:#fbfbfa;--accent:#15181a}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Zen Kaku Gothic New","Noto Sans JP",system-ui,sans-serif;line-height:1.8;font-size:15px}
+.wrap{max-width:960px;margin:0 auto;padding:56px 26px 80px}
+h1{margin:0 0 6px;font-size:26px;font-weight:900;letter-spacing:-.02em}
+.sub{margin:0 0 8px;color:var(--ink-2);font-size:14px;max-width:64ch}
+.meta{margin:0 0 36px;font:500 11.5px/1.8 "Roboto Mono",monospace;color:var(--ink-3);letter-spacing:.04em}
+.cards{display:grid;gap:14px}
+a.card{
+  display:grid;grid-template-columns:60px 1fr;gap:20px;align-items:start;
+  border:1px solid var(--line);background:#fff;padding:20px 22px;text-decoration:none;color:inherit;border-radius:8px;
+  transition:border-color .12s, transform .12s;
+}
+a.card:hover{border-color:var(--ink);transform:translateY(-1px)}
+.tag{font:700 26px/1 "Roboto Mono",monospace;letter-spacing:-.04em;color:var(--ink)}
+.tag small{display:block;font:500 10px/1.6 "Roboto Mono",monospace;letter-spacing:.16em;color:var(--ink-3);margin-top:6px}
+.card h2{margin:0 0 4px;font-size:17px;font-weight:900;letter-spacing:-.01em}
+.card p{margin:0 0 10px;font-size:13.5px;color:var(--ink-2)}
+.card ul{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px}
+.card li{font-size:11.5px;color:var(--ink-2);border:1px solid var(--line);border-radius:999px;padding:2px 10px;background:var(--bg)}
+.sw{display:flex;gap:0;margin-top:12px;width:150px;border:1px solid var(--line)}
+.group{margin:22px 0 2px;padding:16px 20px;border:1px dashed var(--line);border-radius:8px;background:#fff}
+.group h3{margin:0 0 4px;font-size:14px;font-weight:900}
+.group p{margin:0;font-size:13px;color:var(--ink-2)}
+.sw i{display:block;height:14px;flex:1}
+section.how{margin-top:44px;border-top:1px solid var(--line);padding-top:26px}
+section.how h2{margin:0 0 10px;font-size:15px;font-weight:900}
+section.how p,section.how li{font-size:13.5px;color:var(--ink-2)}
+section.how ol{margin:0;padding-left:1.3em}
+code{font:500 12.5px/1 "Roboto Mono",monospace;background:#eef0f0;padding:2px 5px;border-radius:3px}
+@media (max-width:600px){a.card{grid-template-columns:1fr;gap:10px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>トップページ デザインテーマ候補</h1>
+  <p class="sub">ドメイン検索画面（トップ）だけを14案作りました。2・3・9〜14 はスタイルから作った案、4〜6 は既存レジストラのサイト（hover / hostinger / gandi）、1・7・8 は開発者向けクラウドのサイト（Porter / Koyeb / Fly.io）をベースにした案です。気に入った1案を選んでいただければ、その配色・書体・レイアウト規則を design system 化して、他の画面（申込・マイページ・会員登録）へ展開します。</p>
+  <p class="meta">19 candidates (14 + 5 derived from #4) · static html mockups · updated 2026-08-26</p>
+
+  <div class="cards">
+    <a class="card" href="theme-01-zine.html">
+      <span class="tag">1<small>ZINE</small></span>
+      <span>
+        <h2>ジン・イエロー型（porter.run ベース）</h2>
+        <p>クリーム地に蛍光イエロー、点線の枠、等幅のナビ、ピクセルのドット装飾。中央揃えの太い見出しの一部を色面でハイライトし、黒い矩形ボタンで締める同人誌的な紙面。</p>
+        <ul><li>想定: 技術系スタートアップのノリ</li><li>写真・イラストを使わない</li><li>最も目を引く</li></ul>
+        <span class="sw"><i style="background:#fffdf3"></i><i style="background:#ffe64d"></i><i style="background:#cfe4ff"></i><i style="background:#dedcd2"></i><i style="background:#111110"></i></span>
+      </span>
+    </a>
+
+    <a class="card" href="theme-02-grid.html">
+      <span class="tag">2<small>GRID</small></span>
+      <span>
+        <h2>グリッド型（スイス・エディトリアル）</h2>
+        <p>角丸ゼロ・影ゼロ。太い罫線と12カラムグリッドだけで構成し、「22」「¥98」を大きな数字として見せる。色は黒・白・青の3値のみ。</p>
+        <ul><li>想定: スタートアップ / 制作会社</li><li>最も主張が強い</li><li>ブランド化しやすい</li></ul>
+        <span class="sw"><i style="background:#ffffff"></i><i style="background:#f1f1ef"></i><i style="background:#1a35d6"></i><i style="background:#0d0d0f"></i><i style="background:#c02a1c"></i></span>
+      </span>
+    </a>
+
+    <a class="card" href="theme-03-minimal.html">
+      <span class="tag">3<small>MINIMAL</small></span>
+      <span>
+        <h2>ミニマル・ダークヒーロー型</h2>
+        <p>墨緑の沈んだダークヒーローを2カラムで組み、左に細身の大見出しと検索窓、右に端末の全景（実際の検索結果）。以降は白地・極細罫線・大きな余白で、料金／方針4点／手順／FAQ／フッターまで通した1枚もの。</p>
+        <ul><li>想定: ブランドを立てたい個人・小規模事業者</li><li>余白基調・低彩度</li><li>ページ量は最多</li></ul>
+        <span class="sw"><i style="background:#1a2523"></i><i style="background:#0b1211"></i><i style="background:#2f7d70"></i><i style="background:#f5f6f5"></i><i style="background:#101211"></i></span>
+      </span>
+    </a>
+
+    <a class="card" href="theme-04-friendly.html">
+      <span class="tag">4<small>FRIENDLY</small></span>
+      <span>
+        <h2>フレンドリー・グリーン型（hover.com ベース）</h2>
+        <p>全面グリーンのヒーローを2カラムで組み、右にフラットイラスト（実際の検索結果を描いたCSS図形）。丸ゴシックの太い見出しと、白い矩形＋濃色ボタンの検索窓。直下に「いま安いTLD」の帯。</p>
+        <ul><li>想定: はじめてドメインを取る人</li><li>親しみやすさ最優先</li><li>ティール系グリーン</li></ul>
+        <span class="sw"><i style="background:#12897c"></i><i style="background:#0f7a6f"></i><i style="background:#8fe3cd"></i><i style="background:#7aa7ff"></i><i style="background:#ffd28a"></i></span>
+      </span>
+    </a>
+
+    <div class="group">
+      <h3>候補4 から派生した5案 — 若葉マーク（初心者に優しい）方向</h3>
+      <p>チームの評価が高かった候補4を土台に、緑の人格はそのままで「はじめての人を怖がらせない」表現だけを5通りに振ったものです。中身（22TLDの料金・セクション構成・固定文言）は候補4と完全に同じなので、見た目だけを比べられます。</p>
+    </div>
+
+    <a class="card" href="theme-04-1-wakaba.html">
+      <span class="tag">4-1<small>WAKABA</small></span>
+      <span>
+        <h2>若葉マーク直系型</h2>
+        <p>初心者マーク（緑と黄のシェブロン）をブランド記号そのものにした案。ロゴ・3点の番号・ヒーローの主役図形まで、すべて同じ1つの形を使い回す。候補4の4色（ミント/スカイ/サンド/コーラル）を廃し、緑＋若葉イエローの2色だけに絞った。</p>
+        <ul><li>最も記号が強い</li><li>差し色は1色のみ</li><li>送信ボタンが黄色</li></ul>
+        <span class="sw"><i style="background:#12897c"></i><i style="background:#0f7a6f"></i><i style="background:#f5c518"></i><i style="background:#ffd83d"></i><i style="background:#15211f"></i></span>
+      </span>
+    </a>
+
+    <a class="card" href="theme-04-2-step.html">
+      <span class="tag">4-2<small>STEP</small></span>
+      <span>
+        <h2>ステップ・ガイド型</h2>
+        <p>「① 名前を入れる → ② 空きを見る → ③ 申し込む」の帯をヘッダー直下に固定し、スクロールに合わせて現在地が進む。ヒーローは候補4の2カラムをやめ、3ステップのカードを横に並べて①の中に検索窓を置いた。各セクションにも対応するステップ札が付く。</p>
+        <ul><li>迷子にならないのが主眼</li><li>緑＝現在地/完了の意味</li><li>淡緑→白のヒーロー</li></ul>
+        <span class="sw"><i style="background:#ffffff"></i><i style="background:#eaf5f1"></i><i style="background:#12897c"></i><i style="background:#0f7a6f"></i><i style="background:#15211f"></i></span>
+      </span>
+    </a>
+
+    <a class="card" href="theme-04-3-wakakusa.html">
+      <span class="tag">4-3<small>WAKAKUSA</small></span>
+      <span>
+        <h2>やわらか若草型</h2>
+        <p>候補4の濃緑ベタ面を捨て、若草色と生成りの紙を主役にした低音量版。深緑は文字・ボタン・小さな印だけに残す。角丸を大きくし、硬い罫線は淡い塗りに置換、影は拡散の大きいもの1種類だけ。背景に低不透明度の葉形。</p>
+        <ul><li>最も圧が弱い</li><li>本文コントラスト4.5:1確保</li><li>芽のイラスト</li></ul>
+        <span class="sw"><i style="background:#eef7ec"></i><i style="background:#dcefd6"></i><i style="background:#1f6d45"></i><i style="background:#fdfcf7"></i><i style="background:#465449"></i></span>
+      </span>
+    </a>
+
+    <a class="card" href="theme-04-4-guide.html">
+      <span class="tag">4-4<small>GUIDE</small></span>
+      <span>
+        <h2>ガイド吹き出し型</h2>
+        <p>CSSだけで作った双葉のガイド役が、つまずきやすい4か所（検索窓・料金表・？の行・CTA）にだけ現れ、クリーム色の吹き出しで話しかける。ヒーローは中央1カラムに組み替え、検索窓の真下にガイドが立つ。登場は4回まで、と決めているのが要点。</p>
+        <ul><li>候補4に最も近い</li><li>吹き出しは4か所だけ</li><li>クリーム＝第二の声</li></ul>
+        <span class="sw"><i style="background:#12897c"></i><i style="background:#fffaf2"></i><i style="background:#7cc79b"></i><i style="background:#3f9b6d"></i><i style="background:#15211f"></i></span>
+      </span>
+    </a>
+
+    <a class="card" href="theme-04-5-note.html">
+      <span class="tag">4-5<small>NOTE</small></span>
+      <span>
+        <h2>手引きノート型</h2>
+        <p>参考書のページに見立てた案。紙地に薄い罫線のテクスチャ、各セクションに付箋のタブ（第1章／メモ／一覧表／覚えておくこと／見本）、そして1節につき1本だけ黄色のマーカー。22TLDはカードではなく2列の一覧表にした。ヒーローは章の扉で、検索窓は「やってみましょう」の練習問題。</p>
+        <ul><li>22TLDが最も読みやすい</li><li>マーカーは1節1本</li><li>手書きは札のみ</li></ul>
+        <span class="sw"><i style="background:#fdfbf4"></i><i style="background:#ffe680"></i><i style="background:#12897c"></i><i style="background:#0d6f65"></i><i style="background:#1b1a14"></i></span>
+      </span>
+    </a>
+
+    <a class="card" href="theme-05-modern.html">
+      <span class="tag">5<small>SAAS</small></span>
+      <span>
+        <h2>モダンSaaS型（hostinger.com ベース）</h2>
+        <p>ほぼ黒のヘッダー直下に全幅の検索バーを置き、迷う前に打たせる構成。角丸の大きなヒーローカード、紫＋ミントのカードグリッド、下層は明るいグレーへ切り替え。</p>
+        <ul><li>想定: スタートアップ / 制作会社</li><li>検索導線が最短</li><li>ダーク＋紫</li></ul>
+        <span class="sw"><i style="background:#0c0c11"></i><i style="background:#5a3ff0"></i><i style="background:#38e0c0"></i><i style="background:#f4f4f7"></i><i style="background:#14141c"></i></span>
+      </span>
+    </a>
+
+    <a class="card" href="theme-06-soft.html">
+      <span class="tag">6<small>SOFT</small></span>
+      <span>
+        <h2>ソフト・センター型（gandi.net/ja ベース）</h2>
+        <p>白地・中央揃えの太い日本語見出しと、その真下の大きな検索フィールド。チェックマーク3点、サーモンピンクのお知らせバー、角丸で丸くえぐったピンクのセクション。</p>
+        <ul><li>想定: ていねいな説明を求める人</li><li>唯一の中央揃え</li><li>淡いピンク＋ティール</li></ul>
+        <span class="sw"><i style="background:#ffffff"></i><i style="background:#fdf0ec"></i><i style="background:#d4674a"></i><i style="background:#12a08c"></i><i style="background:#1b1b33"></i></span>
+      </span>
+    </a>
+
+    <a class="card" href="theme-07-industrial.html">
+      <span class="tag">7<small>INDUSTRIAL</small></span>
+      <span>
+        <h2>インダストリアル型（koyeb.com ベース）</h2>
+        <p>くすんだオフホワイトの紙地に細いワイヤーフレームの地球儀、中央の極太・横詰め見出し、影を1方向にずらした厚いボタン。四隅のコーナーブラケットと、下端に食い込む黒いウィンドウ。</p>
+        <ul><li>想定: 硬派な道具として選びたい層</li><li>オフセットシャドウ</li><li>ミントは線と小面積だけ</li></ul>
+        <span class="sw"><i style="background:#eeeeea"></i><i style="background:#ffffff"></i><i style="background:#22e39a"></i><i style="background:#141414"></i><i style="background:#0d0d0d"></i></span>
+      </span>
+    </a>
+
+    <a class="card" href="theme-08-pastel.html">
+      <span class="tag">8<small>PASTEL</small></span>
+      <span>
+        <h2>パステル・手描き型（fly.io ベース）</h2>
+        <p>桃・藤・水色のグラデーションに手描きの太い曲線が横切る全幅ヒーロー。左揃えの大きな日本語セリフ見出しと、白い検索窓＋紫のボタン。右には少し傾いた検索結果カードが3枚。</p>
+        <ul><li>想定: やわらかい印象を求める個人</li><li>手描きSVGの装飾</li><li>最も明るい</li></ul>
+        <span class="sw"><i style="background:#fdf1f6"></i><i style="background:#eef8fb"></i><i style="background:#6b4ef2"></i><i style="background:#ff6ea9"></i><i style="background:#5fd0e2"></i></span>
+      </span>
+    </a>
+
+    <a class="card" href="theme-09-neobrutal.html">
+      <span class="tag">9<small>NEOBRUTAL</small></span>
+      <span>
+        <h2>ネオブルータリズム型</h2>
+        <p>3pxの黒枠だけで全要素を区切り、黄・桃・青・緑をベタ塗りで置く。影もグラデーションも使わず、ラベルは少し傾けたステッカー風。右カラムはTLD価格の色面ブロック。</p>
+        <ul><li>想定: 個性を出したい個人・クリエイター</li><li>影/グラデ不使用</li><li>最も色数が多い</li></ul>
+        <span class="sw"><i style="background:#fffdf8"></i><i style="background:#ffc900"></i><i style="background:#ff90e8"></i><i style="background:#90a8ed"></i><i style="background:#0a0a0a"></i></span>
+      </span>
+    </a>
+
+    <a class="card" href="theme-10-glass.html">
+      <span class="tag">10<small>GLASS</small></span>
+      <span>
+        <h2>グラス・プロダクト型</h2>
+        <p>真っ黒に近い地に虹色に発光する球をひとつ。UIはすべて半透明のガラス（背景ぼかし＋1pxの白枠）。文字は細く字間を詰め、色文字はグラデーションのみ。</p>
+        <ul><li>想定: 質感を重視する層</li><li>Apple系プロダクトページ</li><li>5・12とは別系統のダーク</li></ul>
+        <span class="sw"><i style="background:#050609"></i><i style="background:#0a0c12"></i><i style="background:#7aa2ff"></i><i style="background:#c58bff"></i><i style="background:#5ee2d0"></i></span>
+      </span>
+    </a>
+
+    <a class="card" href="theme-11-softui.html">
+      <span class="tag">11<small>SOFT-UI</small></span>
+      <span>
+        <h2>ソフトUI型（ニューモーフィズム）</h2>
+        <p>罫線をひとつも使わず、影の向きだけで凹凸を作る。背景と部品が同じ色で、差し色は藍1色。検索窓はへこませ、カードは押し出す。</p>
+        <ul><li>想定: やわらかい操作感を好む層</li><li>罫線ゼロ</li><li>角丸は2種類だけ</li></ul>
+        <span class="sw"><i style="background:#e8ebf1"></i><i style="background:#ffffff"></i><i style="background:#5b6ee8"></i><i style="background:#2f9e78"></i><i style="background:#3a4054"></i></span>
+      </span>
+    </a>
+
+    <a class="card" href="theme-12-retroweb.html">
+      <span class="tag">12<small>RETRO-WEB</small></span>
+      <span>
+        <h2>レトロWeb型（90s〜Y2K）</h2>
+        <p>ページ全体をウィンドウに見立て、タイトルバーと立体ボタンで組む。ピクセルフォント、青いリンク下線、黒地に緑のマーキー、アクセスカウンター。</p>
+        <ul><li>想定: 学祭・イベント的な文脈</li><li>遊びの強さは随一</li><li>実装コスト中</li></ul>
+        <span class="sw"><i style="background:#c3c7cb"></i><i style="background:#ececec"></i><i style="background:#000080"></i><i style="background:#ffe94a"></i><i style="background:#101010"></i></span>
+      </span>
+    </a>
+
+    <a class="card" href="theme-13-luxe.html">
+      <span class="tag">13<small>LUXE</small></span>
+      <span>
+        <h2>ラグジュアリー誌面型</h2>
+        <p>象牙色の地に細い金の罫線。面はほとんど塗らず、見出しは Didone 系。検索窓は箱ではなく1本の下線で、ボタンは枠線のみ。小文字組みは字間を大きく開ける。</p>
+        <ul><li>想定: ブティック・ブランド</li><li>14とは別系統の紙もの</li><li>余白が最も多い</li></ul>
+        <span class="sw"><i style="background:#f8f5ef"></i><i style="background:#f2ede4"></i><i style="background:#a9884f"></i><i style="background:#16130f"></i><i style="background:#4a6b4f"></i></span>
+      </span>
+    </a>
+
+    <a class="card" href="theme-14-midcentury.html">
+      <span class="tag">14<small>MIDCENTURY</small></span>
+      <span>
+        <h2>ミッドセンチュリー型</h2>
+        <p>生成りの紙にマスタード・テラコッタ・オリーブの3色。円と半円のアーチを大きく置き、紙の粒子を全面に薄くのせる。見出しは丸みのある Kiwi Maru。</p>
+        <ul><li>想定: 喫茶・雑貨・工房</li><li>幾何形＋粒子テクスチャ</li><li>手ざわりのある印象</li></ul>
+        <span class="sw"><i style="background:#f4ecdd"></i><i style="background:#d9a441"></i><i style="background:#c2603f"></i><i style="background:#6b7a4b"></i><i style="background:#3a2c22"></i></span>
+      </span>
+    </a>
+  </div>
+
+  <section class="how">
+    <h2>全案に通した基本方針（参照元がある案は、その作法を優先）</h2>
+    <ol>
+      <li>ヒーローの構図は案ごとに作り分け（左揃え・中央揃え・2カラムを混在させ、テンプレート化を避ける）</li>
+      <li>✨スパークルアイコンとピルバッジを削除</li>
+      <li>「アイコン＋短文の特徴3点」の横並びを削除し、実データ（全22TLDの初年度・更新料）に置き換え</li>
+      <li>意味を運ばないスローガン（「個人でも法人でも。選べるTLDラインナップ」等）を削除</li>
+      <li>角丸と影をテーマごとに1種類へ統一</li>
+      <li>見出しに書体の個性を持たせる（明朝 / 等幅 / Archivo など）</li>
+    </ol>
+    <p style="margin-top:14px">テストが固定している文言（<code>ドメイン検索</code> / <code>取得したいドメイン名</code> / <code>検索する</code> / ヒント文 / <code>AuthContext: 未認証</code>）は14案とも維持しています。</p>
+  </section>
+</div>
+</body>
+</html>

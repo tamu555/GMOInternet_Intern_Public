@@ -1,0 +1,40 @@
+{
+  "name": "functions",
+  "scripts": {
+    "lint": "eslint --ext .js,.ts .",
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "test": "npm run test:unit && npm run test:registrar",
+    "test:unit": "node --test lib/auth/logic.test.js lib/auth/profileSchema.test.js lib/auth/registration.test.js lib/auth/verificationCodes.test.js lib/auth/verification.test.js lib/auth/callerGuard.test.js lib/auth/callerGuardCoverage.test.js lib/auth/account-lifecycle.test.js lib/domain/validation.test.js lib/domain/ownership.test.js lib/bridge/registryClient.test.js lib/api/updateFunctions.test.js lib/domain/getDomainInfo.test.js lib/api/infoCallables.test.js lib/domain/dnsZones.test.js lib/api/dnsRecords.test.js lib/api/updateAutoRenew.test.js lib/api/getOrder.test.js lib/api/getMyProfile.test.js lib/api/updateMyProfile.test.js",
+    "test:integration": "node --test lib/auth/verification.integration.test.js lib/auth/auth.integration.test.js lib/auth/lifecycle.integration.test.js lib/auth/session.integration.test.js lib/domain/renewDomain.test.js lib/api/renewOrder.test.js lib/api/createOrder.test.js lib/domain/domainRepository.integration.test.js",
+    "test:ownership:integration": "node --test lib/domain/ownership.integration.test.js",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log",
+    "test:emulator": "FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npm test",
+    "build:test": "tsc -p tsconfig.test.json",
+    "test:registrar": "npm run build:test && cd lib-test/test && node --test --test-concurrency=1",
+    "test:docker": "docker exec -e FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 registrar-firebase-emulators sh -lc 'cd /workspace/functions && npm run build:test && cd lib-test/test && node --test --test-concurrency=1'"
+  },
+  "engines": {
+    "node": "24"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^13.6.0",
+    "firebase-functions": "^7.0.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-google": "^0.14.0",
+    "eslint-plugin-import": "^2.25.4",
+    "firebase-functions-test": "^3.4.1",
+    "typescript": "^6.0.0"
+  },
+  "private": true
+}

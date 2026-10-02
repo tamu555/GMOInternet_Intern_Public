@@ -1,0 +1,121 @@
+# Firebase Local Emulator Suite を Docker で起動するための compose 定義。
+#
+# 使い方:
+#   cd docs/firebase
+#   docker compose up --build
+#
+# 詳細は docs/firebase/README.md 「6. Docker でのエミュレータ運用」を参照。
+#
+# 前提: リポジトリルートに firebase.json / .firebaserc / firestore.rules 等が
+# 配置されていること（本ドキュメント作成時点ではまだリポジトリに存在しない。
+# `firebase init` を実行してから利用する）。
+
+services:
+  firebase-emulators:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: registrar-firebase-emulators
+    # --export-on-exit writes Auth/Firestore data out on SIGTERM. Docker's
+    # default grace is 10s, which the export regularly exceeds — the emulator
+    # then gets SIGKILL mid-export and the next start imports an old (or
+    # empty) snapshot. That is the "restart しただけで全データが消えた" we
+    # kept hitting; give the export room to finish.
+    stop_grace_period: 90s
+    working_dir: /workspace
+    volumes:
+      # リポジトリルート（firebase.json 等が置かれる場所）をまるごとマウントする
+      - ../..:/workspace
+      # エミュレータのエクスポートデータを永続化する名前付きボリューム
+      - firebase-emulator-data:/workspace/emulator-data
+    ports:
+      - "4000:4000" # Emulator UI
+      - "5001:5001" # Cloud Functions
+      - "8080:8080" # Firestore
+      - "9099:9099" # Authentication
+      - "9499:9499" # Cloud Tasks
+      # 以下は firebase.json 側で該当サービスを有効化した場合のみアンコメントする
+      # - "5000:5000" # Hosting（macOS標準では AirPlay Receiver が既定で 5000 番を使うため要注意）
+      - "8085:8085" # Pub/Sub（スケジュール関数のローカル実行に必要）
+      # - "9000:9000" # Realtime Database
+      # - "9199:9199" # Cloud Storage
+      # - "9299:9299" # Eventarc
+    environment:
+      # Windows のバインドマウントでは関数コードのロードが既定の10秒を超えて
+      # "Cannot determine backend specification. Timeout after 10000" になるため延長する
+      - FUNCTIONS_DISCOVERY_TIMEOUT=120
+      # レジストリ認証情報 (spec §3.2 / functions/src/config/options.ts の defineSecret)。
+      # ホスト側のシステム環境変数をコンテナへ渡し、起動コマンドが
+      # `functions/.secret.local` を自動生成する（下の command を参照）。
+      # ⚠️ エミュレータの defineSecret は process.env を読まない — 解決元は
+      # .secret.local（無ければ Secret Manager へ行って失敗する）。値はコミットしない。
+      # (共通シークレット統合後の5項目: Basic ゲートとレジストラIDは両レジストリ共通)
+      - BASIC_GATE_USER=${BASIC_GATE_USER:-}
+      - BASIC_GATE_PASSWORD=${BASIC_GATE_PASSWORD:-}
+      - REGISTRAR_ID=${REGISTRAR_ID:-}
+      - KITAQSIGN_API_KEY=${KITAQSIGN_API_KEY:-}
+      - KITAQNIC_API_KEY=${KITAQNIC_API_KEY:-}
+      # 任意: BRIDGE の接続先をローカルスタブへ向ける場合のみ設定する
+      - KITAQSIGN_BASE_URL=${KITAQSIGN_BASE_URL:-}
+      - KITAQNIC_BASE_URL=${KITAQNIC_BASE_URL:-}
+    # 起動コマンドは3段構成:
+    #
+    # 1) functions/.secret.local をコンテナ環境変数から自動生成する。
+    #    - 既にファイルがある場合は一切触らない（手書き運用を壊さない）
+    #    - 生成先はバインドマウント上 = ホストの functions/.secret.local（gitignore 済み）
+    #    - 環境変数を更新したときは、ホスト側で functions/.secret.local を削除してから
+    #      `docker compose up` し直すと再生成される
+    #    `$$VAR` は compose のホスト側展開を避けてコンテナ内シェルで展開するための記法。
+    #
+    # 2) `npm --prefix functions run build` — firebase.json の functions.predeploy
+    #    （lint/build）は `firebase deploy` 時にしか走らず `emulators:start` では
+    #    実行されないため、起動のたびにデフォルトコードベースをビルドし、
+    #    `docker compose restart` / `docker restart registrar-firebase-emulators`
+    #    だけで常に最新の `functions/src` から作った lib/ を読むようにする。
+    #
+    # 3) `npm --prefix functions run build:watch` をバックグラウンド常駐させる。
+    #    2) は「起動時点」の src しかビルドしないため、起動したあとに
+    #    functions/src を編集すると lib/ が古いままになり、追加したばかりの
+    #    関数がエミュレータに登録されない。その状態で呼ぶと Express の素の 404
+    #    （CORS ヘッダなし）が返り、ブラウザには CORS エラーとして見えるので
+    #    原因を誤認しやすい。tsc --watch を並走させて lib/ を自動更新し、
+    #    Functions エミュレータの lib/ 監視によるホットリロードに拾わせる。
+    #    - `--preserveWatchOutput` は tsc の画面クリアを抑止し、docker logs に
+    #      コンパイルエラーを残すためのもの。
+    #    - Windows ホストではバインドマウントの変更通知が伝播しないため
+    #      この watch は効かない（従来どおりコンテナ再起動が必要。6.3 節参照）。
+    #
+    # 4) firebase emulators:start。⚠️ exec の行は 1 行のまま維持すること。
+    #    フラグを別行に分割するとシェルがそこでコマンドを打ち切り、--project が
+    #    捨てられて .firebaserc の実プロジェクト (teamc-2026, demo- なし) に
+    #    フォールバックする事故が起きる。
+    #
+    # ⚠️ スカラは literal (|) を使うこと。folded (>) は行の畳み込み規則が
+    #    インデントに依存し、`set -e` や `&` で終わる行が次行と連結されて
+    #    意味が変わる。literal なら書いたままの改行がシェルに渡る。
+    #    行の連結を `&&` ではなく `set -e` + 改行で表現しているのも同じ理由で、
+    #    `A && B &` は「A && B 全体がバックグラウンド」になり 2) の同期ビルドが
+    #    壊れるため、`&` を含む行を `&&` チェーンに混ぜない。
+    command: |
+      sh -c '
+        set -e
+        if [ ! -f /workspace/functions/.secret.local ]; then
+          {
+            echo "BASIC_GATE_USER=$$BASIC_GATE_USER";
+            echo "BASIC_GATE_PASSWORD=$$BASIC_GATE_PASSWORD";
+            echo "REGISTRAR_ID=$$REGISTRAR_ID";
+            echo "KITAQSIGN_API_KEY=$$KITAQSIGN_API_KEY";
+            echo "KITAQNIC_API_KEY=$$KITAQNIC_API_KEY";
+          } > /workspace/functions/.secret.local
+          echo "[compose] functions/.secret.local generated from host environment variables"
+        else
+          echo "[compose] functions/.secret.local already exists - left untouched"
+        fi
+        npm --prefix functions run build
+        npm --prefix functions run build:watch -- --preserveWatchOutput &
+        echo "[compose] tsc --watch started - functions/src edits rebuild lib/ automatically"
+        exec firebase emulators:start --project=demo-teamc-2026 --import=/workspace/emulator-data --export-on-exit=/workspace/emulator-data
+      '
+
+volumes:
+  firebase-emulator-data:

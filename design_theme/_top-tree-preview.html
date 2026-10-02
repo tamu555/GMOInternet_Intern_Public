@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>[試作] トップページ — 育つ木（右カラム置き換え）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Zen+Maru+Gothic:wght@700;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet" />
+<style>
+/*
+  試作｜トップページ右カラムを「育つ木」に置き換えるプレビュー
+  ------------------------------------------------------------------
+  - 本番コードには触れていません。frontend/src/styles/app.css の
+    トークン（ライト/ダーク両方）と DomainSearchPage のヒーロー構造を
+    そのまま写した上で、右の HeroArt を DomainTree に置き換えています
+  - 木・葉はすべて自作SVG/CSS（外部素材なし＝ライセンス管理不要）。
+    Storyset の木は単一パスでSNSロゴ入りのため不採用（本文の報告参照）
+  - 右下のコントロールで件数・状態（読込中/失敗/未ログイン/長い名前/
+    アニメ軽減）を切り替えられます。画面幅を狭めるとタブレット/スマホの
+    コンパクト表示に切り替わります
+*/
+
+/* ---------- tokens : app.css :root の写し ---------- */
+:root{
+  --paper:#fbfcf6; --paper-2:#f3f7ee;
+  --ink:#17241c; --ink-soft:#465449; --ink-faint:#5f6c60;
+  --line:#e4ece0; --line-strong:#cbe6c4;
+  --green:#1f6d45; --green-deep:#175538; --green-darkest:#123f2a;
+  --grass:#2f8f5b; --grass-1:#eef7ec; --grass-2:#dcefd6; --grass-3:#cbe6c4;
+  --green-contrast:#ffffff; --green-ring:rgb(31 109 69 / 22%);
+  --sun:#f6e6bd; --card:#ffffff; --danger:#b23a26;
+  --shadow-soft:0 22px 48px -30px rgb(23 60 40 / 42%);
+  --radius:0.875rem;
+  /* 木のプレビュー専用（採用時は app.css に追加する想定） */
+  --bark:#6b4f37;
+  --leaf-ok:#2f8f5b; --leaf-new:#8fd66b; --leaf-soon:#d99a2b; --leaf-dead:#a9805e;
+  --leaf-shadow:0 10px 22px -14px rgb(23 60 40 / 50%);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#121a14; --paper-2:#17211a;
+    --ink:#e9f0e7; --ink-soft:#a8b8a9; --ink-faint:#85947f;
+    --line:#27332a; --line-strong:#3a4a3d;
+    --green:#6cc38c; --green-deep:#86d3a1; --green-darkest:#b6e6c5;
+    --grass:#58b57c; --grass-1:#1b2a1f; --grass-2:#223528; --grass-3:#2c4433;
+    --green-contrast:#0e1a12; --green-ring:rgb(108 195 140 / 26%);
+    --sun:#3a3116; --card:#1a241d; --danger:#f3a294;
+    --shadow-soft:0 22px 48px -30px rgb(0 0 0 / 62%);
+    --bark:#7d5f45;
+    --leaf-ok:#58b57c; --leaf-soon:#d9a23f;
+    --leaf-shadow:0 10px 22px -14px rgb(0 0 0 / 55%);
+  }
+}
+
+/* ---------- base : app.css @layer base の写し ---------- */
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--paper); color:var(--ink); overflow-x:hidden;
+  font-family:'Noto Sans JP','Poppins',system-ui,sans-serif;
+  font-size:15px; line-height:1.9; font-feature-settings:'palt';
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:'Zen Maru Gothic','Poppins',sans-serif;font-weight:700;margin:0}
+a{color:var(--green);transition:color .15s ease}
+a:hover{color:var(--green-deep)}
+:focus-visible{outline:2px solid var(--green);outline-offset:2px;border-radius:6px}
+.font-en{font-family:'Poppins','Noto Sans JP',sans-serif}
+.wrap{max-width:1160px;margin:0 auto;padding:0 16px}
+@media(min-width:640px){.wrap{padding:0 28px}}
+
+/* ---------- header（AppLayout の要約） ---------- */
+header{position:sticky;top:0;z-index:40;background:var(--grass-1)}
+.hd{display:flex;align-items:center;gap:8px;padding:12px 0}
+.brand{display:flex;align-items:center;gap:9px;font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:17px;color:var(--ink);text-decoration:none}
+.brand i{display:block;width:14px;height:14px;flex:none;transform:rotate(8deg);border-radius:0 80% 0 80%;background:var(--grass)}
+.brand em{font-style:normal;font-weight:700;font-size:12.5px;color:var(--ink-faint)}
+.hd nav{display:none;gap:20px;margin-left:26px;font-size:13.5px}
+.hd nav a{color:var(--ink-soft);text-decoration:none}
+@media(min-width:768px){.hd nav{display:flex}}
+.hd .auth{margin-left:auto;font-size:11.5px;color:var(--ink-faint)}
+
+/* ---------- hero ---------- */
+.hero{
+  position:relative;overflow:hidden;display:flex;align-items:center;
+  background:linear-gradient(180deg,var(--grass-1) 0%,var(--grass-1) 58%,var(--paper) 100%);
+  padding:48px 0 56px;
+}
+@media(min-width:1024px){.hero{min-height:calc(100svh - 62px);padding:56px 0}}
+.leaf-motif{position:absolute;border-radius:0 78% 0 78%;pointer-events:none;z-index:0;background:var(--grass-2)}
+.motif-a{top:-88px;left:-160px;height:360px;width:520px;transform:rotate(-12deg);opacity:.55}
+.motif-b{right:-120px;bottom:-80px;height:270px;width:380px;transform:rotate(24deg);opacity:.42}
+.hero-grid{position:relative;z-index:1;display:grid;gap:48px;align-items:center}
+@media(min-width:1024px){.hero-grid{grid-template-columns:minmax(0,1fr) 480px}}
+
+.eyebrow{margin-bottom:14px;font-size:13px;font-weight:700;letter-spacing:.025em;color:var(--green)}
+.catch{margin:0 0 16px;font-size:31px;line-height:1.32;font-weight:900;text-wrap:balance}
+@media(min-width:640px){.catch{font-size:48px}}
+.sub{margin:0 0 28px;max-width:28em;font-size:16px;line-height:1.75;color:var(--ink-faint);text-wrap:balance}
+
+/* 検索ピル（DomainSearchForm initial の写し。プレビューでは送信しない） */
+.searchpill{display:flex;flex-wrap:wrap;gap:6px;max-width:560px;border-radius:20px;background:var(--card);padding:6px;box-shadow:var(--shadow-soft)}
+@media(min-width:640px){.searchpill{flex-wrap:nowrap;border-radius:999px}}
+.searchpill .fld{display:flex;min-width:0;flex:1;align-items:center;gap:10px;padding:0 12px}
+@media(min-width:640px){.searchpill .fld{padding-left:16px}}
+@media(max-width:639px){.searchpill .btn{width:100%}}
+.searchpill svg{flex:none;stroke:var(--grass)}
+.searchpill input{height:56px;min-width:0;flex:1;border:0;background:transparent;padding:0;font:inherit;font-size:16px;color:var(--ink)}
+.searchpill input:focus{outline:none}
+.searchpill input::placeholder{color:var(--ink-faint)}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;
+  border:0;border-radius:999px;background:var(--green);color:var(--green-contrast);
+  font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:15px;
+  height:56px;padding:0 32px;transition:background .15s;
+}
+.btn:hover{background:var(--green-deep)}
+.btn.sm{height:36px;padding:0 18px;font-size:13px}
+.btn.outline{background:transparent;color:var(--green);box-shadow:inset 0 0 0 1.5px var(--green-ring)}
+.btn.outline:hover{background:var(--grass-1)}
+.mypage-btn{margin-top:24px}
+
+/* ---------- 右カラム : DomainTree ---------- */
+.hero-right{position:relative;display:none}
+@media(min-width:1024px){.hero-right{display:block;align-self:stretch;min-height:560px}}
+/* 右下から生やし、右端と下端で少し切る。装飾は pointer-events を殺し、
+   葉（リンク）だけ拾う。手前のコンテンツ（z-1）が常に勝つ */
+.tree-area{position:absolute;right:-60px;bottom:-52px;width:580px;height:640px;pointer-events:none}
+.tree-inner{position:absolute;inset:0;transform-origin:52% 100%}
+.animated .tree-inner{animation:sway 10s ease-in-out infinite alternate}
+#treeSvg{display:block;width:100%;height:100%}
+
+/* 成長段階 : 5枚のスケルトンをクロスフェード。根もとを支点に立ち上がる */
+.stage{opacity:0;transform:scale(.9);transform-origin:300px 600px;transition:opacity .9s ease,transform .9s cubic-bezier(.22,1,.36,1);pointer-events:none}
+.stage.active{opacity:1;transform:scale(1)}
+.sil{opacity:0;transition:opacity .4s}
+.show-sil .sil{opacity:1}
+.show-sil .stage{opacity:0 !important}
+.loading .sil{animation:pulse 1.6s ease-in-out infinite}
+
+/* 葉 : HTML要素。位置(--x/--y)と回転(--rot)・大きさ(--sc)はドメイン名の
+   ハッシュから決まるので、再訪しても配置は変わらない */
+.leaf-layer{position:absolute;inset:0}
+.leaf-chip{position:absolute;left:var(--x);top:var(--y);transform:translate(-50%,-50%) rotate(var(--rot));pointer-events:auto}
+/* 葉の実体はJSが生成するSVG（輪郭・葉脈・葉柄・文字を含む）。
+   aやbuttonは箱としてだけ使い、見た目はSVGに全部持たせる */
+.leaf-chip a,.leaf-chip button{display:block;border:0;padding:0;margin:0;background:none;cursor:pointer;line-height:0;text-decoration:none}
+.leaf-chip svg.leafsvg{
+  display:block;overflow:visible;
+  filter:drop-shadow(0 7px 8px rgb(23 60 40 / 30%));
+  transform:scale(var(--sc,1));transform-origin:var(--to,12% 60%);transition:transform .18s;
+}
+@media (prefers-color-scheme: dark){.leaf-chip svg.leafsvg{filter:drop-shadow(0 7px 8px rgb(0 0 0 / 45%))}}
+.leaf-chip:hover svg.leafsvg,.leaf-chip:focus-within svg.leafsvg{transform:scale(calc(var(--sc,1)*1.07))}
+.leaf-chip.new svg.leafsvg{animation:sprout .55s cubic-bezier(.34,1.56,.64,1) backwards;animation-delay:var(--d,0s)}
+
+/* ツールチップ : 省略された名前の全文と状態・期限 */
+.tip{
+  position:absolute;left:50%;bottom:calc(100% + 10px);z-index:6;
+  transform:translateX(-50%) rotate(calc(-1 * var(--rot)));
+  background:var(--card);color:var(--ink);border-radius:12px;box-shadow:var(--shadow-soft);
+  padding:8px 14px;font-size:12px;line-height:1.65;white-space:nowrap;
+  opacity:0;visibility:hidden;transition:opacity .15s;pointer-events:none;
+}
+.tip b{font-family:'Poppins','Noto Sans JP',sans-serif;font-weight:600;font-size:12.5px}
+.tip span{color:var(--ink-faint)}
+.leaf-chip:hover .tip,.leaf-chip:focus-within .tip{opacity:1;visibility:visible}
+
+/* 「ほか○件」ポップオーバー */
+.more-pop{
+  position:absolute;right:8%;bottom:16%;z-index:8;width:262px;pointer-events:auto;
+  background:var(--card);border-radius:14px;box-shadow:var(--shadow-soft);padding:14px 16px;
+  opacity:0;visibility:hidden;transform:translateY(6px);transition:opacity .18s,transform .18s;
+}
+.more-pop.open{opacity:1;visibility:visible;transform:none}
+.more-pop h3{font-size:13px;margin-bottom:8px}
+.more-pop ul{list-style:none;margin:0;padding:0;max-height:190px;overflow-y:auto}
+.more-pop li{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12.5px}
+.more-pop li i{width:9px;height:9px;flex:none;border-radius:0 70% 0 70%;background:var(--dot)}
+.more-pop li .nm{font-family:'Poppins','Noto Sans JP',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.more-pop .to-list{display:block;margin-top:10px;font-size:12.5px}
+
+/* 舞い落ちる装飾葉 : 3枚だけ、10秒前後のゆっくりしたループ。
+   木の領域内で完結し、左の文字の上には出ない */
+.faller{position:absolute;opacity:0;pointer-events:none;line-height:0}
+.animated .faller{animation:fall var(--dur,10s) linear infinite;animation-delay:var(--fd,0s)}
+@keyframes fall{
+  0%{opacity:0;transform:translate(0,0) rotate(0deg)}
+  8%{opacity:.65}
+  85%{opacity:.4}
+  100%{opacity:0;transform:translate(var(--dx,30px),330px) rotate(300deg)}
+}
+
+/* 木のキャプション（状態の言語化 : 色だけに意味を持たせない） */
+.tree-cap{position:absolute;left:7%;bottom:14px;max-width:70%;pointer-events:auto;font-size:12.5px;line-height:1.7;color:var(--ink-soft)}
+.tree-cap b{font-weight:700;color:var(--ink)}
+.tree-cap .warn{color:var(--danger)}
+
+/* 未ログイン時のプレースホルダー（現行 HeroArt の代役） */
+.guest-art{
+  position:absolute;inset:12% 4% 14% 4%;display:none;place-content:center;text-align:center;
+  border-radius:24px;background:var(--card);box-shadow:var(--shadow-soft);
+  color:var(--ink-faint);font-size:13px;line-height:1.9;padding:24px;
+}
+.guest-art i{display:block;width:54px;height:54px;margin:0 auto 12px;border-radius:0 78% 0 78%;background:var(--grass-2)}
+.guest .guest-art{display:grid}
+.guest .tree-inner,.guest .tree-cap{display:none}
+.tree-retry{position:absolute;left:7%;bottom:52px;pointer-events:auto;display:none}
+.error .tree-retry{display:inline-flex}
+
+/* ---------- コンパクト表示（lg未満 : フォーム直下の若木） ---------- */
+.tree-compact{
+  margin-top:30px;display:flex;gap:18px;align-items:center;max-width:560px;
+  background:var(--card);border-radius:20px;box-shadow:var(--shadow-soft);padding:16px 20px;
+}
+@media(min-width:1024px){.tree-compact{display:none}}
+.tree-compact svg{flex:none}
+.tc-body{min-width:0;flex:1}
+.tc-body b{display:block;font-size:14px;margin-bottom:6px}
+.tc-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
+.tc-chips .leaf-mini{display:block;line-height:0;max-width:100%}
+.tc-chips .leaf-mini svg{display:block;max-width:100%}
+.tc-more{font-size:12.5px}
+
+/* ---------- 後続の帯（境界確認用のダミー） ---------- */
+.band{background:var(--grass-2);padding:44px 0}
+.band h2{font-size:24px;margin-bottom:18px}
+.band ul{list-style:none;display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:0;padding:0}
+@media(min-width:640px){.band ul{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:1024px){.band ul{grid-template-columns:repeat(5,1fr)}}
+.band li{background:var(--card);border-radius:14px;padding:12px 16px;box-shadow:var(--shadow-soft);font-size:13px}
+.band li b{display:block;font-family:'Poppins',sans-serif;font-size:16px}
+
+footer{background:var(--paper-2);padding:36px 0;font-size:12px;color:var(--ink-faint)}
+footer p{margin:2px 0}
+
+/* ---------- 試作用コントロール ---------- */
+.panel{
+  position:fixed;right:14px;bottom:14px;z-index:90;width:270px;
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  box-shadow:var(--shadow-soft);padding:12px 14px;font-size:12px;
+}
+.panel b{display:block;font-size:11px;letter-spacing:.04em;color:var(--ink-faint);margin-bottom:8px}
+.panel .row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.panel button{
+  font:inherit;font-weight:700;cursor:pointer;border:1px solid var(--line);
+  background:var(--paper-2);color:var(--ink);border-radius:999px;padding:3px 11px;
+}
+.panel button:hover{background:var(--grass-2)}
+.panel button.on{background:var(--green);border-color:var(--green);color:var(--green-contrast)}
+.panel .cap{margin:6px 0 0;font-size:10.5px;color:var(--ink-faint);line-height:1.6}
+
+/* トースト（クリック先の案内） */
+.toast{
+  position:fixed;left:50%;bottom:24px;z-index:99;transform:translate(-50%,12px);
+  background:var(--green-darkest);color:#fff;border-radius:999px;padding:9px 20px;
+  font-size:13px;opacity:0;visibility:hidden;transition:opacity .2s,transform .2s;max-width:88vw;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+@media (prefers-color-scheme: dark){.toast{background:var(--grass-3);color:var(--ink)}}
+.toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
+
+/* ---------- keyframes ---------- */
+@keyframes sway{from{transform:rotate(-.65deg)}to{transform:rotate(.65deg)}}
+@keyframes sprout{from{transform:scale(0)}to{transform:scale(var(--sc,1))}}
+@keyframes pulse{0%,100%{opacity:.45}50%{opacity:.9}}
+
+/* 落ち葉は育った木（stage 3以上・正常時）だけに出す */
+.tree-area:not(.st3):not(.st4) .faller{display:none}
+.show-sil .faller{display:none}
+/* 未ログイン時は「管理画面へ」も出さない（本番の出し分けと同じ） */
+body.guest-mode .mypage-btn{display:none}
+
+/* 画面外・軽減設定では止める */
+.offscreen .tree-inner,.offscreen .faller{animation-play-state:paused !important}
+@media (prefers-reduced-motion: reduce){
+  .tree-inner,.faller,.sil{animation:none !important}
+  .faller{display:none}
+  .leaf-chip.new .leaf-body{animation:none}
+  .stage{transition:none}
+  *,*::before,*::after{transition-duration:.01ms !important}
+}
+/* コントロールの「アニメ軽減」トグルで同じ状態を再現する */
+body.reduce .tree-inner,body.reduce .faller,body.reduce .sil{animation:none !important}
+body.reduce .faller{display:none}
+body.reduce .leaf-chip.new .leaf-body{animation:none}
+body.reduce .stage{transition:none}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap hd">
+    <a class="brand" href="#"><i></i>疑似レジストラ<em>TeamC</em></a>
+    <nav aria-label="メイン">
+      <a href="#">ドメイン検索</a><a href="#">マイページ</a><a href="#">料金一覧</a>
+    </nav>
+    <span class="auth" id="authChip">AuthContext: 認証済み</span>
+  </div>
+</header>
+
+<main>
+  <!-- ヒーロー : DomainSearchPage.tsx :331-368 の構造を写経し、右だけ差し替え -->
+  <section class="hero">
+    <span class="leaf-motif motif-a" aria-hidden="true"></span>
+    <span class="leaf-motif motif-b" aria-hidden="true"></span>
+
+    <div class="wrap hero-grid">
+      <div>
+        <h1 class="eyebrow">ドメイン検索</h1>
+        <p class="catch">ほしい名前、<br />空いているか見てみよう。</p>
+        <p class="sub">22のTLDをまとめて確認します。ログインは要りません。まず一度、打ってみてください。</p>
+
+        <form class="searchpill" onsubmit="return false" aria-label="ドメイン検索（プレビューでは動きません）">
+          <div class="fld">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" placeholder="my-shop" aria-label="取得したいドメイン名" />
+          </div>
+          <button class="btn" type="submit">検索する</button>
+        </form>
+
+        <button class="btn sm outline mypage-btn" id="mypageBtn" type="button">管理画面へ</button>
+
+        <!-- lg未満 : フォーム直下のコンパクトな若木 -->
+        <div class="tree-compact" id="treeCompact"></div>
+      </div>
+
+      <!-- lg以上 : 右カラムの木 -->
+      <div class="hero-right">
+        <div class="tree-area animated" id="treeArea" aria-label="取得済みドメインの木">
+          <div class="tree-inner">
+            <svg id="treeSvg" viewBox="0 0 580 640" aria-hidden="true">
+              <!-- 読込中/失敗用のシルエット -->
+              <g class="sil">
+                <ellipse cx="300" cy="600" rx="120" ry="13" fill="var(--grass-3)" opacity=".45"/>
+                <path d="M291 600 C293 555 295 520 296 488 L304 488 C305 520 307 555 309 600 Z" fill="var(--grass-3)"/>
+                <circle cx="300" cy="430" r="88" fill="var(--grass-2)"/>
+                <circle cx="238" cy="472" r="52" fill="var(--grass-2)"/>
+                <circle cx="362" cy="470" r="56" fill="var(--grass-2)"/>
+              </g>
+              <!-- s0 : 種と芽（0件） -->
+              <g class="stage" data-stage="0">
+                <ellipse cx="300" cy="600" rx="66" ry="10" fill="var(--grass-3)" opacity=".5"/>
+                <ellipse cx="300" cy="597" rx="26" ry="7" fill="var(--bark)" opacity=".55"/>
+                <path d="M300 596 C298 584 302 576 300 566" stroke="var(--grass)" stroke-width="4" stroke-linecap="round" fill="none"/>
+                <ellipse cx="288" cy="566" rx="13" ry="7.5" fill="var(--grass)" transform="rotate(-38 288 566)"/>
+                <ellipse cx="312" cy="561" rx="13" ry="7.5" fill="var(--leaf-new)" transform="rotate(32 312 561)"/>
+              </g>
+              <!-- s1 : 芽が伸びた（1-2件） -->
+              <g class="stage" data-stage="1">
+                <ellipse cx="300" cy="600" rx="86" ry="11" fill="var(--grass-3)" opacity=".5"/>
+                <path d="M300 600 C295 560 306 535 300 505 C297 490 302 480 300 468" stroke="var(--bark)" stroke-width="8" stroke-linecap="round" fill="none"/>
+                <path d="M300 540 C288 532 280 526 272 514" stroke="var(--bark)" stroke-width="5" stroke-linecap="round" fill="none"/>
+                <path d="M301 512 C312 506 320 500 328 490" stroke="var(--bark)" stroke-width="5" stroke-linecap="round" fill="none"/>
+                <ellipse cx="268" cy="510" rx="14" ry="8" fill="var(--grass)" transform="rotate(-34 268 510)"/>
+                <ellipse cx="332" cy="486" rx="14" ry="8" fill="var(--grass)" transform="rotate(28 332 486)"/>
+                <ellipse cx="298" cy="462" rx="15" ry="8.5" fill="var(--leaf-new)" transform="rotate(-12 298 462)"/>
+              </g>
+              <!-- s2 : 小さな若木（3-5件） -->
+              <g class="stage" data-stage="2">
+                <ellipse cx="300" cy="600" rx="104" ry="12" fill="var(--grass-3)" opacity=".5"/>
+                <circle cx="302" cy="440" r="88" fill="var(--grass-3)" opacity=".8"/>
+                <circle cx="240" cy="478" r="52" fill="var(--grass-3)" opacity=".8"/>
+                <circle cx="300" cy="430" r="86" fill="var(--grass-2)"/>
+                <circle cx="238" cy="470" r="52" fill="var(--grass-2)"/>
+                <circle cx="362" cy="468" r="56" fill="var(--grass-2)"/>
+                <path d="M291 600 C293 552 295 516 296 484 L304 484 C305 516 307 552 309 600 Z" fill="var(--bark)"/>
+                <path d="M298 520 C284 510 274 502 266 490" stroke="var(--bark)" stroke-width="6" stroke-linecap="round" fill="none"/>
+                <path d="M302 500 C316 492 328 484 336 472" stroke="var(--bark)" stroke-width="6" stroke-linecap="round" fill="none"/>
+              </g>
+              <!-- s3 : 中程度の木（6-10件） -->
+              <g class="stage" data-stage="3">
+                <ellipse cx="300" cy="600" rx="126" ry="13" fill="var(--grass-3)" opacity=".5"/>
+                <circle cx="302" cy="362" r="102" fill="var(--grass-3)" opacity=".8"/>
+                <circle cx="212" cy="428" r="66" fill="var(--grass-3)" opacity=".8"/>
+                <circle cx="392" cy="418" r="72" fill="var(--grass-3)" opacity=".8"/>
+                <circle cx="300" cy="352" r="100" fill="var(--grass-2)"/>
+                <circle cx="210" cy="420" r="66" fill="var(--grass-2)"/>
+                <circle cx="390" cy="410" r="72" fill="var(--grass-2)"/>
+                <circle cx="300" cy="452" r="68" fill="var(--grass-2)"/>
+                <path d="M289 600 C291 548 294 500 296 448 L304 448 C306 500 309 548 311 600 Z" fill="var(--bark)"/>
+                <path d="M297 500 C278 486 262 474 250 458" stroke="var(--bark)" stroke-width="8" stroke-linecap="round" fill="none"/>
+                <path d="M303 478 C322 464 340 452 352 436" stroke="var(--bark)" stroke-width="8" stroke-linecap="round" fill="none"/>
+              </g>
+              <!-- s4 : 大きく成長した木（11件以上）。右上は画面端で切れる -->
+              <g class="stage" data-stage="4">
+                <ellipse cx="300" cy="600" rx="150" ry="14" fill="var(--grass-3)" opacity=".5"/>
+                <circle cx="304" cy="278" r="118" fill="var(--grass-3)" opacity=".8"/>
+                <circle cx="176" cy="362" r="82" fill="var(--grass-3)" opacity=".8"/>
+                <circle cx="428" cy="342" r="90" fill="var(--grass-3)" opacity=".8"/>
+                <circle cx="302" cy="268" r="116" fill="var(--grass-2)"/>
+                <circle cx="174" cy="352" r="82" fill="var(--grass-2)"/>
+                <circle cx="426" cy="332" r="90" fill="var(--grass-2)"/>
+                <circle cx="230" cy="438" r="70" fill="var(--grass-2)"/>
+                <circle cx="382" cy="440" r="72" fill="var(--grass-2)"/>
+                <circle cx="300" cy="386" r="92" fill="var(--grass-2)"/>
+                <path d="M287 600 C289 540 293 480 296 414 L304 414 C307 480 311 540 313 600 Z" fill="var(--bark)"/>
+                <path d="M296 480 C270 460 248 444 232 422" stroke="var(--bark)" stroke-width="10" stroke-linecap="round" fill="none"/>
+                <path d="M304 452 C330 432 354 416 372 394" stroke="var(--bark)" stroke-width="10" stroke-linecap="round" fill="none"/>
+                <path d="M299 430 C296 408 298 390 300 372" stroke="var(--bark)" stroke-width="8" stroke-linecap="round" fill="none"/>
+              </g>
+            </svg>
+
+            <div class="leaf-layer" id="leafLayer"></div>
+
+            <!-- 装飾の落ち葉（3枚だけ・ゆっくり・名前つきの葉は落とさない） -->
+            <span class="faller" style="left:56%;top:26%;--dur:10s;--fd:0s;--dx:44px" aria-hidden="true"><svg width="24" height="15" viewBox="0 0 24 15"><path d="M1 8 C5 2 12 .5 23 2.5 C19 11 8 14.5 1 8 Z" fill="var(--grass)"/><path d="M3 8 C9 6.5 15 5 21 3.6" stroke="#fff" stroke-opacity=".3" stroke-width="1" fill="none"/></svg></span>
+            <span class="faller" style="left:38%;top:34%;--dur:12s;--fd:4.5s;--dx:-36px" aria-hidden="true"><svg width="24" height="15" viewBox="0 0 24 15"><path d="M1 8 C5 2 12 .5 23 2.5 C19 11 8 14.5 1 8 Z" fill="var(--leaf-new)"/><path d="M3 8 C9 6.5 15 5 21 3.6" stroke="#fff" stroke-opacity=".3" stroke-width="1" fill="none"/></svg></span>
+            <span class="faller" style="left:68%;top:38%;--dur:11s;--fd:8s;--dx:24px" aria-hidden="true"><svg width="24" height="15" viewBox="0 0 24 15"><path d="M1 8 C5 2 12 .5 23 2.5 C19 11 8 14.5 1 8 Z" fill="var(--leaf-soon)"/><path d="M3 8 C9 6.5 15 5 21 3.6" stroke="#fff" stroke-opacity=".3" stroke-width="1" fill="none"/></svg></span>
+          </div>
+
+          <div class="more-pop" id="morePop" role="dialog" aria-label="木に載せきれなかったドメイン">
+            <h3>ほか <span id="moreCount"></span> 件のドメイン</h3>
+            <ul id="moreList"></ul>
+            <a href="#" class="to-list" id="moreLink">マイページで一覧を見る →</a>
+          </div>
+
+          <div class="guest-art">
+            <i aria-hidden="true"></i>
+            未ログイン時は現行の<br />Storysetイラスト（HeroArt）を<br />そのまま表示します
+          </div>
+
+          <p class="tree-cap" id="treeCap"></p>
+          <button class="btn sm outline tree-retry" id="retryBtn" type="button">再読み込み</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 後続セクションとの境界確認用（本物は DomainSearchPage :372-395） -->
+  <section class="band">
+    <div class="wrap">
+      <h2>いま初年度が安いTLD</h2>
+      <ul>
+        <li>.shop<b class="font-en">¥420</b></li>
+        <li>.site<b class="font-en">¥520</b></li>
+        <li>.blog<b class="font-en">¥680</b></li>
+        <li>.com<b class="font-en">¥980</b></li>
+        <li>.dev<b class="font-en">¥1,180</b></li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>© 疑似レジストラ TeamC（ハッカソン試作）</p>
+    <p>Illustration by <a href="https://storyset.com/">Storyset</a>（現行トップの HeroArt。木のイラストはこのプレビュー用の自作SVGで、外部素材を使っていません）</p>
+  </div>
+</footer>
+
+<div class="panel">
+  <b>試作用コントロール（本番には入りません）</b>
+  <div class="row" id="countRow">
+    <button data-n="0">0</button><button data-n="1">1</button><button data-n="2">2</button>
+    <button data-n="5">5</button><button data-n="7" class="on">7</button><button data-n="10">10</button>
+    <button data-n="12">12</button><button data-n="20">20</button><button data-n="24">24</button>
+  </div>
+  <div class="row">
+    <button id="addBtn">+1件取得</button>
+    <button id="longBtn">長い名前</button>
+    <button id="reduceBtn">アニメ軽減</button>
+  </div>
+  <div class="row">
+    <button id="loadBtn">読込中</button>
+    <button id="errBtn">失敗</button>
+    <button id="guestBtn">未ログイン</button>
+  </div>
+  <p class="cap">画面幅を1024px未満にすると、フォーム下のコンパクト表示に切り替わります。</p>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ================================================================
+   実装時の分割イメージ（このプレビューはそれを1ファイルに畳んだもの）
+   - stageForCount / leafStateFor / placementFor → 純関数ユーティリティ
+   - DomainTree（全体） / DomainLeaf（葉） / FallingLeaves（装飾）
+   - データは fetchMyDomains() ( src/api/myDomainsApi.ts ) を
+     authState.status === 'authenticated' のときだけ呼ぶ。
+     MyDomainSummary { name, statuses, rgpStatuses, exDate, autoRenew }
+   ================================================================ */
+
+/* ---- モックデータ : fakeBackend.ts のシード7件 + 追加17件 ----
+   st: 0=通常 1=取得したて 2=更新が近い(60日以内) 3=期限切れ/廃止手続き中
+   実装時は statuses / exDate / registeredAt から導出する（registeredAt は
+   一覧APIに無いので「取得したて」を出すなら listDomains への追加が要る） */
+const DOMAINS=[
+  {n:'teamc-demo.com',st:1,ex:'2027-07-12'},
+  {n:'teamc-portfolio.dev',st:0,ex:'2027-03-25'},
+  {n:'teamc-shop.shop',st:2,ex:'2026-09-19'},
+  {n:'teamc-easy.net',st:1,ex:'2027-08-11'},
+  {n:'teamc-blog.blog',st:0,ex:'2027-08-21'},
+  {n:'teamc-moving.xyz',st:0,ex:'2026-12-14'},
+  {n:'teamc-old.club',st:3,ex:'2026-08-19'},
+  {n:'kitaq-cafe.jp',st:0,ex:'2027-01-30'},
+  {n:'kitaq-cafe.shop',st:2,ex:'2026-10-12'},
+  {n:'hanamaru.studio',st:0,ex:'2027-03-08'},
+  {n:'hanamaru.site',st:1,ex:'2027-06-22'},
+  {n:'aoba-books.com',st:0,ex:'2027-02-14'},
+  {n:'aoba-books.store',st:2,ex:'2026-10-25'},
+  {n:'sakura-tei.shop',st:0,ex:'2027-04-09'},
+  {n:'sakura-tei.net',st:0,ex:'2027-08-01'},
+  {n:'minato-works.co',st:1,ex:'2027-05-30'},
+  {n:'minato-works.tech',st:0,ex:'2026-12-03'},
+  {n:'yamabiko.club',st:0,ex:'2027-01-27'},
+  {n:'yamabiko.blog',st:2,ex:'2026-10-09'},
+  {n:'tsubame.design',st:0,ex:'2027-07-15'},
+  {n:'tsubame.online',st:0,ex:'2027-03-21'},
+  {n:'komorebi.app',st:0,ex:'2027-09-06'},
+  {n:'komorebi.work',st:1,ex:'2027-06-11'},
+  {n:'midori-no-mori.garden',st:0,ex:'2027-05-02'},
+];
+/* 長いドメイン名の動作確認用（「長い名前」トグルで先頭数件を差し替え） */
+const LONG=[
+  {n:'super-long-domain-name-for-layout-testing.example',st:0,ex:'2027-04-01'},
+  {n:'kitakyushu-craft-bakery-and-coffee.online',st:2,ex:'2026-10-02'},
+  {n:'my-extremely-descriptive-portfolio-site.dev',st:1,ex:'2027-06-15'},
+];
+const LEAF_COLOR=['var(--leaf-ok)','var(--leaf-new)','var(--leaf-soon)','var(--leaf-dead)'];
+const LEAF_LABEL=['使えています','取得したて','更新が近い','期限切れ・手続き中'];
+const PALE=[false,true,false,false];        /* 若葉は明るいので文字を濃緑に */
+const MAX_NAMED=11;                          /* 名前つきの葉の上限。超過は「ほか○件」 */
+
+/* ---- 成長段階（UIから分離。しきい値はここだけで変えられる） ---- */
+const STAGE_STEPS=[
+  {min:11,stage:4},{min:6,stage:3},{min:3,stage:2},{min:1,stage:1},{min:0,stage:0},
+];
+const stageForCount=c=>STAGE_STEPS.find(s=>c>=s.min).stage;
+
+/* ---- 配置 : ドメイン名のFNV-1aハッシュで決める（毎回同じ位置になる） ---- */
+function fnv1a(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+/* 段階ごとの葉スロット（%座標）。樹冠の上に置く前提で手置きしたもの */
+const SLOTS={
+  1:[[50,66],[57,74]],
+  2:[[50,60],[34,67],[66,66],[42,75],[68,78],[28,80]],
+  3:[[52,43],[34,50],[66,50],[28,58],[60,58],[40,65],[68,66],[32,72],[62,73],[48,79]],
+  4:[[52,28],[34,35],[67,34],[27,44],[58,42],[72,50],[40,50],[30,58],[63,57],[44,64],[70,65],[52,72]],
+};
+const placementFor=(name)=>{
+  const h=fnv1a(name);
+  return {h, rot:(h%15)-7, sc:0.94+((h>>4)%12)/100};
+};
+
+/* ---- 葉のSVGを組み立てる ----
+   両端がすぼまる木の葉の輪郭 + 中央の葉脈 + 幹側へ伸びる葉柄 + 文字。
+   flip=true で左右反転（木の左側の葉は葉先を左へ向ける）。 */
+function textWidth(t,fs){
+  let w=0;
+  for(const ch of t) w+= /[ -~]/.test(ch) ? fs*0.56 : fs*1.02;
+  return Math.ceil(w);
+}
+function leafSVG(label,{color,pale=false,flip=false,fs=12,h=32,minW=78,maxW=168,textFill,veinCol}={}){
+  const PAD=40, PET=16, mid=h/2;
+  let text=label;
+  while(text.length>2 && textWidth(text,fs)+PAD>maxW) text=text.slice(0,-2)+'…';
+  const W=Math.max(minW,textWidth(text,fs)+PAD), T=W+PET;
+  const X=x=>(flip?(W-x):(x+PET)).toFixed(1);
+  const sh=h/32;                       /* 高さ違い（ミニ葉）用の縦スケール */
+  const y=v=>(v*sh).toFixed(1);
+  /* 輪郭 : 基部(0,mid) → 上縁 → 葉先(W,mid) → 下縁 */
+  const outline=
+    `M${X(0)} ${y(16)} C${X(10)} ${y(5)} ${X(22)} ${y(2.5)} ${X(W-30)} ${y(2.5)}`+
+    ` C${X(W-15)} ${y(3.5)} ${X(W-6)} ${y(9)} ${X(W-1)} ${y(16)}`+
+    ` C${X(W-6)} ${y(23)} ${X(W-15)} ${y(28.5)} ${X(W-30)} ${y(29.5)}`+
+    ` C${X(22)} ${y(29.5)} ${X(10)} ${y(27)} ${X(0)} ${y(16)} Z`;
+  const vein=`M${X(7)} ${y(16)} C${X(W*0.35)} ${y(14.2)} ${X(W*0.65)} ${y(14.2)} ${X(W-9)} ${y(16)}`;
+  const petiole=`M${X(0)} ${y(16)} C${X(-6)} ${y(17.5)} ${X(-10)} ${y(19.5)} ${X(-15)} ${y(23)}`;
+  veinCol=veinCol??(pale?'rgb(23 60 40 / 22%)':'rgb(255 255 255 / 30%)');
+  textFill=textFill??(pale?'#1d4a2f':'#fff');
+  return `<svg class="leafsvg" width="${T}" height="${h}" viewBox="0 0 ${T} ${h}" aria-hidden="true">`+
+    `<path d="${petiole}" stroke="var(--bark)" stroke-width="2.4" stroke-linecap="round" fill="none"/>`+
+    `<path d="${outline}" fill="${color}"/>`+
+    `<path d="${vein}" stroke="${veinCol}" stroke-width="1.1" fill="none"/>`+
+    `<text x="${(flip?W/2:PET+W/2).toFixed(1)}" y="${(h/2+0.5).toFixed(1)}" text-anchor="middle" dominant-baseline="central"`+
+    ` font-family="Poppins,'Noto Sans JP',sans-serif" font-size="${fs}" font-weight="500"`+
+    ` fill="${textFill}">${text}</text></svg>`;
+}
+
+/* ---- 表示する葉の選択 : 全部は載せない。注意が要る状態を優先 ---- */
+const PRIORITY=[3,2,1,0];
+function pickVisible(list){
+  if(list.length<=MAX_NAMED+1) return {named:list,rest:[]};
+  const sorted=[...list].sort((a,b)=>{
+    const pa=PRIORITY.indexOf(a.st)-PRIORITY.indexOf(b.st);
+    return pa!==0?pa:fnv1a(a.n)-fnv1a(b.n);
+  });
+  return {named:sorted.slice(0,MAX_NAMED),rest:sorted.slice(MAX_NAMED)};
+}
+
+/* ================= 描画 ================= */
+const $=id=>document.getElementById(id);
+const state={count:7,long:false,mode:'ok',reduce:false};
+let prevShown=new Set();
+
+function currentList(){
+  const base=state.long?[...LONG,...DOMAINS.slice(LONG.length)]:DOMAINS;
+  return base.slice(0,state.count);
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+
+function leafChip(d,slot,idx,isNew){
+  const p=placementFor(d.n);
+  const flip=slot[0]<52;               /* 木の左側の葉は葉先を外（左）へ向ける */
+  return `<span class="leaf-chip${isNew?' new':''}"
+    style="--x:${slot[0]}%;--y:${slot[1]}%;--rot:${p.rot}deg;--sc:${p.sc};--to:${flip?'88% 60%':'12% 60%'};--d:${(idx*0.06+0.15).toFixed(2)}s">
+    <a href="#" data-name="${esc(d.n)}"
+       aria-label="${esc(d.n)}（${LEAF_LABEL[d.st]}・有効期限 ${d.ex}）の詳細へ">${leafSVG(esc(d.n),{color:LEAF_COLOR[d.st],pale:PALE[d.st],flip})}</a>
+    <span class="tip" role="presentation"><b>${esc(d.n)}</b><br><span>${LEAF_LABEL[d.st]} ・ 有効期限 ${d.ex}</span></span>
+  </span>`;
+}
+
+function render(){
+  const area=$('treeArea');
+  area.classList.remove('loading','error','guest','show-sil','st0','st1','st2','st3','st4');
+  const list=currentList();
+  const stage=stageForCount(list.length);
+  area.classList.add('st'+stage);
+  document.body.classList.toggle('guest-mode',state.mode==='guest');
+
+  /* 段階のクロスフェード */
+  document.querySelectorAll('.stage').forEach(g=>{
+    g.classList.toggle('active',+g.dataset.stage===stage && state.mode==='ok');
+  });
+
+  const layer=$('leafLayer'), cap=$('treeCap'), pop=$('morePop');
+  pop.classList.remove('open');
+
+  if(state.mode!=='ok'){
+    layer.innerHTML='';
+    prevShown=new Set();
+    if(state.mode==='guest'){
+      area.classList.add('guest');
+      $('authChip').textContent='AuthContext: 未認証';
+      renderCompact([],0,null);
+      return;
+    }
+    $('authChip').textContent='AuthContext: 認証済み';
+    area.classList.add('show-sil',state.mode==='loading'?'loading':'error');
+    cap.innerHTML=state.mode==='loading'
+      ? '保有ドメインを読み込んでいます…'
+      : '<span class="warn">取得状況を読み込めませんでした。</span>';
+    renderCompact([],0,state.mode);
+    return;
+  }
+  $('authChip').textContent='AuthContext: 認証済み';
+
+  /* 葉 : ハッシュ順でスロットへ。増えた葉だけ .new で芽吹かせる */
+  const {named,rest}=pickVisible(list);
+  const slots=SLOTS[stage]||[];
+  const ordered=[...named].sort((a,b)=>fnv1a(a.n)-fnv1a(b.n));
+  const parts=[];
+  ordered.forEach((d,i)=>{
+    if(i<slots.length) parts.push(leafChip(d,slots[i],i,!prevShown.has(d.n)));
+  });
+  if(rest.length&&slots.length){
+    const slot=slots[Math.min(ordered.length,slots.length-1)];
+    parts.push(`<span class="leaf-chip more" style="--x:${slot[0]}%;--y:${slot[1]}%;--rot:-4deg;--sc:1;--to:12% 60%">
+      <button type="button" id="moreBtn" aria-haspopup="dialog" aria-expanded="false" aria-label="ほか${rest.length}件のドメインを見る">${leafSVG(`ほか ${rest.length} 件`,{color:'var(--grass-3)',fs:12,textFill:'var(--green-darkest)',veinCol:'transparent'})}</button>
+    </span>`);
+  }
+  layer.innerHTML=parts.join('');
+  prevShown=new Set(ordered.map(d=>d.n));
+
+  /* ほか○件のポップオーバー */
+  $('moreCount').textContent=rest.length;
+  $('moreList').innerHTML=rest.map(d=>
+    `<li><i style="--dot:${LEAF_COLOR[d.st]}"></i><span class="nm font-en">${esc(d.n)}</span></li>`).join('');
+  const mb=$('moreBtn');
+  if(mb) mb.addEventListener('click',e=>{
+    e.stopPropagation();
+    const open=pop.classList.toggle('open');
+    mb.setAttribute('aria-expanded',open);
+  });
+
+  /* キャプション : 色に載せた意味を必ず言葉でも出す */
+  const soon=list.filter(d=>d.st===2).length, dead=list.filter(d=>d.st===3).length;
+  cap.innerHTML=list.length===0
+    ? '最初のドメインを取ると、ここに芽が出ます。'
+    : `<b>${list.length}件</b>のドメインが育っています`
+      +(dead?`　<span class="warn">期限切れ ${dead}件</span>`:'')
+      +(soon?`　更新が近いもの ${soon}件`:'');
+  area.setAttribute('aria-label',`取得済みドメインの木（${list.length}件）`);
+
+  renderCompact(list,stage,null);
+}
+
+/* ---- lg未満のコンパクト表示 : 葉を減らして一覧へ誘導 ---- */
+function renderCompact(list,stage,mode){
+  const el=$('treeCompact');
+  const mini=`<svg width="86" height="100" viewBox="0 0 100 116" aria-hidden="true">
+      <ellipse cx="50" cy="108" rx="30" ry="5" fill="var(--grass-3)" opacity=".55"/>
+      <path d="M47 108 C48 88 49 74 49 ${64-stage*6} L51 ${64-stage*6} C51 74 52 88 53 108 Z" fill="var(--bark)"/>
+      <circle cx="50" cy="${58-stage*6}" r="${16+stage*5}" fill="var(--grass-2)"/>
+      <circle cx="${34-stage*2}" cy="${70-stage*5}" r="${9+stage*3}" fill="var(--grass-2)"/>
+      <circle cx="${66+stage*2}" cy="${69-stage*5}" r="${10+stage*3}" fill="var(--grass-2)"/>
+    </svg>`;
+  if(mode==='loading'){el.innerHTML=mini+'<div class="tc-body"><b>読み込んでいます…</b></div>';return;}
+  if(mode==='error'){el.innerHTML=mini+'<div class="tc-body"><b>取得状況を読み込めませんでした</b><span class="tc-more"><a href="#" data-toast="再読み込み（プレビューでは動きません）">再読み込み</a></span></div>';return;}
+  if(state.mode==='guest'){el.innerHTML=mini+'<div class="tc-body"><b>ログインすると、取ったドメインの木が育ちます</b></div>';return;}
+  if(list.length===0){el.innerHTML=mini+'<div class="tc-body"><b>最初のドメインを取ると、ここに芽が出ます</b></div>';return;}
+  const chips=list.slice(0,3).map(d=>
+    `<span class="leaf-mini">${leafSVG(esc(d.n),{color:LEAF_COLOR[d.st],pale:PALE[d.st],fs:11,h:27,minW:64,maxW:160})}</span>`).join('');
+  const rest=list.length-Math.min(3,list.length);
+  el.innerHTML=mini+`<div class="tc-body">
+      <b>${list.length}件のドメインが育っています</b>
+      <div class="tc-chips">${chips}</div>
+      ${rest>0?`<span class="tc-more"><a href="#" data-toast="実装時は /mypage の一覧へ遷移します">ほか${rest}件はマイページで →</a></span>`:''}
+    </div>`;
+}
+
+/* ================= 操作 ================= */
+let toastTimer;
+function toast(msg){
+  const t=$('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
+}
+document.addEventListener('click',e=>{
+  const leaf=e.target.closest('a.leaf-body');
+  if(leaf){e.preventDefault();toast(`実装時は /mypage/domains/${encodeURIComponent(leaf.dataset.name)} へ遷移します`);return;}
+  const tl=e.target.closest('[data-toast]');
+  if(tl){e.preventDefault();toast(tl.dataset.toast);return;}
+  if(!e.target.closest('.more-pop')) $('morePop').classList.remove('open');
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')$('morePop').classList.remove('open');});
+$('moreLink').addEventListener('click',e=>{e.preventDefault();toast('実装時は /mypage の一覧へ遷移します');});
+$('mypageBtn').addEventListener('click',()=>toast('実装時は /mypage へ遷移します'));
+$('retryBtn').addEventListener('click',()=>{setMode('ok');});
+
+function syncPanel(){
+  document.querySelectorAll('#countRow button').forEach(b=>b.classList.toggle('on',+b.dataset.n===state.count&&state.mode==='ok'));
+  $('longBtn').classList.toggle('on',state.long);
+  $('reduceBtn').classList.toggle('on',state.reduce);
+  $('loadBtn').classList.toggle('on',state.mode==='loading');
+  $('errBtn').classList.toggle('on',state.mode==='error');
+  $('guestBtn').classList.toggle('on',state.mode==='guest');
+}
+function setMode(m){state.mode=m;syncPanel();render();}
+document.querySelectorAll('#countRow button').forEach(b=>b.addEventListener('click',()=>{
+  state.count=+b.dataset.n;state.mode='ok';syncPanel();render();
+}));
+$('addBtn').addEventListener('click',()=>{
+  if(state.count<DOMAINS.length){state.count++;state.mode='ok';syncPanel();render();}
+});
+$('longBtn').addEventListener('click',()=>{state.long=!state.long;prevShown=new Set();syncPanel();render();});
+$('reduceBtn').addEventListener('click',()=>{state.reduce=!state.reduce;document.body.classList.toggle('reduce',state.reduce);syncPanel();});
+$('loadBtn').addEventListener('click',()=>setMode(state.mode==='loading'?'ok':'loading'));
+$('errBtn').addEventListener('click',()=>setMode(state.mode==='error'?'ok':'error'));
+$('guestBtn').addEventListener('click',()=>setMode(state.mode==='guest'?'ok':'guest'));
+
+/* 画面外ではアニメーションを止める */
+if('IntersectionObserver' in window){
+  new IntersectionObserver(es=>{
+    es.forEach(en=>$('treeArea').classList.toggle('offscreen',!en.isIntersecting));
+  },{threshold:.05}).observe($('treeArea'));
+}
+
+/* スクリーンショット確認用 : ?n=20&mode=error&long=1 で状態を直接開ける */
+{
+  const q=new URLSearchParams(location.search);
+  if(q.has('n')) state.count=Math.max(0,Math.min(DOMAINS.length,+q.get('n')||0));
+  if(q.get('long')==='1') state.long=true;
+  const m=q.get('mode');
+  if(m==='loading'||m==='error'||m==='guest') state.mode=m;
+  syncPanel();
+}
+render();
+</script>
+</body>
+</html>

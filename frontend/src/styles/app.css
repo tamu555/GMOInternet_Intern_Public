@@ -1,0 +1,732 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Palette: やわらか若草型 (design_theme/theme-04-3-wakakusa.html).
+
+  The theme's rule is "deep green only for text, buttons and small marks -
+  never as a filled surface"; the surfaces are 生成りの紙 (--paper) and the two
+  pale grass tints (--grass-1 / --grass-2). Corners are large, the single
+  diffuse shadow (--shadow-soft) is the only elevation, and outlines are
+  replaced by soft fills.
+
+  --teal* are kept as aliases of the green ramp so older call sites keep
+  compiling; new code should use --green* / --grass*.
+*/
+:root {
+  --paper: #fbfcf6;
+  --paper-2: #f3f7ee;
+  --ink: #17241c;
+  --ink-soft: #465449;
+  --ink-faint: #5f6c60;
+  /* Placeholders only. --ink-soft sits at 7.8:1 on --paper, which is close
+     enough to body ink (15.6:1) that an example value like "山田 太郎" reads as
+     something the user already typed. Successive rounds of that report walked
+     it down to ~2.2:1 on --card. Colour alone could not finish the job: the
+     placeholder was rendering at weight 400, the same weight as typed text, and
+     Japanese glyphs at 400 read as solid ink however pale they are. The base
+     rule below drops every placeholder to 300, so emptiness is signalled by
+     stroke as well as by tone. Never use this colour for real copy — only a
+     placeholder may sit this far under the 3:1 floor, because every field
+     carries a real <label> and the example is never the only cue. */
+  --ink-hint: #a8b4ab;
+  --line: #e4ece0;
+  --line-strong: #cbe6c4;
+  /* スイッチの OFF の溝だけが使う、この配色で唯一の「緑ではない面」。
+     ⚠️ 若草の階調（--grass-*）を当ててはいけない。あの 3 色はこのアプリで
+     「選ばれている・進んでいる」を表す塗りなので、OFF の溝に使うと、つまみが
+     左にあってもスイッチ全体は ON の見た目になる（実測 2026-08-28: OFF の溝が
+     #cbe6c4 ＝ --grass-3、ON の溝が #1f6d45。どちらも緑で、保護ロックを OFF に
+     しているのに ON に見える、という指摘が出た）。彩度を落として、緑の階調から
+     外すことで「まだ何も効いていない」を色でも言う。 */
+  --switch-off: #c4ccc6;
+
+  /* Deep greens: text, buttons, small marks. Never a large filled surface. */
+  --green: #1f6d45;
+  --green-deep: #175538;
+  --green-darkest: #123f2a;
+  /* 若草: the mid green used for leaves, sprouts and icons. */
+  --grass: #2f8f5b;
+  /* The three pale grass tints that carry every filled surface. */
+  --grass-1: #eef7ec;
+  --grass-2: #dcefd6;
+  --grass-3: #cbe6c4;
+  --green-contrast: #ffffff;
+  --green-ring: rgb(31 109 69 / 22%);
+
+  /* Accent fills for the "3つの安心" boxes — flat, unsaturated, no gradients. */
+  --sun: #f6e6bd;
+  --sky: #dde8fa;
+  --clay: #f8ddd4;
+
+  --card: #ffffff;
+  /* The sticky header sits on top of the grass-1 band that opens the hero and
+     every inner screen. Painting it grass-1 too (as the theme file does) makes
+     it dissolve into the ground, so it gets its own paper-white plate and a
+     line that is always drawn. */
+  --header-surface: #ffffff;
+  --header-surface-translucent: rgb(255 255 255 / 82%);
+  --mono-bg: var(--grass-1);
+  --danger: #b23a26;
+  --danger-soft: #f8e5e0;
+  --orange: #b5651d;
+  --orange-soft: var(--sun);
+  --shadow-soft: 0 22px 48px -30px rgb(23 60 40 / 42%);
+
+  /* ヒーローの木（features/domains/HeroTree.tsx）はラスタなので、トークンでは
+     塗れない。明暗の追従だけをこのフィルタ1本に集約する。 */
+  --hero-tree-filter: none;
+  /* ヒーローの木に置くマーカー（実・生きもの・花）の色。ブランドのトークンでは
+     なく自然物の色なので、ここに直接持つ。明暗で反転させないのは、赤い実は
+     どちらのテーマでも赤いから — 暗いほうで浮きすぎるものだけ下で落とす。 */
+  --marker-stalk: #6f5c3c;
+  --marker-berry-a: #8f3535;
+  --marker-berry-b: #a34141;
+  --marker-berry-c: #7d2e2e;
+  --marker-gold-a: #e6b338;
+  --marker-gold-b: #f7d05e;
+  --marker-gold-c: #cf9a2b;
+  --marker-gold-glow: #ffdf6e;
+  --marker-sparkle: #ffeaa2;
+  --marker-body: #3d3021;
+  --marker-eye: #4b3e2c;
+  --marker-bee: #d3a03d;
+  --marker-bee-urgent: #c98426;
+  --marker-wing-blur: #dfe9ec;
+  --marker-wing-a: #c9903f;
+  --marker-wing-b: #ab7331;
+  --marker-wing-c: #d69a45;
+  --marker-wing-d: #b67b35;
+  --marker-wing-dot: #f0e6cf;
+  --marker-foot: #d9cbab;
+  --marker-foot-line: #c3b391;
+  --marker-shell: #ad8845;
+  --marker-shell-light: #c9a765;
+  --marker-shell-dark: #8a682e;
+  --marker-stem: #4f7a44;
+  --marker-leaf-a: #5d8a4c;
+  --marker-leaf-b: #6d9a58;
+  --marker-petal: #dfd3e0;
+  --marker-petal-light: #ece4ea;
+  --marker-pollen: #d3ad55;
+  --marker-pollen-dark: #b8933f;
+  --marker-stem-dry: #7d7a52;
+  --marker-leaf-dry-a: #8a8757;
+  --marker-leaf-dry-b: #96935f;
+  --marker-petal-dry: #c9bda0;
+  --marker-pollen-dry: #9c7f3f;
+  --marker-unknown: #8f8a7a;
+  --marker-unknown-dark: #7b7667;
+  /* 1枚の葉を見ているあいだ、絵をどこまで残すか。暗い地の上では同じ値だと差が
+     出にくいので、ダークだけ一段強く引く。 */
+  --hero-tree-veil: 0.42;
+
+  /* §3.5 domain-status chip colours (my-page, FIG.9-10). 青 / 黄 / 青グレー
+     have no brand token, so they live here and flip with the same media query
+     (no dark: utilities — DESIGN_SYSTEM.md). */
+  --status-info-bg: var(--sky);
+  --status-info-fg: #2f4f7a;
+  --status-hold-bg: var(--sun);
+  --status-hold-fg: #7a5a1a;
+  --status-locked-bg: #e6ebe4;
+  --status-locked-fg: #55604f;
+
+  /* 角丸ゼロ。テーマ本来の大きな角丸は 2026-08-27 に角張ったデザインへ切り替え
+     た（DESIGN_SYSTEM.md「Shape & elevation」）。--radius-* はすべてこの値から
+     導かれるので、丸みを戻すときもここ1箇所で足りる。円のままなのは
+     スイッチ・ラジオ・状態ドットの3つだけ。 */
+  --radius: 0rem;
+
+  /* Deprecated aliases — see the note above. */
+  --teal: var(--green);
+  --teal-deep: var(--green-deep);
+  --teal-soft: var(--grass-1);
+  --teal-contrast: var(--green-contrast);
+  --teal-ring: var(--green-ring);
+
+  /* shadcn semantic tokens resolve to the brand palette via var() indirection,
+     so the prefers-color-scheme override of the brand tokens above drives dark
+     mode for every shadcn component automatically. */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card-foreground: var(--ink);
+  --popover: var(--card);
+  --popover-foreground: var(--ink);
+  --primary: var(--green);
+  --primary-foreground: var(--green-contrast);
+  --secondary: var(--grass-2);
+  --secondary-foreground: var(--green-darkest);
+  --muted: var(--grass-1);
+  --muted-foreground: var(--ink-soft);
+  --accent: var(--grass-2);
+  --accent-foreground: var(--green-darkest);
+  --destructive: var(--danger);
+  --border: var(--line);
+  --input: var(--line-strong);
+  --ring: var(--green);
+  --chart-1: var(--green);
+  --chart-2: var(--grass);
+  --chart-3: var(--green-deep);
+  --chart-4: var(--ink-soft);
+  --chart-5: var(--ink-faint);
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--green);
+  --sidebar-primary-foreground: var(--green-contrast);
+  --sidebar-accent: var(--grass-2);
+  --sidebar-accent-foreground: var(--green-darkest);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--green);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* The theme itself is light-only. Dark mode keeps its logic — paper-like
+       ground, pale grass surfaces, green reserved for marks — with the values
+       inverted, so no component needs a dark: utility. */
+    --paper: #121a14;
+    --paper-2: #17211a;
+    --ink: #e9f0e7;
+    --ink-soft: #a8b8a9;
+    --ink-faint: #85947f;
+    /* Matched to the light value: ~2.1:1 on --paper-2, so the hint carries the
+       same presence in both themes. */
+    --ink-hint: #475446;
+    --line: #27332a;
+    --line-strong: #3a4a3d;
+    /* 暗い地でも同じ役割。地（--card #1a241d）との差は 1.7:1 で、溝として見える。 */
+    --switch-off: #414942;
+
+    --green: #6cc38c;
+    --green-deep: #86d3a1;
+    --green-darkest: #b6e6c5;
+    --grass: #58b57c;
+    --grass-1: #1b2a1f;
+    --grass-2: #223528;
+    --grass-3: #2c4433;
+    /* Dark green is light, so text on top of it flips to a deep ink. */
+    --green-contrast: #0e1a12;
+    --green-ring: rgb(108 195 140 / 26%);
+
+    --sun: #3a3116;
+    --sky: #1d2a3c;
+    --clay: #3a2620;
+
+    --card: #1a241d;
+    /* Inverted, the plate goes below the ground instead of above it: grass-1 is
+       #1b2a1f here, so the header has to be darker than paper to stay a layer. */
+    --header-surface: #0e150f;
+    --header-surface-translucent: rgb(14 21 15 / 82%);
+    --danger: #f3a294;
+    --danger-soft: #3a221e;
+    --orange: #e0a066;
+    --shadow-soft: 0 22px 48px -30px rgb(0 0 0 / 62%);
+
+    --status-info-fg: #a8c8f0;
+    --status-hold-fg: #e8cb84;
+    --status-locked-bg: #2a352c;
+    --status-locked-fg: #a6b6a7;
+
+    /* 焼き込み済みの水彩は紙の上で成立する明るさなので、暗い地の上ではそのまま
+       だと発光して見える。彩度と明度を一段落とすだけで十分。 */
+    --hero-tree-filter: saturate(0.86) brightness(0.84);
+    --hero-tree-veil: 0.32;
+    /* 暗い地の上では淡色がそのままだと光って見える。明るい面を持つものだけ落とす。 */
+    --marker-petal: #b6abb8;
+    --marker-petal-light: #c6bcc6;
+    --marker-petal-dry: #a79c84;
+    --marker-foot: #b3a78b;
+    --marker-wing-blur: #b3c0c4;
+    --marker-wing-dot: #cdc4ad;
+  }
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  /* Placeholders are one weight lighter than anything a user types. Colour on
+     its own was not enough to say "this field is empty" — at 400 the kana and
+     kanji of an example like 山田 太郎 still read as entered text. Lives in
+     @layer base so the `placeholder:text-ink-hint` utility still wins on
+     colour; only the weight is decided here. Noto Sans JP is loaded from 300
+     (see index.html) — narrowing that range again would silently snap this
+     back to 400. */
+  ::placeholder {
+    font-weight: 300;
+  }
+
+  body {
+    margin: 0;
+    /* 横はみ出しの抑止はここで行う。シェルの <div> に overflow-x:hidden を
+       置くと sticky の封じ込めブロックができ、ヘッダーの固定が壊れる。 */
+    overflow-x: hidden;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: 'Noto Sans JP', 'Poppins', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+    font-size: 15px;
+    line-height: 1.9;
+    font-feature-settings: 'palt';
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* 丸ゴシックの見出し。Card の CardTitle は font-heading クラス経由で同じ書体を拾う。 */
+  h1,
+  h2,
+  h3 {
+    font-family: 'Zen Maru Gothic', 'Poppins', 'Hiragino Kaku Gothic ProN', sans-serif;
+    font-weight: 700;
+  }
+
+  ::selection {
+    background: var(--green-ring);
+  }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.88em;
+    background: var(--mono-bg);
+    padding: 1px 6px;
+  }
+
+  /* Element defaults MUST stay inside @layer base: unlayered rules outrank
+     Tailwind utilities, and an unlayered `a { color }` would repaint the
+     label of every <Button asChild><Link> in the app. */
+  a {
+    color: var(--green);
+    text-underline-offset: 4px;
+    transition: color 0.15s ease;
+  }
+
+  a:hover {
+    color: var(--green-deep);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--green);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* 背景に敷く葉のかたち。文字と競合しない濃度でだけ使う (テーマの .leaf)。
+     Size, position and fill come from utilities on the element. */
+  .leaf {
+    position: absolute;
+    border-radius: 0 78% 0 78%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* 数字・TLD・ドメイン名は Poppins。テーマの .en と同じ役割。 */
+  .font-en {
+    font-family: 'Poppins', 'Noto Sans JP', sans-serif;
+    font-feature-settings: normal;
+  }
+
+  /* ヒーローの木。ラスタ本体だけがダークで沈み、上に載る葉はトークンで反転する。 */
+  .hero-tree-art {
+    filter: var(--hero-tree-filter);
+    transition: opacity 140ms ease-out;
+  }
+
+
+  /* 木そのものの登場。ヒーローで最初に目に入るものが、いきなり在るのではなく
+     生えてくる。fill-mode both で、遅延中も終了後も keyframe の値が残る。 */
+  .hero-tree {
+    animation: hero-tree-rise 900ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+
+  /* 当たり判定はマーカーを囲む見えない円。マーカーは小さいので、掴みしろは別に
+     持たせる（40件でも半径 23px 前後を確保できる）。 */
+  .hero-tree-hit {
+    cursor: pointer;
+  }
+
+  /* マーカーの影。留まるものだけ接地させ、飛ぶものは下へ離してぼかす。
+     この有無が「乗っている / 浮いている」をほぼ決める。 */
+  .hero-tree-shade {
+    fill: rgb(15 34 22 / 30%);
+  }
+
+  /* プレミアムの添え。形は変えず、まわりで小さく瞬くだけ。 */
+  .hero-tree-sparkle path {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: hero-tree-twinkle 2.4s ease-in-out infinite;
+  }
+
+  /* 金の実の後光。実そのものの形は変えず、後ろでゆっくり満ち欠けする。
+     アニメが止まっても（reduced motion）薄い光輪は静止画として残る。 */
+  .hero-tree-glow {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: hero-tree-glow 2.8s ease-in-out infinite;
+  }
+
+  /* 後光の光線。ゆっくり回り続けることで「輝いている」を誇張する。 */
+  .hero-tree-rays {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: hero-tree-rays 18s linear infinite;
+  }
+
+  /* 1つを見ているあいだ、絵そのものを引かせる。 */
+  .hero-tree-veil {
+    opacity: var(--hero-tree-veil);
+  }
+
+  /* 指したときは絵を引かせ、ほかのマーカーも薄くする。マーカーのほうが樹冠より
+     目立つので、絵だけ引いても「そこだけ残っている」状態にはならない。
+     ⚠️ 外側の .hero-tree-marker に CSS transform を当ててはいけない — CSS の
+     transform プロパティは配置用の transform *属性* を丸ごと上書きするので、
+     マーカーが原点（左上）へ飛ぶ。拡大は属性を持たない内側の
+     .hero-tree-marker-zoom だけが持つ（2026-08-28 に実際に起きた）。 */
+  .hero-tree-marker {
+    transition: opacity 140ms ease-out;
+  }
+
+  .hero-tree-marker.is-dimmed {
+    opacity: 0.26;
+  }
+
+  .hero-tree-marker-zoom {
+    transition: transform 140ms ease-out;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .hero-tree-marker-zoom.is-on {
+    transform: scale(1.16);
+  }
+
+  /* SVG の中の要素に outline を引くと外接矩形どおりの角ばった枠になる。
+     フォーカスは当たり判定の円そのものを見せる — マーカーは霞の上に出て色を
+     保つが、それだけだとキーボードでどこに居るのかが分かりにくい。 */
+  .hero-tree-hit:focus-visible {
+    outline: none;
+    stroke: var(--green);
+    stroke-width: 2.5;
+    stroke-dasharray: 6 5;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* マーカーのうごき。木の前で踊らせない — どれも周期4〜6秒・振れ幅は小さく。
+     回転の中心は要素自身の外接矩形（transform-box: fill-box）。既定の view-box
+     基準だと viewBox 全体の中心を軸に回ってしまい、マーカーが樹冠の外へ飛ぶ。 */
+  .hero-tree-bob,
+  .hero-tree-sway,
+  .hero-tree-droop,
+  .hero-tree-creep,
+  .hero-tree-hang,
+  .hero-tree-wing-l,
+  .hero-tree-wing-r,
+  .hero-tree-buzz {
+    transform-box: fill-box;
+  }
+
+  .hero-tree-bob {
+    transform-origin: center;
+    animation: hero-tree-bob 3.6s ease-in-out infinite;
+  }
+
+  .hero-tree-bob.is-urgent {
+    animation-duration: 1.9s;
+  }
+
+  .hero-tree-sway {
+    transform-origin: bottom center;
+    animation: hero-tree-sway 5.2s ease-in-out infinite;
+  }
+
+  .hero-tree-droop {
+    transform-origin: bottom center;
+    animation: hero-tree-droop 7s ease-in-out infinite;
+  }
+
+  .hero-tree-creep {
+    transform-origin: 50% 90%;
+    animation: hero-tree-creep 6s ease-in-out infinite;
+  }
+
+  .hero-tree-hang {
+    transform-origin: 50% 4%;
+    animation: hero-tree-sway 4.4s ease-in-out infinite;
+  }
+
+  .hero-tree-wing-l,
+  .hero-tree-wing-r {
+    transform-origin: center;
+    animation: hero-tree-flap 2.8s ease-in-out infinite;
+  }
+
+  .hero-tree-wing-r {
+    animation-delay: 60ms;
+  }
+
+  .hero-tree-buzz {
+    transform-origin: 38% 40%;
+    animation: hero-tree-buzz 100ms linear infinite;
+  }
+
+  .hero-tree-buzz.is-right {
+    transform-origin: 62% 40%;
+  }
+
+  .is-urgent .hero-tree-buzz {
+    animation-duration: 70ms;
+  }
+
+  .hero-tree-tip {
+    animation: hero-tree-tip-in 140ms ease-out both;
+  }
+}
+
+@keyframes hero-tree-rise {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hero-tree-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-9%);
+  }
+}
+
+@keyframes hero-tree-sway {
+  0%,
+  100% {
+    transform: rotate(-4.5deg);
+  }
+
+  50% {
+    transform: rotate(4.5deg);
+  }
+}
+
+@keyframes hero-tree-droop {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+
+  50% {
+    transform: rotate(1.5deg);
+  }
+}
+
+@keyframes hero-tree-creep {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1.5deg);
+  }
+
+  50% {
+    transform: translateY(-3%) rotate(1.5deg);
+  }
+}
+
+@keyframes hero-tree-flap {
+  0%,
+  100% {
+    transform: scaleX(1);
+  }
+
+  50% {
+    transform: scaleX(0.42);
+  }
+}
+
+@keyframes hero-tree-buzz {
+  0%,
+  100% {
+    transform: scaleY(1) translateY(0);
+  }
+
+  50% {
+    transform: scaleY(0.7) translateY(-4%);
+  }
+}
+
+@keyframes hero-tree-twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.55) rotate(0deg);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.2) rotate(30deg);
+  }
+}
+
+@keyframes hero-tree-glow {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(0.9);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+@keyframes hero-tree-rays {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes hero-tree-tip-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Under reduced motion, animations are switched off -- Tailwind's animate-spin
+   and the tw-animate-css enter animations (.animate-in, used for the easy-mode
+   step transitions) -- and transitions are effectively removed. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin {
+    animation: none;
+  }
+
+  .animate-in {
+    animation: none !important;
+  }
+
+  .hero-tree,
+  .hero-tree-bob,
+  .hero-tree-sway,
+  .hero-tree-droop,
+  .hero-tree-creep,
+  .hero-tree-hang,
+  .hero-tree-wing-l,
+  .hero-tree-wing-r,
+  .hero-tree-buzz,
+  .hero-tree-sparkle path,
+  .hero-tree-glow,
+  .hero-tree-rays,
+  .hero-tree-tip {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@theme inline {
+  --font-heading: 'Zen Maru Gothic', 'Poppins', 'Hiragino Kaku Gothic ProN', sans-serif;
+  --font-sans: 'Noto Sans JP', 'Poppins', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+  /* Brand accents exposed as Tailwind colours (bg-grass-1, text-ink-faint …)
+     so screens can use them without arbitrary-value syntax. They flip with the
+     prefers-color-scheme override of the brand tokens above. */
+  --color-paper-2: var(--paper-2);
+  --color-header-surface: var(--header-surface);
+  --color-grass: var(--grass);
+  --color-grass-1: var(--grass-1);
+  --color-grass-2: var(--grass-2);
+  --color-grass-3: var(--grass-3);
+  --color-green-brand: var(--green);
+  --color-green-deep: var(--green-deep);
+  --color-green-darkest: var(--green-darkest);
+  --color-green-contrast: var(--green-contrast);
+  --color-sun: var(--sun);
+  --color-sky: var(--sky);
+  --color-clay: var(--clay);
+  --color-orange-strong: var(--orange);
+  --color-orange-soft: var(--orange-soft);
+  --color-danger-soft: var(--danger-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-ink-hint: var(--ink-hint);
+  --color-status-info-bg: var(--status-info-bg);
+  --color-status-info-fg: var(--status-info-fg);
+  --color-status-hold-bg: var(--status-hold-bg);
+  --color-status-hold-fg: var(--status-hold-fg);
+  --color-status-locked-bg: var(--status-locked-bg);
+  --color-status-locked-fg: var(--status-locked-fg);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-switch-off: var(--switch-off);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  /* The theme's single diffuse shadow — the only elevation in the design. */
+  --shadow-soft: var(--shadow-soft);
+}
+
+/* Dark mode is driven entirely by the prefers-color-scheme override of the
+   brand tokens at the top of this file — the app never sets a .dark class. */
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+}

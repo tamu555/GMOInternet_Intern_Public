@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    // Deliberately a STANDALONE project, not a `tsconfig.json` reference:
+    // e2e/ imports across into src/, and TypeScript's composite mode requires
+    // every reachable file to be inside the project's own `include`. Adding
+    // "src" here would recompile the whole app under these e2e-specific
+    // options (no `jsx`, different `types`), which fails on every .tsx file.
+    // Run `npm run typecheck:e2e` instead - the §21.3 harness is local-only,
+    // so it is checked by its own script rather than by `npm run build`.
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.e2e.tsbuildinfo",
+    "target": "es2023",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "lib": ["ES2023", "DOM"],
+    "module": "esnext",
+    // "node" for fs/path (reading dataset.json, writing gate-report.json);
+    // "vite/client" (matches tsconfig.app.json) because importing
+    // `config/assistantConfig.ts` pulls in its `import.meta.env.VITE_*`
+    // reference even though this spec never calls the functions that use it.
+    "types": ["node", "vite/client"],
+    "skipLibCheck": true,
+
+    /* Bundler mode - same conventions as tsconfig.app.json */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["e2e", "playwright.config.ts"]
+}

@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>[試作] マイページ — 育つ木</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+/*
+  試作｜マイページの「育つ木」— Storyset の絵柄に寄せた版
+  ------------------------------------------------------------------
+  Storyset から実素材を借りたもの : 背景ブロブ / 雲 / 足元の草
+  Storyset の描法をまねたもの     : 濃い輪郭線・葉脈・灰色の有機的な幹
+  自前で解いたもの :
+    - 本家は葉が300枚以上あり1枚が小さい。名前は絶対に載らない。
+      そこで「名前を載せる葉」を主役サイズにし、その後ろに小さな
+      装飾葉を敷いて密度を作る。読みやすさと絵柄を両立させる唯一の解。
+    - 葉の色は飾りではなく状態を運ぶ（若葉=取得したて / 琥珀=更新間近 …）
+  限界（正直に）: 名前を載せられるのは20枚程度まで。
+*/
+:root{
+  --green:#1f6d45; --green-d:#175538;
+  --grass:#2f8f5b; --grass-1:#eef7ec; --grass-2:#dcefd6; --grass-3:#cbe6c4;
+  --ink:#17241c; --ink-2:#465449; --ink-3:#5f6c60;
+  --line:#e4ece0; --paper:#fbfcf6;
+  /* Storyset 素材の色差し替え口 */
+  --sc-ink:#17241c; --sc-blob:#92e3a9; --sc-veil:#fbfcf6;
+  /* 幹 */
+  --bark:#d3d8d1; --bark-d:#93a092;
+  /* 葉 : すべて淡色 + 濃い輪郭という Storyset の作法に合わせる */
+  --leaf-new:#c8ef9a; --leaf-ok:#92e3a9; --leaf-soon:#f5cf85; --leaf-dead:#dcc7ad;
+  --radius:20px; --radius-sm:14px; --pill:999px;
+  --shadow:0 22px 48px -30px rgba(23,60,40,.42);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:"Noto Sans JP",system-ui,sans-serif;font-size:15px;line-height:1.85;-webkit-font-smoothing:antialiased}
+h1,h2{font-family:"Zen Maru Gothic",sans-serif;font-weight:700}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+
+.site-header{background:var(--paper);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:40}
+.site-header .wrap{display:flex;align-items:center;gap:30px;height:66px}
+.brand{display:flex;align-items:center;gap:9px;font-family:"Poppins",sans-serif;font-weight:600;font-size:19px;color:var(--green)}
+.brand i{width:12px;height:12px;background:var(--grass);border-radius:0 78% 0 78%;display:block}
+.brand em{font-style:normal;font-weight:500;color:var(--ink-3)}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:18px;font-size:13.5px;color:var(--ink-2)}
+.auth-chip{font-family:"Poppins",sans-serif;font-size:11.5px;color:var(--ink-3)}
+
+main{padding:40px 0 80px}
+.page-head{margin-bottom:24px}
+.page-head h1{margin:0 0 6px;font-size:26px;font-weight:900}
+.page-head p{margin:0;color:var(--ink-2);font-size:14px}
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:26px 28px;margin-bottom:22px}
+.card > h2{margin:0 0 4px;font-size:18px}
+.card > p.sub{margin:0 0 18px;color:var(--ink-3);font-size:13px}
+
+.forest{position:relative;background:#fff;border-radius:var(--radius-sm);overflow:hidden}
+.forest svg{display:block;width:100%;height:auto}
+.leafg{cursor:pointer}
+.leafg .lf{transition:transform .18s}
+.leafg:hover .lf{transform:translateY(-2.5px)}
+.leafg text{font-family:"Poppins","Noto Sans JP",sans-serif;font-size:12px;font-weight:500;fill:var(--ink);dominant-baseline:middle;text-anchor:middle;pointer-events:none}
+.empty-note{position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);text-align:center;color:var(--ink-2);font-size:14px;max-width:22em}
+.empty-note b{display:block;font-family:"Zen Maru Gothic",sans-serif;font-size:18px;color:var(--ink);margin-bottom:4px}
+
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:16px;font-size:12.5px;color:var(--ink-2)}
+.legend span{display:flex;align-items:center;gap:7px}
+.legend i{width:17px;height:11px;border-radius:0 100% 0 100%;display:block;border:1.2px solid var(--ink)}
+
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:12px;color:var(--ink-3);font-weight:700;padding:0 0 10px;border-bottom:1px solid var(--line)}
+td{padding:13px 0;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+td.dom{font-family:"Poppins",sans-serif;font-weight:500}
+td.st{width:150px}
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;border-radius:var(--pill);padding:3px 11px;background:var(--grass-1);color:var(--ink-2)}
+.tag i{width:9px;height:9px;border-radius:50%;display:block;border:1px solid var(--ink)}
+td.exp{width:160px;font-family:"Poppins",sans-serif;font-size:13px;color:var(--ink-3)}
+
+.rev{position:fixed;right:14px;bottom:14px;z-index:99;background:#fff;border:1px solid #d6ded2;border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);font-size:12px;max-width:330px}
+.rev b{display:block;font-size:11px;color:var(--ink-3);margin-bottom:8px;font-weight:700}
+.rev .row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.rev input[type=range]{flex:1;accent-color:var(--grass)}
+.rev .n{font-family:"Poppins",sans-serif;font-weight:600;min-width:56px;text-align:right}
+.rev .r{display:flex;flex-wrap:wrap;gap:5px}
+.rev button{font:inherit;font-weight:700;cursor:pointer;border:1px solid #d6ded2;background:#f6faf4;color:var(--ink);border-radius:var(--pill);padding:4px 11px}
+.rev button:hover{background:var(--grass-2)}
+.rev .cap{margin:8px 0 0;font-size:10.5px;color:var(--ink-3);line-height:1.6}
+@media (max-width:820px){.card{padding:20px 18px} td.exp,th:nth-child(3){display:none}}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="#"><i></i><span>TeamC<em>.Com</em></span></a>
+    <div class="header-right">
+      <span class="auth-chip">AuthContext: 認証済み</span>
+      <a href="#">マイページ</a><a href="#">ログアウト</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="page-head">
+      <h1>マイページ</h1>
+      <p>持っているドメインが、そのまま1本の木になります。</p>
+    </div>
+
+    <section class="card">
+      <h2 id="treeTitle">あなたの木</h2>
+      <p class="sub" id="treeSub"></p>
+      <div class="forest">
+        <svg id="tree" role="img" aria-labelledby="treeTitle"></svg>
+        <div class="empty-note" id="emptyNote" hidden>
+          <b>まだ葉が1枚もありません</b>
+          最初のドメインを取ると、ここに葉がつきます。
+        </div>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--leaf-new)"></i>取得したて（90日以内）</span>
+        <span><i style="background:var(--leaf-ok)"></i>通常</span>
+        <span><i style="background:var(--leaf-soon)"></i>更新が近い（60日以内）</span>
+        <span><i style="background:var(--leaf-dead)"></i>期限切れ</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>ドメイン一覧</h2>
+      <p class="sub">木は要約です。手を動かすときはこちらを見てください。</p>
+      <table>
+        <thead><tr><th>ドメイン</th><th>状態</th><th>有効期限</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </section>
+  </div>
+</main>
+
+<div class="rev">
+  <b>試作用コントロール（本番には入りません）</b>
+  <div class="row"><input type="range" id="cnt" min="0" max="20" value="7" /><span class="n" id="cntLabel">7 件</span></div>
+  <div class="r">
+    <button data-n="0">0</button><button data-n="1">1</button><button data-n="3">3</button>
+    <button data-n="7">7</button><button data-n="12">12</button><button data-n="20">20</button>
+  </div>
+  <p class="cap">背景ブロブ・雲・足元の草は Storyset の実素材。幹と葉は同じ描法で自前生成しています。</p>
+</div>
+
+<script>
+/* ===== Storyset から借りた実素材 ===== */
+const SC_BLOB='<g><path d="M335.8,62.13S73,101.63,41.11,170.74s50.13,213.43,98,253.68,252.91.76,299.25-60S455,43.91,335.8,62.13Z" style="fill:var(--sc-blob)"></path><path d="M335.8,62.13S73,101.63,41.11,170.74s50.13,213.43,98,253.68,252.91.76,299.25-60S455,43.91,335.8,62.13Z" style="fill:var(--sc-veil);opacity:0.7000000000000001"></path></g>';
+const SC_CLOUD='<g><path d="M453.61,51.3S446.31,27.73,430,31.1s-11.79,10.66-16.28,14.59-9-3.37-16.28.56S393,56.91,390.75,59.16s-10.1-3.37-14-2.25-3.37,3.37-4.49,5.62-5.61,1.12-7.86,1.68-3.93,3.93-3.93,3.93h119a21.72,21.72,0,0,0-6.17-12.35C467.64,50.18,457,59.72,453.61,51.3Z" style="fill:none;stroke:var(--sc-ink);stroke-miterlimit:10"></path><path d="M78.27,261.68S73.55,246.45,63,248.63s-7.61,6.89-10.51,9.42-5.8-2.17-10.51.37-2.9,6.88-4.35,8.33-6.53-2.17-9.07-1.45-2.17,2.18-2.9,3.63-3.62.72-5.07,1.09-2.54,2.53-2.54,2.53H94.94a14,14,0,0,0-4-8C87.33,261,80.44,267.12,78.27,261.68Z" style="fill:none;stroke:var(--sc-ink);stroke-miterlimit:10"></path><path d="M356,326.28s-7.56-24.42-24.42-20.93-12.21,11-16.86,15.11-9.3-3.48-16.86.59-4.65,11-7,13.37-10.46-3.49-14.53-2.33-3.49,3.49-4.65,5.82-5.82,1.16-8.14,1.74-4.07,4.07-4.07,4.07H382.74a22.48,22.48,0,0,0-6.4-12.79C370.53,325.12,359.48,335,356,326.28Z" style="fill:none;stroke:var(--sc-ink);stroke-miterlimit:10"></path></g>';
+const SC_FLOOR='<g><polygon points="388.17 456.87 388.58 454.11 381.32 456.06 381.67 451.94 375.77 456.57 378.2 450.4 374.04 451.43 372.86 452.05 368.14 454.52 367.1 449.37 365.02 454.52 362.25 450.4 360.51 456.06 355.31 450.92 356.35 456.06 352.19 455.55 352.72 457.28 350.76 457.74 348.81 457.28 349.34 455.55 345.18 456.06 346.22 450.92 341.02 456.06 339.28 450.4 336.51 454.52 334.43 449.37 333.39 454.52 328.67 452.05 327.49 451.43 323.33 450.4 325.76 456.57 319.86 451.94 320.21 456.06 319 455.73 319.05 455.55 318.53 455.61 315.17 454.71 315.93 450.92 310.73 456.06 309 450.4 306.22 454.52 304.14 449.37 303.1 454.52 298.38 452.05 297.21 451.43 293.05 450.4 295.47 456.57 289.58 451.94 289.93 456.06 286.08 455.03 286.22 454.11 284.44 454.59 282.66 454.11 282.8 455.03 278.95 456.06 279.3 451.94 273.4 456.57 275.83 450.4 271.67 451.43 270.49 452.05 265.78 454.52 264.74 449.37 262.65 454.52 259.88 450.4 258.15 456.06 252.95 450.92 253.99 456.06 249.82 455.55 250.36 457.28 247.99 457.83 245.61 457.28 246.15 455.55 241.99 456.06 243.03 450.92 237.82 456.06 236.09 450.4 233.32 454.52 231.24 449.37 230.19 454.52 225.48 452.05 224.3 451.43 220.14 450.4 222.57 456.57 216.67 451.94 217.02 456.06 215.8 455.73 215.86 455.55 215.34 455.61 211.97 454.71 212.74 450.92 207.54 456.06 205.8 450.4 203.03 454.52 200.95 449.37 199.91 454.52 195.19 452.05 194.01 451.43 189.85 450.4 192.28 456.57 186.39 451.94 186.73 456.06 182.89 455.03 183.03 454.11 181.25 454.59 179.47 454.11 179.6 455.03 175.76 456.06 176.11 451.94 170.21 456.57 172.64 450.4 168.48 451.43 167.3 452.05 162.58 454.52 161.54 449.37 159.46 454.52 156.69 450.4 154.96 456.06 149.75 450.92 150.79 456.06 146.63 455.55 147.16 457.28 144.67 457.86 138.09 456.87 138.5 454.11 131.24 456.06 131.58 451.94 125.69 456.57 128.11 450.4 123.95 451.43 122.78 452.05 118.06 454.52 117.02 449.37 114.94 454.52 112.16 450.4 110.43 456.06 105.23 450.92 106.27 456.06 102.11 455.55 102.64 457.28 97.83 458.4 142.36 458.4 148.2 458.4 169.76 458.4 192.73 458.4 200.05 458.4 220.13 458.4 245.55 458.4 250.42 458.4 272.96 458.4 295.92 458.4 303.24 458.4 323.33 458.4 347.92 458.4 353.61 458.4 398.29 458.4 388.17 456.87" style="fill:var(--sc-ink);stroke:var(--sc-ink);stroke-miterlimit:10"></polygon></g>';
+
+/* ===== ダミーデータ ===== */
+const NAMES=['my-shop.com','my-shop.dev','kitaq-cafe.jp','kitaq-cafe.shop','hanamaru.studio',
+ 'hanamaru.site','teamc-lab.dev','teamc-lab.io','aoba-books.com','aoba-books.store',
+ 'sakura-tei.shop','sakura-tei.net','minato-works.co','minato-works.tech','yamabiko.club',
+ 'yamabiko.blog','tsubame.design','tsubame.online','komorebi.app','komorebi.work'];
+const STATE=[1,0,0,2,0, 1,0,3,0,2, 0,0,1,0,0, 2,0,0,0,1];
+const EXPIRY=['2027-05-18','2027-01-04','2026-11-30','2026-10-12','2027-03-08',
+ '2027-06-22','2026-12-19','2026-07-02','2027-02-14','2026-10-25',
+ '2027-04-09','2027-08-01','2027-05-30','2026-12-03','2027-01-27',
+ '2026-10-09','2027-07-15','2027-03-21','2027-09-06','2027-06-11'];
+const LEAFC=['var(--leaf-ok)','var(--leaf-new)','var(--leaf-soon)','var(--leaf-dead)'];
+const LEAFJ=['通常','取得したて','更新が近い','期限切れ'];
+
+/* ===== 配置 ===== */
+const W=900, CX=450, GROUND=548;
+const LW=140, LH=32, GAPX=9, ROWH=44;
+/* 横に並べすぎると樹冠が物干し竿になる。1段は最大4枚に抑え、
+   段数で高さを稼いで丸い樹冠にする。添字0 = 最下段 */
+const CAP=[3,4,4,3,3,2,1];
+
+/* 乱数は使わない。名前から決まる値にして、再描画で葉が動かないようにする */
+const hash=s=>{let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h;};
+
+/* Storyset の葉 : 両端がとがったアーモンド形 + 主脈 + 側脈、濃い輪郭 */
+function leaf(x,y,w,h,fill,rot){
+  const d=`M${x} ${y} C${x+w*.16} ${y-h/2} ${x+w*.6} ${y-h/2} ${x+w} ${y}`
+        + ` C${x+w*.6} ${y+h/2} ${x+w*.16} ${y+h/2} ${x} ${y} Z`;
+  let veins='';
+  for(let i=1;i<=3;i++){
+    const t=x+w*(0.22+i*0.19), dy=h*0.3*(1-Math.abs(i-2)*0.25);
+    veins+=`<path d="M${t} ${y} l${w*0.09} ${-dy}" fill="none" stroke="var(--ink)" stroke-width="1" opacity=".5"/>`
+         + `<path d="M${t} ${y} l${w*0.09} ${dy}" fill="none" stroke="var(--ink)" stroke-width="1" opacity=".5"/>`;
+  }
+  const g=rot?` transform="rotate(${rot} ${x+w/2} ${y})"`:'';
+  return `<g${g}><path class="lf" d="${d}" fill="${fill}" stroke="var(--ink)" stroke-width="1.7" stroke-linejoin="round"/>`
+       + `<path d="M${x+w*.06} ${y} L${x+w*.92} ${y}" fill="none" stroke="var(--ink)" stroke-width="1" opacity=".5"/>`
+       + veins + `</g>`;
+}
+
+/* 幹 : 灰色の面 + 濃い輪郭 + 片側の影、という Storyset の作法 */
+function trunk(topY,halfW){
+  const g=GROUND, fw=halfW*2.3;                       /* 根元の張り出し */
+  const body=`M${CX-fw} ${g} C${CX-fw*.62} ${g-26} ${CX-halfW*1.25} ${g-70} ${CX-halfW} ${topY}`
+           + ` L${CX+halfW} ${topY}`
+           + ` C${CX+halfW*1.25} ${g-70} ${CX+fw*.62} ${g-26} ${CX+fw} ${g} Z`;
+  const shade=`M${CX+halfW*.18} ${topY} C${CX+halfW*.5} ${g-80} ${CX+fw*.5} ${g-30} ${CX+fw*.72} ${g}`
+            + ` L${CX+fw} ${g} C${CX+fw*.62} ${g-26} ${CX+halfW*1.25} ${g-70} ${CX+halfW} ${topY} Z`;
+  return `<path d="${body}" fill="var(--bark)" stroke="var(--ink)" stroke-width="1.9" stroke-linejoin="round"/>`
+       + `<path d="${shade}" fill="var(--bark-d)" opacity=".55"/>`
+       + `<path d="M${CX-halfW*.2} ${g-40} C${CX-halfW*.05} ${g-90} ${CX-halfW*.3} ${g-130} ${CX-halfW*.1} ${topY+18}" fill="none" stroke="var(--ink)" stroke-width="1.1" opacity=".45"/>`;
+}
+
+function rowsFor(n){const o=[];let l=n;for(const c of CAP){if(l<=0)break;o.push(Math.min(c,l));l-=c;}return o;}
+
+function build(n){
+  const svg=document.getElementById('tree');
+  const p=[];
+  const rows=rowsFor(n), filled=rows.length;
+  const trunkLen = n===0 ? 96 : 104+Math.min(n,20)*3.2;
+  const canopyBottom = GROUND-trunkLen;
+  const canopyTop = canopyBottom - filled*ROWH;
+  const widest = filled?Math.max(...rows):1;
+  const cw = widest*(LW+GAPX)-GAPX;
+  const vTop = (n===0? GROUND-190 : canopyTop-110);
+  const vH = (GROUND+40)-vTop;
+
+  /* --- 背景（Storyset実素材） --- */
+  const bs = Math.max(1.0, (cw+240)/430);
+  const bsy = Math.max(0.85, Math.min(1.15, vH/470));
+  p.push(`<g transform="translate(${CX-248*bs} ${vTop-10}) scale(${bs} ${bsy})" opacity=".85">${SC_BLOB}</g>`);
+  p.push(`<g transform="translate(${CX-470} ${vTop-150}) scale(1.5 0.62)" opacity=".85">${SC_CLOUD}</g>`);
+  p.push(`<g transform="translate(0 ${GROUND-456}) scale(1.8 1)">${SC_FLOOR}</g>`);
+
+  if(n===0){
+    /* 双葉 : ここから始まる */
+    p.push(`<path d="M${CX-3.5} ${GROUND} L${CX-2.5} ${GROUND-92} h5 L${CX+3.5} ${GROUND} Z" fill="var(--bark)" stroke="var(--ink)" stroke-width="1.7" stroke-linejoin="round"/>`);
+    p.push(leaf(CX-2,GROUND-88,70,28,'var(--leaf-ok)',-206));
+    p.push(leaf(CX+2,GROUND-74,70,28,'var(--leaf-new)',-8));
+    svg.setAttribute('viewBox',`0 ${vTop} ${W} ${vH}`);
+    svg.innerHTML=p.join(''); return;
+  }
+
+  /* --- 葉の位置（下段ほど広い） --- */
+  const slots=[];
+  rows.forEach((c,ri)=>{
+    const rw=c*(LW+GAPX)-GAPX;
+    const y=canopyBottom-ri*ROWH-ROWH/2;
+    const off=(ri%2)?(LW+GAPX)*0.28:0;      /* 段を互い違いにして噛み合わせる */
+    for(let i=0;i<c;i++) slots.push({x:CX-rw/2+i*(LW+GAPX)+off, y});
+  });
+
+  /* --- 幹と枝 --- */
+  const halfW = 10+Math.min(n,20)*0.5;
+  p.push(trunk(canopyBottom+8, halfW));
+  /* 太い主枝 : 濃い線の上に樹皮色を重ねて「輪郭のある枝」にする */
+  const fork={x:CX,y:canopyBottom+14};
+  const mains=[[-0.92,0.42],[-0.5,0.9],[0.5,0.92],[0.94,0.4]].map(([dx,dy])=>({
+    x:fork.x+dx*cw*0.30, y:fork.y-dy*filled*ROWH*0.62
+  }));
+  mains.forEach(m=>{
+    const d=`M${fork.x} ${fork.y} C${fork.x} ${(fork.y+m.y)/2}, ${m.x} ${(fork.y+m.y)/2+Math.min(28, filled*ROWH*0.18)}, ${m.x} ${m.y}`;
+    p.push(`<path d="${d}" fill="none" stroke="var(--ink)" stroke-width="10" stroke-linecap="round"/>`);
+    p.push(`<path d="${d}" fill="none" stroke="var(--bark)" stroke-width="6.6" stroke-linecap="round"/>`);
+  });
+  /* 細い小枝 : いちばん近い主枝から葉へ */
+  slots.forEach(s=>{
+    const ex=s.x+LW*0.5;
+    let b=mains[0], best=1e9;
+    mains.forEach(m=>{const d=(m.x-ex)**2+(m.y-s.y)**2; if(d<best){best=d;b=m;}});
+    p.push(`<path d="M${b.x} ${b.y} C${b.x} ${(b.y+s.y)/2}, ${ex} ${(b.y+s.y)/2}, ${ex} ${s.y}" fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round" opacity=".8"/>`);
+  });
+
+  /* --- 後ろの装飾葉 : 樹冠の外周だけに置いて密度を作る。
+         主役の葉に重ねると名前が読めなくなるので内側には置かない --- */
+  const ccx=CX, ccy=(canopyTop+canopyBottom)/2;
+  const crx=cw/2+30, cry=filled*ROWH/2+26;
+  const deco=Math.min(8+n*2,30);
+  for(let k=0;k<deco;k++){
+    const a=(k*137.5+ (hash('d'+n)%40))*Math.PI/180;
+    const bx=ccx+Math.cos(a)*crx, by=ccy+Math.sin(a)*cry;
+    const deg=Math.atan2(Math.sin(a)*cry,Math.cos(a)*crx)*180/Math.PI;
+    p.push(leaf(bx-26,by,52,18,'var(--grass-3)',deg));
+  }
+
+  /* --- 名前を載せる主役の葉 --- */
+  slots.forEach((s,i)=>{
+    const st=STATE[i], nm=NAMES[i];
+    p.push(`<g class="leafg"><title>${nm} — ${LEAFJ[st]}／有効期限 ${EXPIRY[i]}</title>`
+      + leaf(s.x,s.y,LW,LH,LEAFC[st],((hash(nm)%9)-4))
+      + `<text x="${s.x+LW/2}" y="${s.y+0.5}">${nm}</text></g>`);
+  });
+
+  svg.setAttribute('viewBox',`0 ${vTop} ${W} ${vH}`);
+  svg.innerHTML=p.join('');
+}
+
+function render(n){
+  build(n);
+  document.getElementById('emptyNote').hidden = n!==0;
+  document.getElementById('cntLabel').textContent = n+' 件';
+  document.getElementById('cnt').value=n;
+  const soon=STATE.slice(0,n).filter(s=>s===2).length, dead=STATE.slice(0,n).filter(s=>s===3).length;
+  document.getElementById('treeSub').textContent = n===0 ? '' :
+    `葉が ${n} 枚。` + (dead?`期限切れが ${dead} 件、`:'') + (soon?`更新が近いものが ${soon} 件あります。`:'すべて健康です。');
+  document.getElementById('rows').innerHTML = Array.from({length:n},(_,i)=>{
+    const st=STATE[i];
+    return `<tr><td class="dom">${NAMES[i]}</td><td class="st"><span class="tag"><i style="background:${LEAFC[st]}"></i>${LEAFJ[st]}</span></td><td class="exp">${EXPIRY[i]}</td></tr>`;
+  }).join('') || '<tr><td colspan="3" style="color:var(--ink-3);font-size:13.5px">まだドメインを持っていません。</td></tr>';
+}
+document.getElementById('cnt').addEventListener('input',e=>render(+e.target.value));
+document.querySelectorAll('.rev button').forEach(b=>b.onclick=()=>render(+b.dataset.n));
+render(7);
+</script>
+</body>
+</html>

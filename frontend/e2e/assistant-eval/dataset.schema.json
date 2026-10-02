@@ -1,0 +1,323 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://teamc-2026.example/assistant-eval/dataset.schema.json",
+  "title": "Assistant LLM quality-evaluation dataset (spec §21.3)",
+  "description": "Cases fed to the Playwright evaluation harness (frontend/e2e/assistant-eval/assistant-eval.spec.ts) to machine-judge the §21.4 release gate.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "assistantVersion",
+    "cases"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "assistantVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 518,
+      "maxItems": 518,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "intentId": {
+      "type": "string",
+      "enum": [
+        "SEARCH_DOMAIN",
+        "PURCHASE_DOMAIN",
+        "VIEW_DOMAIN",
+        "POST_PURCHASE_NEXT_STEPS",
+        "CONNECT_WEBSITE",
+        "SETUP_EMAIL",
+        "ADD_A_RECORD",
+        "ADD_AAAA_RECORD",
+        "ADD_CNAME",
+        "ADD_TXT",
+        "ADD_MX",
+        "CREATE_SUBDOMAIN",
+        "CHANGE_NAMESERVER",
+        "SETUP_DNSSEC",
+        "VERIFY_DOMAIN",
+        "TRANSFER_DOMAIN",
+        "RENEW_DOMAIN",
+        "RETIRE_DOMAIN",
+        "TROUBLESHOOT_DNS",
+        "EXPLAIN_DNS",
+        "EXPLAIN_RECORD",
+        "LOGIN_HELP",
+        "UNKNOWN",
+        "OUT_OF_SCOPE"
+      ]
+    },
+    "routeId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "DOMAIN_SEARCH",
+        "DOMAIN_LIST",
+        "DOMAIN_DETAIL",
+        "DNS_RECORDS",
+        "DNS_NAMESERVER",
+        "LOGIN",
+        "SIGNUP",
+        "LEGAL_LICENSES",
+        null
+      ]
+    },
+    "connectWebsiteProvider": {
+      "type": "string",
+      "enum": [
+        "vercel",
+        "netlify",
+        "github-pages",
+        "sakura-rental",
+        "xserver",
+        "cloudflare",
+        "other"
+      ]
+    },
+    "setupEmailProvider": {
+      "type": "string",
+      "enum": [
+        "google-workspace",
+        "microsoft-365",
+        "other"
+      ]
+    },
+    "expectedSlots": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "type": "string"
+        }
+      }
+    },
+    "pageContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "routeId",
+        "hasSelectedDomain"
+      ],
+      "properties": {
+        "routeId": {
+          "$ref": "#/$defs/routeId"
+        },
+        "hasSelectedDomain": {
+          "type": "boolean"
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "utterance",
+        "category",
+        "expectedIntent",
+        "expectedRouteId",
+        "expectedSlots",
+        "expectNavigationCard",
+        "expectClarification",
+        "pageContext",
+        "notes"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^eval-[0-9]{3}$"
+        },
+        "utterance": {
+          "type": "string",
+          "minLength": 1
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "in_scope",
+            "clarification",
+            "explanation",
+            "out_of_scope",
+            "injection",
+            "follow_up"
+          ]
+        },
+        "expectedIntent": {
+          "$ref": "#/$defs/intentId"
+        },
+        "expectedRouteId": {
+          "$ref": "#/$defs/routeId"
+        },
+        "expectedSlots": {
+          "$ref": "#/$defs/expectedSlots"
+        },
+        "expectNavigationCard": {
+          "type": "boolean"
+        },
+        "expectClarification": {
+          "type": "boolean"
+        },
+        "pageContext": {
+          "$ref": "#/$defs/pageContext"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "blocked": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "expectedIntent": {
+                "const": "CONNECT_WEBSITE"
+              }
+            },
+            "required": [
+              "expectedIntent"
+            ]
+          },
+          "then": {
+            "properties": {
+              "expectedSlots": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "provider": {
+                    "$ref": "#/$defs/connectWebsiteProvider"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "expectedIntent": {
+                "const": "SETUP_EMAIL"
+              }
+            },
+            "required": [
+              "expectedIntent"
+            ]
+          },
+          "then": {
+            "properties": {
+              "expectedSlots": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "provider": {
+                    "$ref": "#/$defs/setupEmailProvider"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "not": {
+              "properties": {
+                "expectedIntent": {
+                  "enum": [
+                    "CONNECT_WEBSITE",
+                    "SETUP_EMAIL"
+                  ]
+                }
+              },
+              "required": [
+                "expectedIntent"
+              ]
+            }
+          },
+          "then": {
+            "properties": {
+              "expectedSlots": {
+                "type": "object",
+                "additionalProperties": false,
+                "maxProperties": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "expectedRouteId": {
+                "const": null
+              }
+            },
+            "required": [
+              "expectedRouteId"
+            ]
+          },
+          "then": {
+            "properties": {
+              "expectNavigationCard": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "expectClarification": {
+                "const": true
+              }
+            },
+            "required": [
+              "expectClarification"
+            ]
+          },
+          "then": {
+            "properties": {
+              "expectNavigationCard": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "not": {
+              "properties": {
+                "category": {
+                  "const": "injection"
+                }
+              },
+              "required": [
+                "category"
+              ]
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "blocked"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

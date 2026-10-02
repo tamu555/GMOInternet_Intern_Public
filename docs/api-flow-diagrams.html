@@ -1,0 +1,442 @@
+<meta charset="utf-8">
+<title>画面とAPIのフロー図集</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;700&family=Noto+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper: #FAFBFA; --ink: #1E2A32; --ink-soft: #51626D; --line: #DCE4E2;
+    --teal: #0F766E; --teal-soft: #E4F0EE; --orange: #D9530B; --orange-soft: #FBEDE3;
+    --card: #FFFFFF; --mono-bg: #EEF3F2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #14191D; --ink: #E6ECEA; --ink-soft: #9FAFB4; --line: #2C363C;
+      --teal: #4CC5B9; --teal-soft: #17302E; --orange: #F08A4B; --orange-soft: #38271B;
+      --card: #1B2227; --mono-bg: #222B30;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #14191D; --ink: #E6ECEA; --ink-soft: #9FAFB4; --line: #2C363C;
+    --teal: #4CC5B9; --teal-soft: #17302E; --orange: #F08A4B; --orange-soft: #38271B;
+    --card: #1B2227; --mono-bg: #222B30;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    font-size: 14.5px; line-height: 1.8; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 44px 24px 64px; }
+  header { border-bottom: 1px solid var(--line); padding-bottom: 24px; margin-bottom: 36px; }
+  .team-mark {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700; letter-spacing: .12em; color: var(--ink-soft);
+  }
+  .team-mark::before {
+    content: ""; width: 22px; height: 4px;
+    background: linear-gradient(90deg, var(--orange) 50%, var(--teal) 50%); border-radius: 2px;
+  }
+  h1 {
+    font-family: "Shippori Mincho", serif;
+    font-size: 30px; font-weight: 700; line-height: 1.4; margin: 8px 0 6px; text-wrap: balance;
+  }
+  .lede { color: var(--ink-soft); margin: 0; max-width: 46em; }
+  .notice {
+    background: var(--orange-soft); border-radius: 8px; padding: 10px 16px;
+    font-size: 13px; margin-top: 14px; max-width: 46em;
+  }
+  .notice b { color: var(--orange); }
+
+  section { margin-bottom: 48px; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .14em; color: var(--teal); margin: 0 0 4px; }
+  h2 {
+    font-family: "Shippori Mincho", serif;
+    font-size: 21px; font-weight: 600; margin: 0 0 10px; text-wrap: balance;
+  }
+  p { margin: 0 0 12px; max-width: 46em; }
+  code { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: .88em; background: var(--mono-bg); padding: 1px 6px; border-radius: 4px; }
+  figure { margin: 0; }
+  .diagram {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px; overflow-x: auto; margin-bottom: 8px;
+  }
+  figcaption { font-size: 13px; color: var(--ink-soft); margin-bottom: 14px; max-width: 46em; }
+  footer { border-top: 1px solid var(--line); padding-top: 18px; font-size: 12.5px; color: var(--ink-soft); }
+  .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; background: var(--mono-bg); padding: 1px 6px; border-radius: 4px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="team-mark">GMOインターネット ハッカソン — TeamC・実装者向け</span>
+    <h1>画面とAPIのフロー図集</h1>
+    <p class="lede">どの画面からどのリクエストが出て、どの結果でどの画面に遷移するか。§番号はチーム作成の仕様書草案（公開版では非収録）の該当節。</p>
+    <div class="notice"><b>凡例と前提:</b> 自バックエンドのパス（<code>/api/…</code>）は<b>仮称</b>— 技術スタック確定（TBD #10）後にこのページを更新する。レジストリ側のパス（<code>/api/v1/epp/…</code>）は<b>確定仕様</b>。成否は常に HTTP ステータスと <code>result.code</code> の2段で判定する（仕様書 §3.3）。</div>
+  </header>
+
+  <section>
+    <p class="eyebrow">FIG. 1</p>
+    <h2>ドメイン取得フロー — 画面遷移と結果分岐</h2>
+    <figure>
+      <div class="diagram">
+<pre class="mermaid">
+flowchart TD
+    S["検索画面 / 候補提案画面<br>（簡単モードは目的入力から合流）"] -->|"POST /api/domains/search"| CHK{"バックエンドが両レジストリへ<br>domain:check を振り分け<br>（TLD→レジストリ表 §4.3）"}
+    CHK -->|"空きあり"| FORM["申込フォーム<br>（簡単モードは隠し項目を<br>デフォルト値で充填 §6.2.6）"]
+    CHK -->|"空きなし (2302)"| ALT["類似候補の提案画面<br>（ルールベース §6.2.4）"]
+    ALT --> FORM
+    FORM -->|"POST /api/orders (kind=create)<br>疑似決済 → Order.state=paid"| PROV["バックエンド処理<br>① contact 確認（初回のみ作成）<br>② domain:create<br>③ NS設定 (domain:update)"]
+    PROV -->|"HTTP 200 + result 1000"| DONE["完了画面<br>→ DNS設定へ誘導"]
+    PROV -->|"HTTP 409 + result 2302<br>→ domain:info が自レジストラで引ける"| DONE2["前回のリトライが成功していた<br>と解釈して完了画面へ（§6.7）"]
+    PROV -->|"タイムアウト / 5xx"| RETRY["『処理中です。自動で再試行しています』<br>Order.state=retrying・二重課金しない"]
+    RETRY -->|"リトライ成功"| DONE
+    RETRY -->|"リトライ上限"| FAIL["エラー画面<br>Order.state=failed（返金扱い）"]
+</pre>
+      </div>
+      <figcaption>取得の幹線。実装の要点は右下の3分岐 — 「2302 かつ info が引ける」を成功扱いにするリカバリ（仕様書 §6.7）が「お金だけ取られてドメインが無い」を防ぐ本体。<br><b>フロント実装メモ:</b> 左半分（検索〜候補提案）を実装。検索画面は<b>トップページ <code>/</code> の公開ルート</b>（未認証で検索・空き確認・価格・候補提案まで使える。ログインが要るのは「申し込む」から先だけ。旧 <code>/domains</code> は <code>/</code> へリダイレクト）。実行済みの検索条件は URL クエリ（<code>/?q=&lt;ラベル&gt;&amp;tlds=.com,.dev</code>）に保持し、リロード・URL共有・ログイン往復のいずれでも同じ検索を再実行して結果を復元する。ログイン済み時は検索画面に「管理画面へ」ボタン（<code>/dashboard</code>）を表示、未認証時はヘッダーの「ログイン / 会員登録」のみ。自バックエンドのエンドポイントは <code>POST /api/domains/search</code>（仮称、原図どおり）に加え <code>GET /api/domains/tlds</code>（仮称・新設、原図になし）を追加した — 仕様書 §4.3 の「TLD一覧はハードコードせず取得し、失敗時のみ静的フォールバックを使う」という方針をフロントの対応TLD一覧取得にもそのまま適用したため。検索は<b>常に対応TLD全件</b>に対して行う（フォームのTLD選択は廃止・2026-08-25、URL契約は <code>/?q=ラベル</code> のみ）。結果はTLDごとの選択テーブル（列=TLD、価格は初年度／更新を同一文字サイズで併記 §6.2.5）で表示し、空きありのTLDを ◯ で選択→「選択した商品」カートに集約→「次へ進む」で申込フォームへ渡す（選択全件を <code>?domain=</code> の繰り返しで運ぶが、申込フォームは1件ずつ処理する）。各TLDの状態は「◯ 空きあり／✕ 使用中(2302)／？ 確認できませんでした」の3状態 — 片方のレジストリだけタイムアウトしても、そのレジストリ担当のTLDだけが3つ目の状態になり「使用中」と誤表示しない（§6.7）。類似候補提案は原図のような別画面ではなく、検索画面内の同一ページ内セクションとして実装（スコープ内での簡略化）。候補はルールベース（AIなし、§6.2.4）で生成した上で同じ検索APIにより実際に空き確認してから提示し、未検証の「空きあり」は出さない。TLDごとの推薦理由・注意書き（.dev/.app のHTTPS必須等）と価格表（初年度／2年目以降／3年合計）は <code>frontend/src/features/domains/tldData.ts</code> に暫定値として集約（Kitaqnicの18TLD＝TBD #1、価格表＝TBD #7、実値差し替えはこのファイルのみで完結）。<code>/domains</code> は本タスクで実装した検索画面に転用し、既存の「ドメイン一覧」（§6.1 情報参照＝所有ドメインの一覧）は今回実装しないため将来別ルートで用意する。実装は <code>frontend/src/features/domains/</code>、<code>frontend/src/api/domainsSearchApi.ts</code>。<br><b>フロント実装メモ（右半分）:</b> 申込フォーム（<code>/domains/new?domain=…</code>）→ 疑似決済 → 注文結果（<code>/orders/{id}</code>）→ 完了画面を実装した。自バックエンドの契約は仮決め — <code>POST /api/orders</code>（疑似決済込みで <code>state=paid</code> の注文を返す）のあと、結果画面が <code>GET /api/orders/{id}</code>（仮称・新設、原図になし）を<b>ポーリング</b>して done / failed への確定を待つ。作成レスポンスは最終結果を運ばない（バックエンド確定後に要再合意、frontend/README.md 未合意事項）。注文状態は4状態以上（処理中 / 再試行中 / 完了 / 失敗）で表現し、再試行中は「処理中です。自動で再試行しています」＋二重課金しない旨を明示（§6.7）、失敗時は「処理できませんでした」のみで内部の返金扱いは出さない（§5）。図中 DONE2 の「409+2302 かつ自レジストラで info が引ける＝前回成功」リカバリは<b>バックエンドの責務のまま</b> — フロントは <code>state=done</code> を通常成功と同一の完了画面で表示するだけで、同じ判定ロジックをフロントには書いていない。§6.2.6 のデフォルト6項目は <code>frontend/src/features/orders/orderDefaults.ts</code> に暫定値（TBD #5、実値はデータ差し替えのみ）。フォームは項目を隠さず「くわしい設定」でたたみ（§1.2）、送信ペイロードは常に完全。完了画面は authInfo をマスク＋コピーのみ（§7.3）、<code>inactive</code> は「まだインターネットに公開されていません」（§3.5）と表示して DNS設定（プレースホルダ）へ誘導する。実装は <code>frontend/src/features/orders/</code>、<code>frontend/src/api/ordersApi.ts</code>、エラーコード対応表（§6.7）は <code>frontend/src/api/eppResultMessages.ts</code> に一元化。</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <p class="eyebrow">FIG. 2</p>
+    <h2>domain:create の内部シーケンス — 2段判定と clTRID</h2>
+    <figure>
+      <div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+    participant UI as 画面
+    participant API as API層
+    participant BR as BRIDGE層
+    participant REG as レジストリ<br>(Kitaqsign/Kitaqnic)
+
+    UI->>API: POST /api/orders (kind=create)
+    API->>API: Order作成 → clTRID を注文IDから<br>決定的に生成 (ORD-000123-CREATE-01)
+    API->>BR: createDomain(req)
+    BR->>REG: POST /api/v1/epp/domains<br>Basic + X-Registrar-Id + X-Api-Key + X-Cl-TRID
+    REG-->>BR: HTTP status + { result.code, resData, trID }
+    BR->>BR: 2段判定：HTTP と result.code の両方を検査<br>RegistryLog に clTRID/svTRID/所要時間を記録 (§7.2)
+    alt 1000 成功
+        BR-->>API: CreateResult
+        API-->>UI: 完了 → DNS設定画面へ
+    else 409 + 2302（既存）
+        BR->>REG: GET /api/v1/epp/domains/{name} (info)
+        REG-->>BR: 自レジストラ保有なら「前回成功」と判定
+        BR-->>API: 成功扱いで返す (§6.7)
+    else タイムアウト / 5xx
+        API-->>UI: 「処理中・自動再試行」表示<br>同じ clTRID で再試行（追跡可能）
+    end
+</pre>
+      </div>
+      <figcaption>共通HTTPクライアント（§4.4）が担う部分。2段判定とログ記録をここに共通化しないと、後で全呼び出し箇所を直すことになる。<br><b>フロント実装メモ:</b> この図の UI 列（<code>POST /api/orders</code> を投げ、結果を受けて画面を出す）だけをフロントが実装した。API層・BRIDGE層・レジストリ通信、および「409+2302 → info で前回成功と判定」のリカバリはバックエンドの責務のまま（§3.2.1: ブラウザはレジストリと直接通信しない）。フロントから見えるのは Order.state の遷移のみで、モック（MSW）ではリカバリ経由の成功を通常成功と同一のレスポンスで返すことでこの境界を検証している。</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <p class="eyebrow">FIG. 3</p>
+    <h2>移管 IN / OUT — Pollワーカーと承認画面</h2>
+    <figure>
+      <div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+    participant UI as 画面
+    participant API as API層 / BATCH
+    participant BR as BRIDGE層
+    participant REG as レジストリ
+    participant B as 他社レジストラB<br>(Swagger/seedで操作)
+
+    rect rgba(15,118,110,0.08)
+    note over UI,B: 移管IN（アプリ = gaining 側）
+    UI->>API: 移管INウィザード：ドメイン名 + AuthCode入力
+    API->>BR: transferRequest(name, authInfo)
+    BR->>REG: POST …/transfer/request
+    REG-->>BR: 1000 → pendingTransfer
+    API-->>UI: 「移管元の承認待ちです」（進捗表示）
+    B->>REG: transfer/approve（Bの判断）
+    API->>BR: Pollワーカーが pollMessage() を定期実行
+    BR->>REG: poll（パス差はBRIDGEが吸収 §3.8）
+    REG-->>BR: 移管完了通知 → ack
+    API-->>UI: 完了通知 → DNS設定へ合流
+    end
+
+    rect rgba(217,83,11,0.08)
+    note over UI,B: 移管OUT（アプリ = losing 側）
+    B->>REG: transfer/request（authInfo付き）
+    API->>BR: Pollワーカーが通知を検知 → ack
+    API-->>UI: 「移管申請が来ています」通知 → 承認画面
+    UI->>API: 承認 or 拒否
+    API->>BR: transferApprove / transferReject
+    BR->>REG: POST …/transfer/approve（or reject）
+    API-->>UI: 一覧から削除（or 元に戻す）
+    end
+</pre>
+      </div>
+      <figcaption>2つの帯は独立したフロー。⚠️ losing 側が20分放置するとサーバが自動承認する（§6.6.1）— テストで意図しない移管が起きたらまずこれを疑う。Pollワーカーはレジストリごとに1本、ackを忘れるとキュー全体が止まる（§3.7）。<br><b>フロント実装メモ（2026-08-26 実バックエンド接続済み）:</b> 上帯（移管IN）の UI 列は実装済み — 申請フォームは <code>/mypage/transfer</code>（<code>frontend/src/features/transfer/TransferInPage.tsx</code>。①ドメイン名 ②AuthCode発行手順の案内 ③貼り付け ④申請、を1画面に収めた §6.6.2 準拠版。初心者最大の難所である AuthCode の発行案内をフォームと同格で置く）。申請後の進捗「移管元の承認待ちです」はマイページの<b>移管IN進捗区画</b>（<code>TransferInSection</code> — FIG.9）が表示し、承認前の取り下げ（transfer/cancel 相当 §6.6.1）もそこから行う。バックエンドは<b>実装済みの callable</b>（<code>functions/src/api/transferCallables.ts</code>: <code>requestTransfer</code> / <code>cancelTransfer</code> / <code>respondTransfer</code> / <code>listTransfers</code> / <code>getTransferStatus</code>。旧スタブ <code>requestTransferIn</code> 系は削除済み）。⚠️ <b>すべて <code>domainName</code> がキー</b>（レコードIDは <code>{uid}__{domainName}</code>）で、状態は <code>pending / completed / rejected / cancelled / failed</code> ＋ <code>direction: 'in'|'out'</code>。結果は移管元の応答か20分自動承認（§6.6.1）で決まり、Pollワーカーが <code>transfers</code> に書き戻す。⚠️ <code>listTransfers</code> は <b>pending のみ</b>を返すため、FIG.9 の「結果行（閉じるまで残る）」は <code>getTransferStatus</code> の個別照会で再構成している（<code>frontend/src/features/transfer/transferWatchlist.ts</code>）。エラー文言（2202 authInfo不一致 / TLD非対応 / 申請済み）はバックエンドが日本語で返し、入力欄の名指しは <code>details.field</code> 経由（§6.7）。下帯（移管OUT）の UI は FIG.9 の実装メモを参照。</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <p class="eyebrow">FIG. 4</p>
+    <h2>廃止・復旧 — ドメイン状態と画面の対応</h2>
+    <figure>
+      <div class="diagram">
+<pre class="mermaid">
+stateDiagram-v2
+    [*] --> ok : create 成功
+    ok --> ok問い合わせ : 「もう使わない」選択
+    state ok問い合わせ <<choice>>
+    ok問い合わせ --> 自動更新OFF : 期限まで使う（推奨）<br>アプリ内フラグ + BATCHが期限時にdelete (§6.4 TBD15)
+    ok問い合わせ --> pendingDelete : 今すぐ削除<br>DELETE /api/domains/{name}<br>→ registry domain:delete
+    自動更新OFF --> pendingDelete : exDate 到来<br>BATCH が delete 実行
+    pendingDelete --> ok : 復旧<br>POST …/restore（猶予期間内・復旧料表示）
+    pendingDelete --> [*] : 猶予期間終了<br>一覧から消滅（他者が取得可能）
+
+    note right of ok
+        一覧：アクティブ区画（緑）
+    end note
+    note right of pendingDelete
+        一覧：終盤区画（橙〜赤）
+        「あと◯日は戻せます」表示
+    end note
+</pre>
+      </div>
+      <figcaption>状態別の色分け一覧（§3.5・§6.5）と対応。⚠️ 猶予期間の実際の段階数（redemptionPeriod の有無）はテスト3の実測結果でこの図を更新する。削除確定前には「Webサイトとメールが止まります」の影響明示を必ず挟む。</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <p class="eyebrow">FIG. 5</p>
+    <h2>新規登録 — 両レジストリへの contact:create とリカバリ</h2>
+    <figure>
+      <div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+    participant UI as 画面
+    participant API as API層
+    participant BR as BRIDGE層
+    participant SGN as Kitaqsign
+    participant NIC as Kitaqnic
+
+    UI->>UI: 送信前チェック（§3.4）<br>氏名=許可8種のプルダウン / メール=ローカル部のみ入力<br>ドメインは @example.com / .net / .org から選択
+    UI->>API: POST /api/auth/register<br>（email + password + 表示名）
+    alt 受理できない
+        API-->>UI: 400（項目別エラー）/ 409（メール重複）/ 500
+        UI->>UI: フォームにエラー表示して中断<br>500は「時間をおいて再度お試しください」
+    else 受理
+        API->>API: passwordHash 生成（bcrypt等）<br>User作成 → コンタクトID決定的採番 (例 U000123 §5.1)
+        par 両レジストリへ並行作成
+            API->>BR: createContact(kitaqsign, id, name, email)
+            BR->>SGN: POST /api/v1/epp/contacts
+            SGN-->>BR: HTTP status + result.code
+        and
+            API->>BR: createContact(kitaqnic, id, name, email)
+            BR->>NIC: POST /api/v1/epp/contacts
+            NIC-->>BR: HTTP status + result.code
+        end
+        alt 両方 1000 成功
+            API->>API: User.contactStatus = both_ready
+            API-->>UI: 201 + JWT 発行 → ログイン完了
+        else 片方のみ失敗（タイムアウト / 5xx）
+            API->>API: User.contactStatus = partial<br>会員登録自体は成功させる（§6.8）
+            API-->>UI: 201 + JWT 発行 → ログイン完了<br>（失敗側は未作成のまま先に進める）
+            note over API: 該当レジストリのTLDを<br>初回注文する時点でリトライ
+            API->>BR: createContact(retry)
+            BR-->>API: 409 + 2302（既存）なら<br>「前回すでに成功」と解釈 (§6.7と同じロジック)
+        end
+    end
+</pre>
+      </div>
+      <figcaption>会員登録は「両方成功するまで待つ」設計にしない — 片方の失敗で登録自体をブロックすると新規会員が詰まる。決定的採番のコンタクトIDにより、リトライ時の <code>2302</code> を成功扱いにできる（§6.7・§6.8 TBD #18）。<br><b>フロント実装メモ:</b> <code>contactStatus</code>（both_ready / partial）は<b>UIに出さない</b> — 会員が対処できない情報で不安にさせないため。左端の入力チェックは §3.4 由来で、氏名の自由入力は 100% <code>400</code> になるため必ずプルダウンにする。実装は <code>frontend/src/features/auth/RegisterPage.tsx</code>。<br><b>追記（2026-08-25・要整理）:</b> UIタスクとして<b>新規登録ウィザード</b>（<code>/signup</code>: アカウント作成 → メール認証(6桁コード) → 契約者情報(個人/法人) → 内容確認 → 完了 → ダッシュボード）を別途実装し、ヘッダーの「会員登録」はこちらに向けた（実装 <code>frontend/src/features/signup/</code>、モックAPI <code>POST /api/signup/start|verify|resend|complete</code> 仮称・認証コードは固定 <code>123456</code>）。⚠️ この図（FIG.5）とは一致しない: ウィザードは氏名・住所が自由入力で、§3.4 のコンタクト制約（氏名8種・<code>@example.*</code>）を満たさないため、<b>そのままレジストリのコンタクトにはできない</b>。旧 <code>/register</code>（本図準拠・§3.4制約版）は残してある。会員登録とコンタクト作成（§5.1/§6.8）の関係をバックエンド確定時に整理し、どちらかへ一本化してこの図を更新すること。</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <p class="eyebrow">FIG. 6</p>
+    <h2>ログイン — 成功 / 失敗とJWT発行</h2>
+    <figure>
+      <div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+    participant UI as 画面（Reactアプリ）
+    participant API as API層
+
+    UI->>UI: ログインフォーム送信<br>（email + password）
+    UI->>API: POST /api/auth/login
+    API->>API: email から User 検索<br>bcrypt.compare(password, passwordHash)
+    alt 認証成功
+        API-->>UI: 200 + { accessToken, user }
+        UI->>UI: accessToken を保持<br>（メモリ + localStorage 等、方式は実装確定後にこの図を更新）
+        UI->>UI: AuthContext を「認証済み」に更新
+        UI->>UI: 直前の遷移先 or トップ（ドメイン検索）へリダイレクト
+    else email 不一致 / password 不一致
+        API-->>UI: 401 + { message: "メールアドレスまたは<br>パスワードが違います" }
+        UI->>UI: フォームにエラー表示<br>（どちらが誤りかは意図的に区別しない）
+    else サーバエラー
+        API-->>UI: 500
+        UI->>UI: 「時間をおいて再度お試しください」表示
+    end
+</pre>
+      </div>
+      <figcaption>認証失敗時のメッセージは email / password のどちらが誤りかを区別しない（アカウント存在の推測を防ぐ）。方式はJWT前提で暫定作成 — Cookieセッション方式に決まった場合はこの図とFIG.7を差し替える。<br><b>フロント実装メモ:</b> 最後のリダイレクトはフォームではなく<b>ルートガード（<code>RequireGuest</code>）が実行する</b>。returnTo を解決する箇所を1つに保つためで、フォーム側と二重に実行すると returnTo を二重消費して誤った画面に着地する。実装は <code>frontend/src/features/auth/LoginPage.tsx</code> と <code>frontend/src/auth/RequireGuest.tsx</code>。<br><b>変更（2026-08-25）:</b> returnTo が無い場合の既定の着地先を「ダッシュボード」から<b>トップ＝ドメイン検索画面（<code>/</code>、公開ルート）</b>に変更した（原図の該当行も更新済み）。保護ルートから弾かれてログインした場合は従来どおり returnTo の画面へ戻る — 「弾かれて来た＝元の場所へ / 自分でログインを押した＝トップへ」の優先順位は変えていない。会員登録成功後の着地も同じ規則に従う。</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <p class="eyebrow">FIG. 7</p>
+    <h2>セッション復帰 — リロード時の認証状態確認</h2>
+    <figure>
+      <div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+    participant Browser as ブラウザ
+    participant UI as 画面（Reactアプリ）
+    participant API as API層
+
+    Browser->>UI: ページ読み込み / リロード
+    UI->>UI: AuthContext 初期状態 = "確認中"<br>（画面はローディング表示、即座に未認証扱いしない）
+    UI->>UI: localStorage 等から<br>保持中の accessToken を読み出す
+    alt トークンが無い
+        UI->>UI: AuthContext = "未認証"
+        UI->>UI: 保護ルートならログイン画面へ
+    else トークンがある
+        UI->>API: GET /api/auth/me<br>Authorization: Bearer &lt;accessToken&gt;
+        alt トークン有効
+            API-->>UI: 200 + { user }
+            UI->>UI: AuthContext = "認証済み"<br>直前にいた画面をそのまま表示
+        else トークン失効 / 不正 (401)
+            API-->>UI: 401
+            UI->>UI: 保持中トークンを破棄<br>AuthContext = "未認証" → ログイン画面へ
+        else 検証できない（通信失敗 / 5xx）
+            API-->>UI: 500 または応答なし
+            UI->>UI: トークンは破棄しない（失効の証拠がない）<br>AuthContext = "未認証" + 「再確認する」を提示
+        end
+    end
+</pre>
+      </div>
+      <figcaption>「確認中」の状態を必ず挟む — トークン検証中に一瞬でも未認証UIを出すと、認証済みユーザーがログイン画面にちらつく。簡単モードの進捗復帰（§6.2.3「再ログインしても正しい位置に復帰する」）はこの確認が完了した後に走る。<br><b>フロント実装メモ:</b> 3つ目の分岐（通信失敗 / 5xx）は実装時に追加した — 500 は「トークンが無効である証拠」ではないため、ここで破棄すると一時的な障害で正規ユーザーを強制ログアウトさせてしまう。AuthContext は <code>確認中 / 認証済み / 未認証</code> の3状態（真偽値2値にしない）。実装は <code>frontend/src/auth/AuthProvider.tsx</code>。</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <p class="eyebrow">FIG. 8</p>
+    <h2>未認証時の保護ルートリダイレクト</h2>
+    <figure>
+      <div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+    participant UI as 画面（Reactアプリ）
+    participant Router as ルーター
+    participant API as API層
+
+    UI->>Router: 保護ルートへ遷移<br>（例: /domains/new, /easy/goal）
+    Router->>UI: AuthContext を確認
+    alt 確認中
+        UI->>UI: ローディング表示のみ<br>（リダイレクト判定を保留）
+    else 未認証と確定
+        UI->>UI: 遷移先パスを保存<br>（例 returnTo=/easy/goal）
+        Router->>UI: /login へリダイレクト
+        UI->>UI: ログイン成功後、returnTo へ復帰（FIG.6）
+    end
+
+    note over API: 認証済みのつもりでAPIを叩いた後に<br>401 が返るケース（トークン失効・他端末でログアウト等）
+    UI->>API: 何らかのAPI呼び出し
+    API-->>UI: 401
+    UI->>UI: 共通HTTPクライアントが一括検知<br>AuthContext = "未認証" にリセット
+    UI->>UI: 現在地を returnTo に保存し /login へ
+</pre>
+      </div>
+      <figcaption>ルート単位のガードと、API呼び出し中に起きる401の両方を扱う。後者を共通HTTPクライアント（§4.4 と同じ思想）で一括検知しないと、401ハンドリングが呼び出し箇所ごとにバラつく。<br><b>フロント実装メモ:</b> 一括検知から<b>除外する2本</b>がある — <code>POST /api/auth/login</code>（401＝資格情報の誤りでフォームのエラー）と <code>GET /api/auth/me</code>（401＝FIG.7 の復帰処理が扱う）。除外しないとログイン失敗のたびにリダイレクトが走る。共通クライアントは 401 を検知して AuthContext を「未認証」に戻すだけで、リダイレクトはガードが行う（現在地がそのまま returnTo になる）。実装は <code>frontend/src/api/httpClient.ts</code> と <code>frontend/src/auth/RequireAuth.tsx</code>。<br><b>変更（2026-08-25）:</b> ドメイン検索がトップページ（<code>/</code>）の<b>公開ルート</b>になったため、検索画面は保護ルートの例から外れた（原図の例も <code>/domains/new</code> に更新）。保護されるのは申込フォーム以降（<code>/domains/new</code>・<code>/orders/…</code>）・管理画面・かんたんモード。検索結果の「申し込む」を未認証で押すとこの図の仕組みでログインへ誘導され、returnTo（クエリ文字列込み）で申込フォームに復帰する。旧 <code>/domains</code> は <code>/</code> へのリダイレクトとして残る。</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <p class="eyebrow">FIG. 9</p>
+    <h2>マイページ：ドメイン一覧 — 導線と2セクション表示</h2>
+    <figure>
+      <div class="diagram">
+<pre class="mermaid">
+flowchart TD
+    NAV["ヘッダー『マイページ』ボタン<br>（ログイン時のみ表示）"] --> LIST["ドメイン一覧画面 /mypage<br>callable listDomains<br>一覧はローカルDB由来・詳細は都度info（§6.1）"]
+    DONE1["FIG.1 完了画面（取得直後）"] -->|"取得したドメインの管理へ"| DETAIL
+    LIST -->|"0件"| EMPTY["空状態<br>『まだドメインがありません』<br>→ 検索画面 /domains へ誘導"]
+    LIST --> ACTIVE["アクティブ区画（§6.5）<br>ok=緑 / inactive=グレー / clientHold=黄 / client*Prohibited=青グレー<br>各行：状態タグ（色＋ラベル併記 §3.5）<br>exDate と残り日数バー + 自動更新ON/OFF（同じ大きさで表示 §6.4）"]
+    LIST --> ENDING["ライフサイクル終盤区画（§6.5）<br>pendingDelete=橙〜赤『解約手続き中（あと◯日は戻せます）』<br>pendingTransfer=青『引っ越しの手続き中です』<br>rgpStatus=autoRenewPeriod『自動で1年延びました。取り消すなら残り◯日』"]
+    LIST --> NOTIF["移管OUT通知バナー<br>『移管申請が来ています』<br>callable listTransfers (direction=out)"]
+    NOTIF --> APPROVE["承認/拒否（バナー内・FIG.3 下帯の UI 列）<br>callable respondTransfer {domainName, action}<br>承認は確認ダイアログ必須（取り消し不可）<br>⚠️ 20分放置で自動承認の注意を併記（§6.6.1）"]
+    LIST --> TIN["『他社から移管する』ボタン<br>→ 移管IN申請フォーム /mypage/transfer<br>（FIG.3 上帯・§6.6.2）"]
+    LIST --> TINSEC["移管IN進捗区画（申請があるときのみ表示）<br>callable listTransfers (direction=in)<br>pending=『移管元の承認待ちです』＋取り下げ<br>completed / rejected = 結果行（getTransferStatus で照会・閉じるまで残る）"]
+    ACTIVE -->|"行を選択"| DETAIL["ドメイン詳細画面（FIG.10）"]
+    ENDING -->|"行を選択"| DETAIL
+</pre>
+      </div>
+      <figcaption>「ゴミ箱」メタファーは不採用（§6.5 確定）— 一覧を<b>アクティブ／ライフサイクル終盤の2区画</b>に分け、状態別の色＋ラベルで表現する（色だけに意味を持たせない §3.5、<code>frontend/src/features/domains/domainStatusLabels.ts</code> を再利用）。⚠️ レジストリは期限切れを自動で+1年更新するため「失効して消えたドメイン」は存在しない（§3.6）— 終盤区画に入るのは pendingDelete 等の状態であり、「期限切れ一覧」ではない。残り日数の表示はモック時計（§7.1 表示用の基準時刻）を差し込めるようにする。<code>/domains</code> は検索画面に転用済みのため、一覧は新ルート（<code>/mypage</code> 仮）で作る。終盤区画の段階数（redemptionPeriod の有無）はテスト3の実測でこの図を更新する。<br><b>フロント実装メモ（2026-08-25 callable移行済み）:</b> <code>/mypage</code>（一覧）・<code>/mypage/domains/{name}</code>（詳細）として実装。ヘッダーの「マイページ」ボタンと FIG.1 完了画面の「マイページで管理する」の2導線。通信層は Firebase callable に移行済み — 移管OUT通知は実 <code>listTransfers</code>（<code>direction: 'out'</code> の pending を抽出）、承認/拒否は実 <code>respondTransfer</code>（<code>{domainName, action}</code>）。承認は取り消せないため確認ダイアログを必須にし、承認後は一覧から消える・拒否後は pendingTransfer が解けることをスタブで再現している。ドメイン一覧は実 <code>listDomains</code>（Firestoreミラー）、移管は実 <code>transfers</code> コレクションが情報源。<b>移管INの導線もこの画面が持つ</b> — 「他社から移管する」ボタン → <code>/mypage/transfer</code>（FIG.3 上帯）と、申請中のみ現れる移管IN進捗区画（<code>TransferInSection</code>: 承認待ち表示・取り下げ・approved/rejected の結果行）。全体は <b>shadcn/ui + Tailwind CSS v4</b>（セマンティックトークンの規約は <code>frontend/DESIGN_SYSTEM.md</code>）。実装は <code>frontend/src/features/mypage/</code>・<code>frontend/src/features/transfer/</code>、API層 <code>frontend/src/api/myDomainsApi.ts</code> / <code>transferApi.ts</code>。</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <p class="eyebrow">FIG. 10</p>
+    <h2>マイページ：ドメイン詳細 — 操作とAPIの対応</h2>
+    <figure>
+      <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+    DETAIL["ドメイン詳細画面<br>GET /api/domains/{name}（仮称）<br>詳細は都度 domain:info（§6.1）"]
+    DETAIL --> INFO["基本情報<br>状態タグ / レジストリ / exDate＋残り日数<br>ライフサイクルのタイムライン表示（§6.5）"]
+    DETAIL --> RENEW["更新（renew）<br>期間選択＋料金（複数年更新の提案 §6.4）<br>POST /api/orders (kind=renew) → 疑似決済<br>→ GET /api/orders/{id} をポーリング（FIG.1と同じ契約）"]
+    DETAIL --> AUTOR["自動更新トグル＋支払い方法の状態表示（§6.4）<br>PUT /api/domains/{name}（アプリ内フラグ）<br>⚠️ OFFの実体は期限時のBATCH delete（TBD #15・FIG.4）"]
+    DETAIL --> NS["ネームサーバ変更<br>PUT /api/domains/{name} → domain:update<br>⚠️ 警告必須『設定済みレコードが無効になります。<br>メールも止まります』（§6.3.3）"]
+    DETAIL --> DNSREC["DNSレコード設定へ<br>/domains/{name}/dns（§6.3・現状プレースホルダ）"]
+    DETAIL --> LOCK["ロック設定 client*Prohibited のトグル<br>PUT /api/domains/{name} → domain:update<br>（ドメインプロテクションのミニ版 §6.1）"]
+    DETAIL --> AUTH["authInfo：マスク＋コピーのみ（§7.3）<br>再生成 POST /api/domains/{name}/rotate-auth-info<br>→ 移管OUTの入口"]
+    DETAIL --> DEL["『もう使わない』<br>→ FIG.4 の2択分岐（推奨=期限まで使う）<br>削除前に影響明示を必須表示"]
+    DETAIL --> RESTORE["pendingDelete 中：復旧ボタン＋残り日数<br>POST /api/domains/{name}/restore → FIG.4"]
+</pre>
+      </div>
+      <figcaption>管理操作の全量と自バックエンドAPI（すべて仮称）の対応表。更新（renew）は新規取得と同じ Order 契約（<code>POST /api/orders</code> → ポーリング）に <code>kind=renew</code> を追加して再利用する — 疑似決済・再試行・二重課金防止の仕組み（FIG.1 右半分・§6.7）をそのまま流用でき、画面部品（<code>useOrderPolling</code> / <code>PriceDisplay</code>）も共有できる。authInfo は再表示トグルを持たない（マスク＋コピーのみ、<code>AuthInfoMasked</code> 再利用）。<code>pendingTransfer</code> 中に禁止される操作（update / delete / renew が通るか）はテスト6の実測でこの図に反映する。自動更新OFFは PUT が返るだけでは実現されない（レジストリは無条件に自動更新する §3.6）— BATCH の delete 実装（TBD #15）が無い間は表示が嘘にならないよう文言に注意。<br><b>フロント実装メモ:</b> 図の全カード（期限と更新 / DNS / 保護ロック / authInfo / 廃止2択・復旧）を実装。<code>kind=renew</code> の注文は完了画面だけ専用（<code>RenewCompletion</code> — DNS誘導ではなくマイページへ戻す）で、それ以外は FIG.1 の注文フローをそのまま通る。自動更新OFFトグルには TBD #15 の実体（期限日のアプリ側バッチ）を明記した文言を常設し、表示が嘘にならないようにした。pendingDelete / pendingTransfer 中は registry 系の操作をUI側で無効化し、モックも 2306 相当（409）で弾く（テスト6の実測後に緩める）。NS変更ダイアログの警告文（§6.3.3「メールも止まります」）と削除確定前の影響明示（§6.5）は仕様固定文言として <code>mypageMessages.ts</code> に集約。実装は <code>frontend/src/features/mypage/DomainDetailPage.tsx</code> ほか。<br><b>バックエンド接続メモ（2026-08-26）:</b> 詳細=実 <code>getDomainInfo</code>、NS/ロック=実 <code>updateDomain</code>（delta方式）、自動更新トグル=実 <code>updateAutoRenew</code>（<code>functions/src/api/updateAutoRenew.ts</code> — Firestoreミラーのフラグ書き込みのみ・レジストリ通信なし・<code>pendingDelete</code> 中は failed-precondition で拒否）に接続済みで、旧スタブ <code>getMyDomain</code> / <code>updateMyDomain</code> は削除。残るスタブは authInfo 再生成の <code>rotateAuthInfo</code> のみ（AuthInfo再生成API＝上図 rotate-auth-info の実装待ち・別担当）。</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <p class="eyebrow">FIG. 11</p>
+    <h2>DNS設定 — レシピ方式のレコード編集と「確認する」4状態</h2>
+    <figure>
+      <div class="diagram">
+<pre class="mermaid">
+flowchart TD
+    ENTRY1["FIG.1 完了画面<br>『DNS設定へ』ボタン"] --> BRANCH
+    ENTRY2["FIG.10 ドメイン詳細<br>『DNSレコード設定へ』<br>/domains/{name}/dns"] --> BRANCH
+    BRANCH{"最初の1問（§6.3.3a）<br>『契約したサービスから ns1.〜 のような<br>ネームサーバーを渡されましたか？』"}
+    BRANCH -->|"はい"| NSMODE["NS変更モード<br>callable <b>updateDomain</b>（実装済み・FIG.10のNS変更と同一）<br>⚠️ 警告必須『設定済みレコードは無効になります。<br>メールも止まります』（§6.3.3e）"]
+    BRANCH -->|"いいえ / IPアドレスをもらった"| RECMODE["レコード設定モード（当サービスのレンタルDNS）<br>callable <b>listDnsRecords</b> {domainName} → {records[]}"]
+    RECMODE --> INPUT["レコード案の作成 — 3方式（すべてフロント完結）<br>① レシピ選択：サービス別プリセットJSON（§6.3.3b）<br>② 貼り付けパーサ：設定案内のコピペを表に変換（§6.3.3c）<br>③ 手動フォーム：Type/Name/Value/TTL/Priority"]
+    INPUT --> VALID["保存前バリデーション（フロント完結 §6.3.3e）<br>ルートCNAME不可 / 値末尾ドット / www有無 /<br>MX優先度必須 / SPF複数行禁止 / 全角・空白混入"]
+    VALID --> SAVE["保存<br>callable <b>saveDnsRecords</b> {domainName, records[]}<br>→ {records[]}（全置換セマンティクス）"]
+    SAVE --> CONFIRM["『確認する』ボタン<br>callable <b>resolveDns</b> {name, type} → {records[]}<br>（自作ミニリゾルバ = 実装Lv2 §6.3.2）"]
+    CONFIRM --> ST{"応答と期待値を突合"}
+    ST -->|"未保存"| S1["未設定<br>『まだ設定していません』"]
+    ST -->|"保存済み・応答が空"| S2["反映待ち<br>『反映まで通常数分〜最大48時間』"]
+    ST -->|"一致"| S3["確認できた<br>『つながっています ✓』"]
+    ST -->|"不一致"| S4["値が違う<br>期待値と実際の値を差分表示"]
+</pre>
+      </div>
+      <figcaption><b>バックエンド接続の要否（検討結果）:</b> レジストリはNSまでしか持たない（§6.3.1）ため、レコードの保存先と「確認する」の応答元は<b>自バックエンド（レンタルDNS相当）に必ず必要</b>。一方、レシピJSON・貼り付けパーサ・保存前バリデーション・4状態の判定表示は<b>すべてフロント完結</b>で、バックエンドはレコードの永続化と参照だけを担えばよい。NS変更モードは既存の <code>updateDomain</code>（実装済み）を再利用するため新規APIは不要。<br>
+      <b>バックエンドチームへの開発要請（callable 3本・region asia-northeast2・要認証）:</b><br>
+      ① <code>listDnsRecords</code> — req <code>{domainName: string}</code> / res <code>{records: DnsRecord[]}</code>。所有チェック（他人のドメインは permission-denied）。<br>
+      ② <code>saveDnsRecords</code> — req <code>{domainName: string, records: DnsRecord[]}</code> / res <code>{records: DnsRecord[]}</code>（保存後の全量を返す）。<b>全置換セマンティクス</b>（差分ではなく配列全体を受けて置き換える — フロントは編集完了時点の全量を送る）。バリデーション違反は invalid-argument + <code>details.fieldErrors</code>。<br>
+      ③ <code>resolveDns</code> — req <code>{name: string, type: DnsRecordType}</code> / res <code>{records: DnsRecord[]}</code>（該当なしは<b>空配列</b>、エラーにしない — 空＝「反映待ち」表示に使うため）。実装Lv2のミニリゾルバ（§6.3.2）。name はFQDN（例 <code>www.example.com</code>）。<br>
+      共通型: <code>DnsRecord = {type: 'A'|'AAAA'|'CNAME'|'MX'|'TXT'|'NS', name: string /* '@'=ルート */, value: string, ttl?: number, priority?: number /* MXのみ */}</code>。<br>
+      <b>実装済み（2026-08-26）:</b> この3本は <code>functions/src/api/dnsRecords.ts</code> の実 callable として実装済み（同名スタブは <code>functions-stubs/</code> から削除済み）。保存先は Firestore <code>dnsZones/{domainName}</code>（1ドメイン=1文書、保存は全置換）。<code>resolveDns</code> は保存ストアを FQDN のサフィックス最長一致で引く自作ミニリゾルバ（実装Lv2 §6.3.2）— 実DNSへの公開はなく、応答はこのストアのみが根拠。反映は<b>即時</b>（「反映待ち」演出の遅延は入れない — 要相談だった件は即時反映で決定。後日入れる場合はゾーン文書の <code>updatedAt</code> と閾値比較を足すだけ）。NS未設定（<code>inactive</code>）時はレコード設定モードに入る前に「まだインターネットに公開されていません」を表示し、当サービスNSへの設定（updateDomain）を先に促す。<br>
+      <b>フロント実装メモ（2026-08-26）:</b> 図の全フローを実装した（<code>frontend/src/features/dns/</code>、API層 <code>frontend/src/api/dnsApi.ts</code>）。モード選択は URL クエリ <code>?mode=ns|records</code> に保持（リロード・戻る対応）。レシピ8種・貼り付けパーサ・保存前バリデーション・4状態判定は純ロジックモジュール（<code>recipes.ts</code> / <code>pasteParser.ts</code> / <code>dnsValidation.ts</code> / <code>dnsCheckStatus.ts</code>）に分離しユニットテスト済み。レシピの Cloudflare / エックスサーバーは <code>mode: 'ns-guide'</code>（NS変更モードへ誘導）として実装。画面は入口で <code>getDomainInfo</code>（実装済みcallable）による所有確認を通す（functions/.secret.local 配布済みで実照会が通るため、開発用スタブフォールバック <code>devStubDomainDetail.ts</code> は削除済み） — UI の全分岐は <code>dnsFlow.test.tsx</code>（fakeBackend）で担保し、スタブcallable 3本はエミュレータに対するワイヤ検証済み（保存の全置換・apex/サブドメイン解決・未設定=空配列・未認証ガード）。⚠️ 実装側への注意: callable の JSON 化で省略した <code>ttl</code>/<code>priority</code> が <code>null</code> で返るため、フロントは <code>dnsApi.ts</code> で null を除去してから扱う — 実APIも同じ応答形でよい。</figcaption>
+    </figure>
+  </section>
+
+  <footer>
+    <p>§番号はチーム作成の仕様書草案 v0.3.1（公開版では非収録）の節番号（エラーコード対応表 §6.7 / エンドポイント一覧 §3.9 / BRIDGE インタフェース §4.2 / 会員登録 §6.8）。実測テスト（§9）の結果が出たら本図の 🔬 相当箇所（猶予期間・移管後の exDate・pendingTransfer 中の許可操作）を更新すること。FIG.5〜8 は認証方式が TBD #10 で確定していない暫定案（JWT前提）— 確定後に更新する。FIG.9〜10（マイページ）はフロント・バックエンドとも実装済み（各図の「フロント実装メモ」「バックエンド接続メモ」参照）— 旧スタブ codebase <code>functions-stubs/</code> は全 callable の実移行完了に伴い削除済み（2026-08-27）。FIG.3（移管）は上帯=移管IN・下帯=移管OUT ともマイページ起点の UI として実装済み（実 callable <span class="mono">functions/src/api/transferCallables.ts</span> に接続済み — 同図の実装メモ参照）。FIG.11（DNS設定）はフロント・バックエンドとも実装済み — callable 3本（listDnsRecords / saveDnsRecords / resolveDns）は実 callable <span class="mono">functions/src/api/dnsRecords.ts</span> に接続（同名スタブは削除済み。詳細は同図の「実装済み」注記と「フロント実装メモ」参照）。<br>FIG.5〜8 のフロントエンド実装は <span class="mono">frontend/</span>（React + TypeScript / Vite、バックエンド未実装のため MSW のモックAPIで各分岐を再現）。前提と暫定判断の一覧は <span class="mono">frontend/README.md</span>。</p>
+  </footer>
+</div>
+
+<script type="module">
+  // ローカルでファイルを直接開いたときに Mermaid を描画するための読み込み（要ネット接続）
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  const dark = document.documentElement.dataset.theme === "dark" ||
+    (document.documentElement.dataset.theme !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  mermaid.initialize({ startOnLoad: true, theme: dark ? "dark" : "default" });
+</script>

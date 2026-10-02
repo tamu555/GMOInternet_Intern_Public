@@ -1,0 +1,21 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "registryLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "ok", "order": "ASCENDING"},
+        {"fieldPath": "requestedAt", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "pollMessages",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "handled", "order": "ASCENDING"},
+        {"fieldPath": "receivedAt", "order": "ASCENDING"}
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

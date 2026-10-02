@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>候補12 レトロWeb型 — ドメイン検索</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=VT323&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+/*
+  候補12｜レトロWeb型（90s〜Y2K）
+  ------------------------------------------------------------------
+  参考にした系統 : 90年代のデスクトップUI風サイト（ウィンドウ枠 + ベベル）
+  特徴 :
+    - ページ全体を「ウィンドウ」に見立て、タイトルバーと立体ボタンで組む
+    - ピクセルフォント（DotGothic16 / VT323）と青いリンク下線
+    - 影は使わず、ハイライトとシャドウの2色ベベルだけで凹凸を出す
+  想定ユーザー : 遊びのある見た目を許容するイベント・学祭的な文脈
+  このページの唯一の仕事 : 懐かしい窓の中で、迷わず打たせる。
+  ※ 実装コストは中。細かいベベルはCSS変数で共通化しています。
+*/
+:root{
+  --silver:#c3c7cb;
+  --silver-2:#d6dade;
+  --face:#ececec;
+  --navy:#000080;
+  --navy-2:#1084d0;
+  --ink:#101010;
+  --ink-2:#3f3f3f;
+  --ink-3:#6f6f6f;
+  --link:#0000cc;
+  --hl:#ffffff;
+  --sh:#7e8388;
+  --sh2:#4a4d51;
+  --ok:#008040;
+  --ng:#c00000;
+  --yellow:#ffe94a;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--silver);
+  background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.16) 0 2px, transparent 2px 6px);
+  color:var(--ink);
+  font-family:"DotGothic16","Noto Sans JP",system-ui,sans-serif;
+  font-size:15.5px;line-height:1.95;
+}
+a{color:var(--link);text-decoration:underline;text-underline-offset:2px}
+.pixel{font-family:"DotGothic16","Noto Sans JP",sans-serif}
+/* 本文もピクセルフォント。数字と英字だけ VT323 に寄せる */
+.hint,.box p,.res td,table.grid td,.footwin li,.copy{font-family:"DotGothic16","Noto Sans JP",sans-serif}
+.term{font-family:"VT323",monospace}
+.wrap{max-width:1080px;margin:0 auto;padding:0 18px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.bevel{box-shadow:inset 1px 1px 0 var(--hl), inset -1px -1px 0 var(--sh2), inset 2px 2px 0 var(--silver-2), inset -2px -2px 0 var(--sh)}
+.bevel-in{box-shadow:inset 1px 1px 0 var(--sh2), inset -1px -1px 0 var(--hl), inset 2px 2px 0 var(--sh), inset -2px -2px 0 var(--silver-2)}
+
+/* 窓 */
+.win{background:var(--silver);padding:3px;margin:16px auto}
+.win.bevel{}
+.win .title{
+  display:flex;align-items:center;gap:8px;padding:4px 5px;
+  background:linear-gradient(90deg,var(--navy),var(--navy-2));color:#fff;
+}
+.win .title b{font-family:"DotGothic16",sans-serif;font-size:14px;font-weight:400;letter-spacing:.02em}
+.win .title .sp{margin-left:auto;display:flex;gap:3px}
+.win .title .sp span{
+  width:19px;height:17px;background:var(--silver);color:var(--ink);font:400 12px/15px "DotGothic16",sans-serif;
+  text-align:center;box-shadow:inset 1px 1px 0 var(--hl), inset -1px -1px 0 var(--sh2);
+}
+.win .menu{display:flex;gap:14px;padding:3px 8px;background:var(--silver);font-family:"DotGothic16",sans-serif;font-size:13px}
+.win .menu span u{text-decoration:underline}
+.win .body{background:var(--face);padding:20px}
+
+/* ヘッダ */
+.topstrip{background:var(--navy);color:#fff;font-family:"DotGothic16",sans-serif;font-size:13px;padding:5px 0}
+.topstrip .wrap{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.topstrip span,.topstrip a{font-family:"DotGothic16",sans-serif}
+.topstrip a{color:var(--yellow)}
+.site-header{padding:12px 0 0}
+.site-header .bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{font-family:"DotGothic16",sans-serif;font-size:26px;color:var(--ink);text-decoration:none;letter-spacing:.02em}
+.brand em{font-style:normal;color:var(--navy)}
+.navlist{display:flex;gap:6px;margin-left:6px;flex-wrap:wrap}
+.navlist a{
+  font-family:"DotGothic16",sans-serif;font-size:13px;color:var(--ink);text-decoration:none;
+  background:var(--silver);padding:4px 12px;
+  box-shadow:inset 1px 1px 0 var(--hl), inset -1px -1px 0 var(--sh2), inset 2px 2px 0 var(--silver-2), inset -2px -2px 0 var(--sh);
+}
+.navlist a:hover{box-shadow:inset 1px 1px 0 var(--sh2), inset -1px -1px 0 var(--hl)}
+.auth-chip{margin-left:auto;font-family:"VT323",monospace;font-size:16px;color:var(--ink-2)}
+
+/* hero */
+.hero .body{text-align:center}
+.hero h1{margin:0 0 14px;font-family:"DotGothic16",sans-serif;font-size:14px;font-weight:400;color:var(--ink-2)}
+.hero .head{
+  margin:0 auto 10px;font-family:"DotGothic16",sans-serif;font-size:38px;line-height:1.5;
+  max-width:20em;word-break:auto-phrase;min-height:3em;
+}
+/* 入力されていくように1文字ずつ表示する（動きを減らす設定なら即時表示） */
+.hero .head .caret{
+  display:inline-block;width:.62em;height:1em;background:var(--ink);
+  vertical-align:-.14em;margin-left:.06em;animation:blink 1s steps(1,end) infinite;
+}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.hero .head .caret{animation:none}}
+.hero .head span.hl{background:var(--yellow);padding:0 6px}
+.hero .sub{margin:0 auto 22px;font-family:"VT323",monospace;font-size:20px;color:var(--ink-2);line-height:1.4}
+form.q{display:flex;gap:8px;max-width:560px;margin:0 auto;flex-wrap:wrap;justify-content:center}
+form.q .field{flex:1;min-width:240px;background:#fff;padding:2px 10px;display:flex;align-items:center}
+form.q input{
+  flex:1;min-width:0;border:0;outline:0;background:transparent;height:38px;
+  font-family:"DotGothic16",sans-serif;font-size:17px;color:var(--ink);
+}
+form.q input::placeholder{color:#9a9a9a}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;border:0;
+  font-family:"DotGothic16",sans-serif;font-size:15px;color:var(--ink);background:var(--silver);
+  padding:0 22px;height:42px;
+  box-shadow:inset 1px 1px 0 var(--hl), inset -1px -1px 0 var(--sh2), inset 2px 2px 0 var(--silver-2), inset -2px -2px 0 var(--sh);
+}
+.btn:active{box-shadow:inset 1px 1px 0 var(--sh2), inset -1px -1px 0 var(--hl)}
+.btn-yellow{background:var(--yellow)}
+.btn-sm{height:28px;padding:0 12px;font-size:13px}
+.hint{margin:14px auto 0;max-width:560px;font-size:13.5px;color:var(--ink-2);line-height:1.8}
+.marquee{
+  margin:20px auto 0;max-width:760px;background:#000;color:#31ff8b;font-family:"VT323",monospace;font-size:17px;
+  padding:5px 12px;text-align:left;overflow:hidden;white-space:nowrap;
+}
+.counter{margin:16px auto 0;font-family:"VT323",monospace;font-size:17px;color:var(--ink-2)}
+.counter b{background:#000;color:#31ff8b;padding:1px 8px;letter-spacing:.16em}
+
+/* 表 */
+table.grid{width:100%;border-collapse:collapse;background:#fff;font-size:14.5px}
+table.grid th,table.grid td{border:1px solid var(--sh);padding:8px 10px;text-align:left}
+table.grid thead th{background:var(--silver);font-family:"DotGothic16",sans-serif;font-weight:400;font-size:13px}
+table.grid td.t{font-family:"DotGothic16",sans-serif;font-size:15px}
+table.grid td.num{text-align:right;font-family:"VT323",monospace;font-size:18px;white-space:nowrap}
+table.grid tr:nth-child(even) td{background:#f6f6f6}
+.tag{font-family:"DotGothic16",sans-serif;font-size:11.5px;background:var(--yellow);padding:1px 6px}
+.sec-title{
+  display:inline-block;margin:0 0 14px;font-family:"DotGothic16",sans-serif;font-size:20px;
+  background:var(--navy);color:#fff;padding:3px 14px;
+}
+.note{margin:14px 0 0;font-family:"VT323",monospace;font-size:17px;color:var(--ink-2);line-height:1.5}
+.cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.box{background:#fff;padding:16px 18px;box-shadow:inset 1px 1px 0 var(--sh2), inset -1px -1px 0 var(--hl), inset 2px 2px 0 var(--sh), inset -2px -2px 0 var(--silver-2)}
+.box h3{margin:0 0 6px;font-family:"DotGothic16",sans-serif;font-size:16px;font-weight:400}
+.box p{margin:0;font-size:14.5px;color:var(--ink-2);line-height:1.9;word-break:auto-phrase}
+.res{width:100%;border-collapse:collapse;background:#fff;font-size:15px}
+.res td{border:1px solid var(--sh);padding:9px 12px}
+.res .dom{font-family:"DotGothic16",sans-serif;font-size:16px}
+.res .ok{color:var(--ok);font-weight:700}
+.res .ng{color:var(--ng);font-weight:700}
+.res .unk{color:var(--ink-3);font-weight:700}
+.res .num{text-align:right;font-family:"VT323",monospace;font-size:18px}
+.res .num small{display:block;font-size:14px;color:var(--ink-3)}
+.footwin .body{display:flex;flex-wrap:wrap;gap:26px;justify-content:space-between;align-items:flex-start}
+.footwin h4{margin:0 0 8px;font-family:"DotGothic16",sans-serif;font-size:14px;font-weight:400}
+.footwin ul{margin:0;padding:0;list-style:none;font-size:14px}
+.footwin li{margin-bottom:5px}
+.copy{padding:10px 0 40px;text-align:center;font-family:"VT323",monospace;font-size:17px;color:var(--ink-2)}
+@media (max-width:900px){
+  .cols3{grid-template-columns:1fr}
+  .hero .head{font-size:24px}
+  .footwin .body{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<div class="topstrip">
+  <div class="wrap">
+    <span>★ TeamC.Com — 演習用の疑似レジストラです</span>
+    <a href="#">サイトについて</a>
+    <span class="term" style="margin-left:auto">LAST UPDATE: 2026/08/26</span>
+  </div>
+</div>
+
+<header class="site-header">
+  <div class="wrap">
+    <div class="bar">
+      <a class="brand" href="#">TeamC<em>.Com</em></a>
+      <nav class="navlist">
+        <a href="#">ドメイン検索</a>
+        <a href="#">料金表</a>
+        <a href="#">使い方</a>
+        <a href="#">ログイン</a>
+        <a href="#">会員登録</a>
+      </nav>
+      <span class="auth-chip">AuthContext: 未認証</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="win bevel hero">
+    <div class="title">
+      <b>ドメイン検索 — TeamC.Com</b>
+      <span class="sp"><span>_</span><span>□</span><span>×</span></span>
+    </div>
+    <div class="menu"><span><u>ファ</u>イル</span><span><u>編</u>集</span><span><u>表</u>示</span><span><u>ヘ</u>ルプ</span></div>
+    <div class="body">
+      <h1>ドメイン検索</h1>
+      <p class="head" id="typed" aria-label="名前をひとつ入れて、22TLDを一度に調べる。"></p>
+      <p class="sub">LOGIN NOT REQUIRED &nbsp;/&nbsp; 22 TLD &nbsp;/&nbsp; AVG 1.2 SEC</p>
+
+      <form class="q" onsubmit="return false">
+        <div class="field bevel-in">
+          <label class="sr" for="q">取得したいドメイン名</label>
+          <input id="q" type="text" placeholder="my-shop" autocomplete="off" />
+        </div>
+        <button class="btn btn-yellow" type="submit">検索する</button>
+      </form>
+      <p class="hint">TLD（.com など）は含めず入力してください。全角文字は自動的に半角へ変換されます。</p>
+
+      <div class="marquee">&gt;&gt;&gt; いま安いTLD: .xyz ¥98 / .top ¥98 / .site ¥180 / .work ¥180 / .shop ¥280 </div>
+      <p class="counter">本日の検索回数 <b>0 0 1 2 4 8</b></p>
+    </div>
+  </section>
+
+  <section class="win bevel">
+    <div class="title"><b>料金表 — 全22TLD</b><span class="sp"><span>_</span><span>□</span><span>×</span></span></div>
+    <div class="body">
+      <h2 class="sec-title">対応TLDと料金</h2>
+      <table class="grid">
+        <thead><tr><th>TLD</th><th style="text-align:right">初年度</th><th style="text-align:right">更新</th><th style="text-align:right">3年合計</th><th>備考</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p class="note">
+        ※ 税込・1年あたり / 復旧料 ¥3,300〜¥6,600<br />
+        ※ .dev / .app は HSTS プリロード済みのため常時HTTPS化が必須<br />
+        ※ レジストリ: Kitaqsign（.com/.net/.org/.info）, Kitaqnic（その他18種）
+      </p>
+    </div>
+  </section>
+
+  <section class="win bevel">
+    <div class="title"><b>この検索について</b><span class="sp"><span>_</span><span>□</span><span>×</span></span></div>
+    <div class="body">
+      <h2 class="sec-title">決めた3つのこと</h2>
+      <div class="cols3">
+        <div class="box"><h3>[1] TLDを先に選ばせない</h3><p>対応する22のTLDすべてに毎回問い合わせます。ひとつずつ試し直す必要はありません。</p></div>
+        <div class="box"><h3>[2] 取れる候補だけ提案</h3><p>希望がすべて埋まっていたときだけ、その場で空きを再確認できた候補を出します。</p></div>
+        <div class="box"><h3>[3] 分からないと書く</h3><p>接続できなかったTLDは空きとも使用中とも表示しません。◯ / ✕ / ？ を記号と文字で区別します。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="win bevel">
+    <div class="title"><b>検索結果のプレビュー</b><span class="sp"><span>_</span><span>□</span><span>×</span></span></div>
+    <div class="body">
+      <h2 class="sec-title">検索するとこう出ます</h2>
+      <table class="res">
+        <tr><td class="dom">my-shop.com</td><td class="ok">◯ 空きあり</td><td class="num">¥1,480<small>更新 ¥1,980</small></td><td style="width:1%"><button class="btn btn-sm" type="button">選択</button></td></tr>
+        <tr><td class="dom">my-shop.net</td><td class="ng">✕ 使用中</td><td class="num">—</td><td></td></tr>
+        <tr><td class="dom">my-shop.dev</td><td class="ok">◯ 空きあり</td><td class="num">¥1,980<small>更新 ¥2,480</small></td><td><button class="btn btn-sm" type="button">選択</button></td></tr>
+        <tr><td class="dom">my-shop.io</td><td class="unk">？ 確認できませんでした</td><td class="num">¥5,980<small>更新 ¥6,980</small></td><td></td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="win bevel footwin">
+    <div class="title"><b>サイトマップ</b><span class="sp"><span>_</span><span>□</span><span>×</span></span></div>
+    <div class="body">
+      <div><h4>検索</h4><ul><li><a href="#">ドメイン検索</a></li><li><a href="#">料金一覧</a></li><li><a href="#">対応TLD</a></li><li><a href="#">似た候補の提案</a></li></ul></div>
+      <div><h4>アカウント</h4><ul><li><a href="#">ログイン</a></li><li><a href="#">会員登録</a></li><li><a href="#">マイページ</a></li><li><a href="#">ダッシュボード</a></li></ul></div>
+      <div><h4>サポート</h4><ul><li><a href="#">よくある質問</a></li><li><a href="#">ネームサーバーの設定</a></li><li><a href="#">更新と自動更新</a></li><li><a href="#">ドメインを手放す</a></li></ul></div>
+      <div><h4>TeamC.Com</h4><ul><li><a href="#">概要</a></li><li><a href="#">レジストリ Kitaqsign</a></li><li><a href="#">レジストリ Kitaqnic</a></li><li><a href="#">利用規約</a></li></ul></div>
+    </div>
+  </section>
+
+  <p class="copy">TeamC.Com — GMO INTERNET GROUP 学生ハッカソン TeamC / 料金・レジストリは演習用のダミーデータです。</p>
+</main>
+
+<script>
+/* ヒーロー見出しのタイプ演出（黄色ハイライトは 22TLD の部分だけ） */
+(function(){
+  var el=document.getElementById('typed');
+  if(!el) return;
+  var parts=[
+    {t:'名前をひとつ入れて、'},
+    {br:true},
+    {t:'22TLD',hl:true},
+    {t:'を一度に調べる。'}
+  ];
+  var caret=document.createElement('span');
+  caret.className='caret';
+  caret.setAttribute('aria-hidden','true');
+
+  function renderAll(){
+    el.textContent='';
+    parts.forEach(function(p){
+      if(p.br){el.appendChild(document.createElement('br'));return}
+      var n=document.createElement('span');
+      n.className=p.hl?'hl':'plain';
+      n.textContent=p.t;
+      el.appendChild(n);
+    });
+    el.appendChild(caret);
+  }
+
+  var reduce=window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduce){renderAll();return}
+
+  el.textContent='';
+  el.appendChild(caret);
+  var pi=0, ci=0, node=null;
+  function step(){
+    if(pi>=parts.length){setTimeout(function(){pi=0;ci=0;node=null;el.textContent='';el.appendChild(caret);setTimeout(step,420)},2600);return}
+    var p=parts[pi];
+    if(p.br){el.insertBefore(document.createElement('br'),caret);pi++;node=null;setTimeout(step,160);return}
+    if(!node){node=document.createElement('span');node.className=p.hl?'hl':'plain';el.insertBefore(node,caret)}
+    node.textContent=p.t.slice(0,++ci);
+    if(ci>=p.t.length){pi++;ci=0;node=null;setTimeout(step,220)}
+    else{setTimeout(step,88)}
+  }
+  setTimeout(step,420);
+})();
+
+const TLDS=[
+ ['.com',1480,1980,'人気No.1'],['.net',1680,2180,''],['.org',1680,2180,''],['.info',980,2480,''],
+ ['.dev',1980,2480,'HTTPS必須'],['.app',2980,3480,'HTTPS必須'],['.io',5980,6980,'プレミアム'],['.co',3980,4980,''],
+ ['.shop',280,4980,''],['.tech',480,5980,''],['.blog',1980,2980,''],['.site',180,3980,''],
+ ['.online',180,5480,''],['.store',280,5980,''],['.biz',1480,2980,''],['.club',780,2480,''],
+ ['.live',780,3480,''],['.studio',980,3980,''],['.work',180,2480,''],['.design',3980,6980,'プレミアム'],
+ ['.xyz',98,1980,''],['.top',98,1680,'']
+];
+const yen=n=>'¥'+n.toLocaleString('ja-JP');
+document.getElementById('rows').innerHTML=TLDS.map(([t,f,r,flag])=>`
+  <tr><td class="t">${t}</td><td class="num">${yen(f)}</td><td class="num">${yen(r)}</td><td class="num">${yen(f+r*2)}</td><td>${flag?`<span class="tag">${flag}</span>`:''}</td></tr>`).join('');
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+# Compiled JavaScript files
+lib/**/*.js
+lib/**/*.js.map
+
+# Compiled test output (tsconfig.test.json -> lib-test/, "registrar" test subset)
+lib-test/
+
+# TypeScript v1 declaration files
+typings/
+
+# Node.js dependency directory
+node_modules/
+*.local
+
+# Environment variables
+.env
+.env.*
+!.env.example
+# Test build output
+lib-test/

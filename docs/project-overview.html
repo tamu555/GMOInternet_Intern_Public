@@ -1,0 +1,591 @@
+<title>疑似レジストラ プロジェクト概要</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;700&family=Noto+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+/>
+<style>
+  :root {
+    --paper: #fafbfa;
+    --ink: #1e2a32;
+    --ink-soft: #51626d;
+    --line: #dce4e2;
+    --teal: #0f766e;
+    --teal-soft: #e4f0ee;
+    --orange: #d9530b;
+    --orange-soft: #fbede3;
+    --card: #ffffff;
+    --mono-bg: #eef3f2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #14191d;
+      --ink: #e6ecea;
+      --ink-soft: #9fafb4;
+      --line: #2c363c;
+      --teal: #4cc5b9;
+      --teal-soft: #17302e;
+      --orange: #f08a4b;
+      --orange-soft: #38271b;
+      --card: #1b2227;
+      --mono-bg: #222b30;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #14191d;
+    --ink: #e6ecea;
+    --ink-soft: #9fafb4;
+    --line: #2c363c;
+    --teal: #4cc5b9;
+    --teal-soft: #17302e;
+    --orange: #f08a4b;
+    --orange-soft: #38271b;
+    --card: #1b2227;
+    --mono-bg: #222b30;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family:
+      "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    font-size: 15px;
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 48px 24px 72px;
+  }
+
+  /* ---- header ---- */
+  header {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 28px;
+    margin-bottom: 40px;
+  }
+  .team-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--ink-soft);
+  }
+  .team-mark::before {
+    content: "";
+    width: 22px;
+    height: 4px;
+    background: linear-gradient(90deg, var(--orange) 50%, var(--teal) 50%);
+    border-radius: 2px;
+  }
+  h1 {
+    font-family: "Shippori Mincho", serif;
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1.4;
+    margin: 10px 0 6px;
+    text-wrap: balance;
+  }
+  .tagline {
+    color: var(--ink-soft);
+    margin: 0 0 14px;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+  .meta b {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  /* ---- sections ---- */
+  section {
+    margin-bottom: 44px;
+  }
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--teal);
+    margin: 0 0 6px;
+  }
+  h2 {
+    font-family: "Shippori Mincho", serif;
+    font-size: 23px;
+    font-weight: 600;
+    line-height: 1.5;
+    margin: 0 0 14px;
+    text-wrap: balance;
+  }
+  p {
+    margin: 0 0 12px;
+    max-width: 42em;
+  }
+  code,
+  .mono {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.88em;
+    background: var(--mono-bg);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  /* ---- persona ---- */
+  .persona {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 20px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-top: 6px;
+    font-size: 14px;
+  }
+  .persona dt {
+    font-weight: 700;
+    color: var(--teal);
+    white-space: nowrap;
+  }
+  .persona dd {
+    margin: 0;
+  }
+  @media (max-width: 560px) {
+    .persona {
+      grid-template-columns: 1fr;
+    }
+    .persona dt {
+      margin-top: 6px;
+    }
+  }
+
+  /* ---- two-mode ---- */
+  .modes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 6px;
+  }
+  @media (max-width: 640px) {
+    .modes {
+      grid-template-columns: 1fr;
+    }
+  }
+  .mode {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 20px;
+  }
+  .mode h3 {
+    margin: 0 0 6px;
+    font-size: 15.5px;
+  }
+  .mode h3 span {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 2px 9px;
+    border-radius: 99px;
+    margin-right: 8px;
+    vertical-align: 2px;
+  }
+  .mode.normal h3 span {
+    background: var(--teal-soft);
+    color: var(--teal);
+  }
+  .mode.easy h3 span {
+    background: var(--orange-soft);
+    color: var(--orange);
+  }
+  .mode p {
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+
+  /* ---- feature table ---- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin-top: 6px;
+  }
+  .table-scroll {
+    overflow-x: auto;
+  }
+  th {
+    text-align: left;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    font-weight: 700;
+    border-bottom: 2px solid var(--line);
+    padding: 6px 12px 6px 0;
+    white-space: nowrap;
+  }
+  td {
+    border-bottom: 1px solid var(--line);
+    padding: 9px 12px 9px 0;
+    vertical-align: top;
+  }
+  td:first-child {
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .why {
+    color: var(--ink-soft);
+  }
+  .tag-core,
+  .tag-diff,
+  .tag-opt {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 1px 8px;
+    border-radius: 99px;
+    white-space: nowrap;
+  }
+  .tag-core {
+    background: var(--teal-soft);
+    color: var(--teal);
+  }
+  .tag-diff {
+    background: var(--orange-soft);
+    color: var(--orange);
+  }
+  .tag-opt {
+    background: var(--mono-bg);
+    color: var(--ink-soft);
+  }
+
+  /* ---- decisions ---- */
+  .decision {
+    border-left: 3px solid var(--teal);
+    padding: 2px 0 2px 18px;
+    margin: 0 0 18px;
+  }
+  .decision h3 {
+    margin: 0 0 3px;
+    font-size: 15px;
+  }
+  .decision p {
+    margin: 0;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    max-width: 46em;
+  }
+  .decision .status {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin-left: 8px;
+    padding: 1px 8px;
+    border-radius: 99px;
+    vertical-align: 1px;
+    white-space: nowrap;
+  }
+  .status.done {
+    background: var(--teal-soft);
+    color: var(--teal);
+  }
+  .status.open {
+    background: var(--orange-soft);
+    color: var(--orange);
+  }
+
+  /* ---- arch ---- */
+  .arch {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    background: var(--mono-bg);
+    border-radius: 10px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    white-space: pre;
+    margin: 6px 0 10px;
+    color: var(--ink);
+  }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+  footer .mono {
+    font-size: 12px;
+  }
+  a {
+    color: var(--teal);
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="team-mark"
+      >GMOインターネット ハッカソン — TeamC（4名チーム）</span
+    >
+    <h1>疑似レジストラサービス 計画概要</h1>
+    <p class="tagline">
+      事前知識ゼロでも、ドメイン取得からDNS設定・維持までひとりで完走できるレジストラ。
+    </p>
+    <div class="meta">
+      <span>更新 <b>2026-08-25</b></span>
+      <span>期間 <b>5日間ハッカソン</b></span>
+    </div>
+  </header>
+
+  <section>
+    <p class="eyebrow">TARGET</p>
+    <h2>ターゲット：ドメイン未経験の個人・初学者</h2>
+    <p>
+      UX原則は<strong>「小学生でも使える」</strong>。判断基準に迷ったら、常にこのペルソナが完走できるかで決める。
+    </p>
+    <dl class="persona">
+      <dt>ペルソナ</dt>
+      <dd>
+        佐藤
+        悠（19歳・大学1年生）。HTML/CSSやReactは少し触った。ドメイン・DNSは未経験
+      </dd>
+      <dt>きっかけ</dt>
+      <dd>
+        就活・サークル・個人開発のサイトを独自ドメインで公開したい（<code>yuu-portfolio.com</code>）
+      </dd>
+      <dt>つまずき</dt>
+      <dd>
+        どこで買うか分からない。<code>.com</code>と<code>.net</code>の違いも曖昧。購入後に「ネームサーバー」「CNAME」が突然出てくる
+      </dd>
+      <dt>求めるもの</dt>
+      <dd>
+        「何をしたいか」を選ぶだけで必要な設定まで案内され、「サイトが公開されました
+        ✓」まで到達できること
+      </dd>
+    </dl>
+  </section>
+
+  <section>
+    <p class="eyebrow">PURPOSE</p>
+    <h2>目的：知識ハードルを外し、「安心して維持できる」まで面倒を見る</h2>
+    <p>
+      既存サービスは事前知識を要求し、サイト内導線も分かりにくく、初学者には参入ハードルが高い。本サービスは専門知識を極力排したUIで<strong
+        >取得 → DNS設定 → 維持</strong
+      >を一気通貫で支援する。ただし専門用語を消し去るのではなく併記し（例：「ネームサーバー（どのDNSに任せるかの指定）」）、学習して通常モードへ「卒業」できる導線を作る。
+    </p>
+    <div class="modes">
+      <div class="mode normal">
+        <h3><span>通常モード</span>知識がある人向け</h3>
+        <p>
+          ドメイン一覧・検索を起点に全項目を表示・操作。コア機能はすべてここに実装する。
+        </p>
+      </div>
+      <div class="mode easy">
+        <h3><span>簡単モード</span>事前知識ゼロ向け</h3>
+        <p>
+          「何をしたいか」を起点に、必要な項目だけをフローチャート＋進捗つきで案内。通常モードのAPIを呼ぶ薄いウィザードとして実装する。
+        </p>
+      </div>
+    </div>
+    <p style="font-size: 13px; color: var(--ink-soft); margin-top: 10px">
+      理由：5日間でUIを二重実装すると破綻する。ドメイン操作ロジックは1本に保ち、通常モードを先に完成させてから簡単モードを載せる。
+    </p>
+  </section>
+
+  <section>
+    <p class="eyebrow">FEATURES</p>
+    <h2>主要機能と選定理由</h2>
+    <div class="table-scroll">
+      <table>
+        <tr>
+          <th>機能</th>
+          <th>区分</th>
+          <th>内容と選定理由</th>
+        </tr>
+        <tr>
+          <td>コア6機能</td>
+          <td><span class="tag-core">必須</span></td>
+          <td>
+            登録・更新・情報修正・廃止・復旧・移管（IN/OUT）＋情報参照。<span
+              class="why"
+              >レジストラとしての土台。EPP相当APIで正しく動くことを最優先で保証する。</span
+            >
+          </td>
+        </tr>
+        <tr>
+          <td>ユーザー関連</td>
+          <td><span class="tag-core">必須</span></td>
+          <td>
+            ユーザー登録/削除、ユーザー認証、ログイン/ログアウト。<span
+              class="why"
+              >ユーザー周りの機能を担う。</span
+            >
+          </td>
+        </tr>
+        <tr>
+          <td>2レジストリ対応</td>
+          <td><span class="tag-core">必須</span></td>
+          <td>
+            Kitaqsign / Kitaqnic
+            の差分（pollのack方式がパスもHTTPメソッドも違う等）をBRIDGE層に閉じ込める。<span
+              class="why"
+              >レジストリごとの差分を上位層に漏らさず、レジストリ追加にも耐える構成にするため。</span
+            >
+          </td>
+        </tr>
+        <tr>
+          <td>目的起点ウィザード</td>
+          <td><span class="tag-diff">差別化</span></td>
+          <td>
+            「Web公開／デプロイ／メール」の目的選択から、候補提案 → 決済 →
+            DNS設定 →
+            維持まで進捗表示つきで案内。進捗の完了条件はボタン押下ではなく<strong>実データで判定</strong>（再ログインしても正しい位置に復帰）。<span
+              class="why"
+              >「安心」の実体は正確な進捗復帰。</span
+            >
+          </td>
+        </tr>
+        <tr>
+          <td>AI入口（協議中）</td>
+          <td><span class="tag-opt">検討</span></td>
+          <td>
+            「やりたいこと」の自由文入力をAIが解釈し目的分類へ変換。おすすめTLDのデフォルト提示で「とりあえずこれなら良さそう」に導く。<span
+              class="why"
+              >AIの役割は生成でなく解釈→分類に限定。<code>IntentParser</code>で抽象化し、ルールベース／Claude
+              API／ブラウザ内モデルを差し替え可能に。TLD推薦自体はルールベースが担当。</span
+            >
+          </td>
+        </tr>
+        <tr>
+          <td>レンタルDNS（自作）</td>
+          <td><span class="tag-core">必須</span></td>
+          <td>
+            A/CNAME/MX/TXTを保持し、自前リゾルバAPIで「確認する」ボタンに応答。<span
+              class="why"
+              >レジストリはNSまでしか持たないため、DNS設定機能を持つなら自作が必須。「レジストリはNSまで、レコードはレジストラの責務」という業界の切り分けの再現でもある。</span
+            >
+          </td>
+        </tr>
+        <tr>
+          <td>DNSレシピ＋貼り付けパーサ</td>
+          <td><span class="tag-diff">差別化</span></td>
+          <td>
+            Vercel等の主要サービス別テンプレを選ぶだけで一括投入。設定案内のコピペをパースしてレコード案に変換。<span
+              class="why"
+              >初心者最大の壁「そこに何を書くか」を選択肢化する。テンプレ追加＝JSON追加のみで仕様変更耐性の実例にもなる。</span
+            >
+          </td>
+        </tr>
+        <tr>
+          <td>エラー回復UI</td>
+          <td><span class="tag-diff">差別化</span></td>
+          <td>
+            決済成功→create失敗などの中途半端な状態を自動リカバリし、「処理中です。自動で再試行しています」と正直に見せる。<span
+              class="why"
+              >通信エラー時の振る舞いはデモの見せ場。二重課金を防ぐ冪等リカバリ（2302＋info成功＝前回成功と解釈）が本体。</span
+            >
+          </td>
+        </tr>
+        <tr>
+          <td>維持ダッシュボード</td>
+          <td><span class="tag-core">必須</span></td>
+          <td>
+            残り期間・自動更新の状態・支払い方法の状態を同格で表示。状態別の色分け一覧。<span
+              class="why"
+              >擬似レジストリは自動更新されるため「失効の恐怖」は演出できない。実際にドメインを失う原因（支払い方法の期限切れ）を可視化する方が誠実。</span
+            >
+          </td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">ARCHITECTURE</p>
+    <h2>構成：レイヤ分割</h2>
+    <div class="arch">
+      [ Web UI ] 通常/簡単モード（UIは1セット） │ [ API層 ]
+      会員・注文・進捗・価格・DNSレコード ├── [ 自作 権威DNS ] A/CNAME/MX/TXT
+      ├── [ BATCH層 ] Pollワーカー×2・期限監視 └── [ BRIDGE層 ]
+      レジストリ差分の吸収 ├── KitaqsignClient └── KitaqnicClient
+    </div>
+    <p style="font-size: 13px; color: var(--ink-soft)">
+      TLD→レジストリのルーティングは起動時に<code>sessions/hello</code>の<code>supportedTlds</code>から自動生成し、ハードコードしない。
+    </p>
+  </section>
+
+  <section>
+    <p class="eyebrow">DECISIONS</p>
+    <h2>主要な設計判断</h2>
+
+    <div class="decision">
+      <h3>
+        ゴミ箱UIは採用しない → 状態別の色分け一覧<span class="status done"
+          >決定</span
+        >
+      </h3>
+      <p>
+        ゴミ箱は「無料でいつでも戻せる」という期待を作るが、ドメインの実態（猶予期間・復旧料）と食い違う。ライフサイクル終盤の複数状態を1つの場所にまとめるのも無理がある。アクティブと終盤をセクション分けし、状態ごとに色＋ラベルで表示する。
+      </p>
+    </div>
+    <div class="decision">
+      <h3>
+        候補提案のコアはルールベース、AIは限定適用<span class="status open"
+          >協議中</span
+        >
+      </h3>
+      <p>
+        AIを使うなら価値が出る2点（自由文の解釈、日本語→ドメイン文字列変換）に限定し、デモはルールベースのフォールバックで確実に動かす。API費用はこの使い方なら1回約0.3円。
+      </p>
+    </div>
+    <div class="decision">
+      <h3>
+        実測ファースト：コードを書く前にDay1でAPIを叩き切る<span
+          class="status done"
+          >決定</span
+        >
+      </h3>
+      <p>
+        仕様書に載っていない挙動（復旧の猶予期間、移管後のexDate、pollの空応答など）は8本の実測テストで確定させてから設計を固定する。飛ばすとDay3〜4に設計やり直しが発生する。
+      </p>
+    </div>
+    <div class="decision">
+      <h3>
+        レジストラを2つ発行し、移管を自前で完結<span class="status done"
+          >決定</span
+        >
+      </h3>
+      <p>
+        APIキーは自己発行できるため、A=サービス本体、B=「他社レジストラ」役を用意。移管IN/OUTの検証・デモが自前で完結し、移管OUTの承認画面も自然に必須機能になる。
+      </p>
+    </div>
+    <div class="decision">
+      <h3>
+        モック時計で時間をデモ可能にする<span class="status done">決定</span>
+      </h3>
+      <p>
+        猶予期間は日単位でデモの5分では見せられない。表示用の基準時刻を差し込める設計を初期から入れる（後付け不可）。早送りは表示演出であり、実態とズレないようデモ用データを仕込む。
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      ハッカソン期間中に作成した計画資料（公開用に一部編集）。実装の詳細は
+      <span class="mono">README.md</span> と
+      <span class="mono">docs/仕様/</span> を参照。
+    </p>
+  </footer>
+</div>

@@ -1,0 +1,31 @@
+# OS / editor
+.DS_Store
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Firebase local/generated files
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+database-debug.log
+pubsub-debug.log
+extensions-debug.log
+.runtimeconfig.json
+emulator-data/
+firebase-export-*/
+
+# Environment variables (never commit local secrets)
+.env
+.env.*
+!.env.example
+
+# Functions emulator secrets (copy from functions/.secret.local.example)
+functions/.secret.local
+
+# Playwright CLI local session artifacts (snapshots, console logs, screenshots)
+.playwright-cli/
+node_modules/

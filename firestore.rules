@@ -1,0 +1,37 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Signup wizard step 2 (メール認証). Nothing in this project sends mail,
+    // so the six-digit code has no channel to travel over: the visitor reads
+    // it for the address they just typed, straight out of Firestore. That
+    // makes this one document deliberately world-readable - a recorded
+    // trade-off (see .agents/docs/DESIGN.md), not an oversight.
+    //
+    // `get` only, never `list`: a list rule would let anyone page through
+    // every address currently mid-registration. Writes stay Admin-SDK only
+    // (functions/src/auth/verification.ts), so a client can never mint a
+    // code, extend one, reset the attempt counter, or set `verified` itself
+    // - and registration.ts re-checks the grant server-side regardless.
+    match /verificationCodes/{email} {
+      allow get: if true;
+      allow list, write: if false;
+    }
+
+    // Transfers (functions/src/domain/transfers.ts). Read-only, owner-scoped:
+    // MyPage.tsx subscribes with onSnapshot purely as a change signal (it
+    // still renders from the callables' DTOs, never straight off this
+    // document), so the member seeing their own transfer rows is the only
+    // access this needs. Writes stay Admin-SDK only (pollWorker /
+    // transferCallables.ts) - no callable ever accepts holderToken back from
+    // the client, so exposing it here creates no way to forge a lease.
+    match /transfers/{transferId} {
+      allow get, list: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

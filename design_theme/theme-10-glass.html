@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>候補10 グラス・プロダクト型 — ドメイン検索</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<style>
+/*
+  候補10｜グラス・プロダクト型
+  ------------------------------------------------------------------
+  参考にした系統 : Apple のプロダクトページ系（黒地 + 発光する球 + ガラス面）
+  特徴 :
+    - 真っ黒に近い背景に、虹色に発光する球をひとつだけ置く
+    - UIはすべて半透明のガラス（背景ぼかし + 1pxの白枠）
+    - 文字は細め・字間を詰めた中央揃え。色文字はグラデーションのみ
+  想定ユーザー : プロダクトとしての質感を重視する層
+  このページの唯一の仕事 : 静かな暗闇の中央で、光る窓に打たせる。
+  ※ 同じダークでも 5（黒+紫のSaaS）12（レトロWeb）とは別系統です。
+*/
+:root{
+  --bg:#050609;
+  --bg-2:#0a0c12;
+  --fg:#f2f4f8;
+  --fg-2:#a2a9ba;
+  --fg-3:#6b7285;
+  --glass:rgba(255,255,255,.06);
+  --glass-2:rgba(255,255,255,.1);
+  --stroke:rgba(255,255,255,.14);
+  --ok:#5ee2a0;
+  --ng:#ff7d7d;
+  --radius:14px;
+  --radius-lg:22px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg);color:var(--fg);
+  font-family:"Inter","Noto Sans JP",system-ui,sans-serif;
+  font-size:15px;line-height:1.85;font-weight:400;-webkit-font-smoothing:antialiased;
+}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1140px;margin:0 auto;padding:0 26px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.grad{background:linear-gradient(96deg,#7aa2ff,#c58bff 42%,#5ee2d0);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* header : ガラスのフローティングバー */
+.site-header{position:sticky;top:0;z-index:20;padding:14px 0}
+.site-header .inner{
+  max-width:1000px;margin:0 auto;display:flex;align-items:center;gap:24px;height:54px;padding:0 18px;
+  background:rgba(12,14,20,.6);border:1px solid var(--stroke);border-radius:999px;backdrop-filter:blur(18px);
+}
+.brand{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:600;letter-spacing:-.02em}
+.brand i{width:18px;height:18px;border-radius:50%;display:block;background:conic-gradient(from 210deg,#7aa2ff,#c58bff,#5ee2d0,#7aa2ff)}
+.brand em{font-style:normal;font-weight:300;color:var(--fg-2)}
+.site-nav{display:flex;gap:22px;margin-left:6px}
+.site-nav a{font-size:13.5px;color:var(--fg-2)}
+.site-nav a:hover{color:var(--fg)}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:14px;font-size:13px;color:var(--fg-2)}
+.auth-chip{font-size:11px;color:var(--fg-3);white-space:nowrap}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;
+  font-family:inherit;font-weight:500;font-size:14px;letter-spacing:-.01em;border:1px solid transparent;
+  background:#fff;color:#0a0c12;border-radius:999px;padding:11px 22px;line-height:1;
+}
+.btn:hover{background:#dfe3ec}
+.btn-glass{background:var(--glass);color:var(--fg);border-color:var(--stroke);backdrop-filter:blur(10px)}
+.btn-glass:hover{background:var(--glass-2)}
+.btn-sm{padding:8px 16px;font-size:12.5px}
+
+/* hero */
+.hero{position:relative;overflow:hidden;padding:74px 0 96px;text-align:center}
+.orb{
+  position:absolute;left:50%;top:150px;transform:translateX(-50%);
+  width:820px;height:820px;border-radius:50%;pointer-events:none;
+  background:
+    radial-gradient(circle at 34% 30%, rgba(150,180,255,.55), transparent 46%),
+    radial-gradient(circle at 68% 62%, rgba(196,139,255,.5), transparent 52%),
+    radial-gradient(circle at 50% 84%, rgba(94,226,208,.42), transparent 55%),
+    radial-gradient(circle at 50% 50%, rgba(20,24,38,.9), rgba(5,6,9,0) 68%);
+  filter:blur(46px);opacity:.85;
+}
+.grid-lines{
+  position:absolute;inset:0;pointer-events:none;opacity:.35;
+  background-image:linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
+  background-size:80px 80px;
+  mask-image:radial-gradient(700px 420px at 50% 34%, #000 30%, transparent 74%);
+}
+.hero .wrap{position:relative;z-index:2}
+.hero h1{margin:0 0 20px;font-size:11.5px;font-weight:500;letter-spacing:.26em;color:var(--fg-3)}
+.hero .head{
+  margin:0 auto 18px;font-family:"Noto Sans JP",sans-serif;font-weight:500;
+  font-size:54px;line-height:1.34;letter-spacing:-.035em;max-width:17em;word-break:auto-phrase;
+}
+.hero .lede{margin:0 auto 34px;color:var(--fg-2);font-size:15.5px;font-weight:300;max-width:34em;word-break:auto-phrase}
+form.q{
+  display:flex;align-items:center;gap:10px;max-width:540px;margin:0 auto;
+  background:rgba(255,255,255,.07);border:1px solid var(--stroke);border-radius:999px;
+  padding:7px 7px 7px 20px;backdrop-filter:blur(16px);
+  box-shadow:0 24px 60px -30px rgba(120,150,255,.5);
+}
+form.q:focus-within{border-color:rgba(150,180,255,.6)}
+form.q svg{width:17px;height:17px;color:var(--fg-3);flex:none}
+form.q input{flex:1;min-width:0;border:0;outline:0;background:transparent;height:46px;font-family:inherit;font-size:16px;color:var(--fg);letter-spacing:-.01em}
+form.q input::placeholder{color:var(--fg-3)}
+form.q .btn{height:46px;padding:0 24px}
+.hint{margin:14px auto 0;max-width:540px;font-size:12.5px;color:var(--fg-3)}
+.metrics{
+  margin:52px auto 0;max-width:840px;display:grid;grid-template-columns:repeat(3,1fr);
+  background:var(--glass);border:1px solid var(--stroke);border-radius:var(--radius-lg);backdrop-filter:blur(14px);overflow:hidden;
+}
+.metric{padding:22px 18px;border-right:1px solid var(--stroke)}
+.metric:last-child{border-right:0}
+.metric b{display:block;font-size:30px;font-weight:500;letter-spacing:-.04em}
+.metric span{font-size:12.5px;color:var(--fg-2)}
+
+/* sections */
+section.block{padding:92px 0}
+.sec-head{text-align:center;margin-bottom:38px}
+.sec-head h2{margin:0 auto 10px;font-size:36px;font-weight:500;letter-spacing:-.035em;line-height:1.42;max-width:22em;word-break:auto-phrase}
+.sec-head p{margin:0 auto;color:var(--fg-2);font-size:14.5px;font-weight:300;max-width:44em;word-break:auto-phrase}
+.pricepanel{background:var(--glass);border:1px solid var(--stroke);border-radius:var(--radius-lg);backdrop-filter:blur(14px);overflow:hidden}
+.tlds{display:grid;grid-template-columns:repeat(4,1fr)}
+.tld{padding:18px 20px;border-right:1px solid var(--stroke);border-bottom:1px solid var(--stroke)}
+.tld:nth-child(4n){border-right:0}
+.tld .t{font-size:17px;font-weight:500;letter-spacing:-.02em}
+.tld .p{margin:6px 0 0;font-size:20px;font-weight:500;letter-spacing:-.03em}
+.tld .p em{font-style:normal;font-family:"Noto Sans JP",sans-serif;font-size:11px;color:var(--fg-3);font-weight:400;margin-left:6px}
+.tld .r{font-size:12px;color:var(--fg-3)}
+.tld .flag{display:inline-block;margin-top:8px;font-size:10.5px;color:var(--fg-2);border:1px solid var(--stroke);border-radius:999px;padding:1px 9px}
+.note{margin:22px auto 0;text-align:center;font-size:12.5px;color:var(--fg-3);line-height:1.95;max-width:60em;word-break:auto-phrase}
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{background:var(--glass);border:1px solid var(--stroke);border-radius:var(--radius-lg);padding:28px 26px;backdrop-filter:blur(14px)}
+.card .dot{width:30px;height:30px;border-radius:50%;margin-bottom:16px;background:conic-gradient(from 200deg,#7aa2ff,#c58bff,#5ee2d0,#7aa2ff);opacity:.9}
+.card h3{margin:0 0 8px;font-size:19px;font-weight:500;letter-spacing:-.02em}
+.card p{margin:0;color:var(--fg-2);font-size:14px;font-weight:300;line-height:2;word-break:auto-phrase}
+.rows{background:var(--glass);border:1px solid var(--stroke);border-radius:var(--radius-lg);overflow:hidden;backdrop-filter:blur(14px)}
+.row{display:flex;align-items:center;gap:18px;padding:17px 24px;border-bottom:1px solid var(--stroke)}
+.row:last-child{border-bottom:0}
+.row .dom{font-size:16.5px;font-weight:500;letter-spacing:-.02em;min-width:190px}
+.row .st{font-size:13.5px;font-weight:500;min-width:170px}
+.row .st.ok{color:var(--ok)}
+.row .st.ng{color:var(--ng)}
+.row .st.unk{color:var(--fg-3)}
+.row .fee{margin-left:auto;font-size:15px;text-align:right;letter-spacing:-.02em}
+.row .fee small{display:block;font-size:11.5px;color:var(--fg-3)}
+.row .act{width:92px;text-align:right}
+.cta{position:relative;overflow:hidden;text-align:center;padding:104px 0}
+.cta .glow{position:absolute;left:50%;bottom:-260px;transform:translateX(-50%);width:900px;height:520px;border-radius:50%;filter:blur(60px);background:radial-gradient(circle at 50% 40%, rgba(150,180,255,.42), rgba(196,139,255,.25) 45%, transparent 70%)}
+.cta .wrap{position:relative;z-index:2}
+.cta h2{margin:0 auto 12px;font-size:38px;font-weight:500;letter-spacing:-.035em;line-height:1.4;max-width:20em;word-break:auto-phrase}
+.cta p{margin:0 auto 28px;color:var(--fg-2);font-size:14.5px;font-weight:300;max-width:38em}
+footer.site{border-top:1px solid var(--stroke);padding:52px 0 64px;color:var(--fg-2)}
+.fcols{display:grid;grid-template-columns:repeat(4,1fr);gap:26px;margin-bottom:30px}
+.fcols h4{margin:0 0 10px;font-size:11.5px;font-weight:500;letter-spacing:.1em;color:var(--fg-3)}
+.fcols ul{margin:0;padding:0;list-style:none}
+.fcols li{margin-bottom:7px}
+.fcols a{font-size:13.5px}
+.fcols a:hover{color:var(--fg)}
+.fbottom{border-top:1px solid var(--stroke);padding-top:20px;font-size:11.5px;color:var(--fg-3);display:flex;flex-wrap:wrap;gap:16px}
+@media (max-width:1000px){
+  .site-nav{display:none}
+  .hero .head{font-size:31px}
+  .sec-head h2,.cta h2{font-size:26px}
+  .orb{width:560px;height:560px}
+  .metrics{grid-template-columns:1fr}
+  .metric{border-right:0;border-bottom:1px solid var(--stroke)}
+  .tlds{grid-template-columns:repeat(2,1fr)}
+  .tld:nth-child(4n){border-right:1px solid var(--stroke)}
+  .tld:nth-child(2n){border-right:0}
+  .trio{grid-template-columns:1fr}
+  .fcols{grid-template-columns:repeat(2,1fr)}
+  form.q{flex-wrap:wrap;border-radius:var(--radius);padding:12px}
+  form.q input{flex-basis:100%}
+  form.q .btn{width:100%}
+  .row{flex-wrap:wrap;gap:8px}
+  .row .dom{flex-basis:100%;min-width:0}
+  .row .fee{margin-left:0}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="#"><i></i><span>TeamC<em>.Com</em></span></a>
+    <nav class="site-nav"><a href="#">料金</a><a href="#">使い方</a><a href="#">サポート</a></nav>
+    <div class="header-right">
+      <span class="auth-chip">AuthContext: 未認証</span>
+      <a href="#">ログイン</a>
+      <a class="btn btn-glass btn-sm" href="#">会員登録</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="grid-lines" aria-hidden="true"></div>
+    <div class="orb" aria-hidden="true"></div>
+    <div class="wrap">
+      <h1>ドメイン検索</h1>
+      <p class="head">ひとつの名前から、<br /><span class="grad">22の答え</span>を。</p>
+      <p class="lede">空き状況・初年度・更新料を、対応するすべてのTLDについて一度に取得します。ログインは要りません。</p>
+
+      <form class="q" onsubmit="return false">
+        <label class="sr" for="q">取得したいドメイン名</label>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+        <input id="q" type="text" placeholder="my-shop" autocomplete="off" />
+        <button class="btn" type="submit">検索する</button>
+      </form>
+      <p class="hint">TLD（.com など）は含めず入力してください。全角文字は自動的に半角へ変換されます。</p>
+
+      <div class="metrics">
+        <div class="metric"><b>22</b><span>対応TLD</span></div>
+        <div class="metric"><b>1.2s</b><span>平均応答</span></div>
+        <div class="metric"><b>0円</b><span>検索にかかる費用</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>初年度の安さだけで選ばないでください</h2>
+        <p>¥98 のTLDは2年目から ¥1,680 になります。初年度と更新料は必ず同じ大きさで並べて表示します。すべて税込・1年あたりです。</p>
+      </div>
+      <div class="pricepanel"><div class="tlds" id="tlds"></div></div>
+      <p class="note">復旧料は ¥3,300 〜 ¥6,600。.dev / .app はHSTSプリロード済みのため常時HTTPS化が必須です。レジストリは Kitaqsign と Kitaqnic の2社です。</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="sec-head"><h2>この検索が、ほかと違うところ</h2></div>
+      <div class="trio">
+        <div class="card"><div class="dot"></div><h3>TLDを先に選ばせない</h3><p>対応する22のTLDすべてに毎回問い合わせます。ひとつずつ試し直す必要はありません。</p></div>
+        <div class="card"><div class="dot"></div><h3>取れる候補だけを提案</h3><p>希望がすべて埋まっていたときだけ、その場で空きを再確認できた候補を出します。</p></div>
+        <div class="card"><div class="dot"></div><h3>分からなかったと書く</h3><p>接続できなかったTLDは空きとも使用中とも表示しません。◯ / ✕ / ？ を記号と文字で区別します。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="sec-head"><h2>検索するとこう表示されます</h2></div>
+      <div class="rows">
+        <div class="row"><span class="dom">my-shop.com</span><span class="st ok">◯ 空きあり</span><span class="fee">¥1,480<small>更新 ¥1,980</small></span><span class="act"><button class="btn btn-glass btn-sm" type="button">選択</button></span></div>
+        <div class="row"><span class="dom">my-shop.net</span><span class="st ng">✕ 使用中</span><span class="fee">—<small>&nbsp;</small></span><span class="act"></span></div>
+        <div class="row"><span class="dom">my-shop.dev</span><span class="st ok">◯ 空きあり</span><span class="fee">¥1,980<small>更新 ¥2,480</small></span><span class="act"><button class="btn btn-glass btn-sm" type="button">選択</button></span></div>
+        <div class="row"><span class="dom">my-shop.io</span><span class="st unk">？ 確認できませんでした</span><span class="fee">¥5,980<small>更新 ¥6,980</small></span><span class="act"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="glow" aria-hidden="true"></div>
+    <div class="wrap">
+      <h2>その名前、まだ空いているかもしれません</h2>
+      <p>入力するのは名前だけ。ログインもカード登録も要りません。</p>
+      <a class="btn" href="#">ドメインを検索する</a>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="fcols">
+      <div><h4>SEARCH</h4><ul><li><a href="#">ドメイン検索</a></li><li><a href="#">料金一覧</a></li><li><a href="#">対応TLD</a></li><li><a href="#">似た候補の提案</a></li></ul></div>
+      <div><h4>ACCOUNT</h4><ul><li><a href="#">ログイン</a></li><li><a href="#">会員登録</a></li><li><a href="#">マイページ</a></li><li><a href="#">ダッシュボード</a></li></ul></div>
+      <div><h4>SUPPORT</h4><ul><li><a href="#">よくある質問</a></li><li><a href="#">ネームサーバーの設定</a></li><li><a href="#">更新と自動更新</a></li><li><a href="#">ドメインを手放す</a></li></ul></div>
+      <div><h4>ABOUT</h4><ul><li><a href="#">概要</a></li><li><a href="#">レジストリ Kitaqsign</a></li><li><a href="#">レジストリ Kitaqnic</a></li><li><a href="#">利用規約</a></li></ul></div>
+    </div>
+    <div class="fbottom"><span>TeamC.Com — GMOインターネットグループ 学生ハッカソン TeamC</span><span>料金・レジストリは演習用のダミーデータです。</span></div>
+  </div>
+</footer>
+
+<script>
+const TLDS=[
+ ['.com',1480,1980,'人気No.1'],['.net',1680,2180,''],['.org',1680,2180,''],['.info',980,2480,''],
+ ['.dev',1980,2480,'HTTPS必須'],['.app',2980,3480,'HTTPS必須'],['.io',5980,6980,'プレミアム'],['.co',3980,4980,''],
+ ['.shop',280,4980,''],['.tech',480,5980,''],['.blog',1980,2980,''],['.site',180,3980,''],
+ ['.online',180,5480,''],['.store',280,5980,''],['.biz',1480,2980,''],['.club',780,2480,''],
+ ['.live',780,3480,''],['.studio',980,3980,''],['.work',180,2480,''],['.design',3980,6980,'プレミアム'],
+ ['.xyz',98,1980,''],['.top',98,1680,'']
+];
+const yen=n=>'¥'+n.toLocaleString('ja-JP');
+const PAD=(4-TLDS.length%4)%4;
+document.getElementById('tlds').innerHTML=TLDS.map(([t,f,r,flag])=>`
+  <div class="tld"><div class="t">${t}</div><p class="p">${yen(f)}<em>初年度</em></p><div class="r">更新 ${yen(r)}</div>${flag?`<span class="flag">${flag}</span>`:''}</div>`).join('')
+  +Array.from({length:PAD},()=>'<div class="tld" aria-hidden="true"></div>').join('');
+</script>
+</body>
+</html>

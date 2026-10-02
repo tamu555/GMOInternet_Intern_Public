@@ -1,0 +1,490 @@
+/**
+ * Intent -> Playbook table (spec browser-ai.md §10). This is the "LLM
+ * Knowledge + System Playbook" split: the model only classifies free text
+ * into one of these IntentIds and fills `requiredSlots`; which RouteIds are
+ * even legal for that intent, and what the app says about it, is decided
+ * here, not by the model's own words.
+ */
+import { DNS_RECIPES } from '../../dns/recipes'
+import { normalizeDomainLabel, validateDomainLabel } from '../../domains/validation'
+import { SLOT_VALUE_OTHER_LABEL } from '../assistantMessages'
+import type { RouteId } from './routeManifest'
+
+/**
+ * §10.2 table, in table order (24 entries).
+ *
+ * `POST_PURCHASE_NEXT_STEPS` is not in §10.2's original table: it was added for
+ * the reported 「ドメインを取得したが次に何をすれば良い」 family, which named a
+ * completed acquisition and asked what comes next without naming any concrete
+ * goal. Every §10.2 intent answers a goal the user already has; this one answers
+ * the turn BEFORE that, where the goal itself is what is missing. Routing it to
+ * `UNKNOWN` (the only pre-existing home for it) produced §11.5's apology for a
+ * question the service can answer precisely, which is what this entry fixes.
+ */
+export type IntentId =
+  | 'SEARCH_DOMAIN'
+  | 'PURCHASE_DOMAIN'
+  | 'VIEW_DOMAIN'
+  | 'POST_PURCHASE_NEXT_STEPS'
+  | 'CONNECT_WEBSITE'
+  | 'SETUP_EMAIL'
+  | 'ADD_A_RECORD'
+  | 'ADD_AAAA_RECORD'
+  | 'ADD_CNAME'
+  | 'ADD_TXT'
+  | 'ADD_MX'
+  | 'CREATE_SUBDOMAIN'
+  | 'CHANGE_NAMESERVER'
+  | 'SETUP_DNSSEC'
+  | 'VERIFY_DOMAIN'
+  | 'TRANSFER_DOMAIN'
+  | 'RENEW_DOMAIN'
+  | 'RETIRE_DOMAIN'
+  | 'TROUBLESHOOT_DNS'
+  | 'EXPLAIN_DNS'
+  | 'EXPLAIN_RECORD'
+  | 'LOGIN_HELP'
+  | 'UNKNOWN'
+  | 'OUT_OF_SCOPE'
+
+/** §10.1 verbatim, plus the v1.4 §4.1 `kind`/`optional` extensions. */
+export interface AssistantSlot {
+  key: string
+  allowedValues: string[]
+  /** Template of the follow-up question the AI asks while this slot is unfilled. */
+  question: string
+  /**
+   * v1.4 design contract §4.1. `'enum'` (the default when absent, so every
+   * pre-v1.4 slot is unchanged) means the value must be one of
+   * `allowedValues`. `'label'` means `allowedValues` stays empty and the
+   * value is instead validated with `validateLabelSlotValue` below (reusing
+   * the domain-search page's own `normalizeDomainLabel`/`validateDomainLabel`,
+   * never a reimplemented regex).
+   */
+  kind?: 'enum' | 'label'
+  /**
+   * `true` when this slot must NOT block Playbook satisfaction or the
+   * Navigation Card while unfilled - it only unlocks an extra Quick Action
+   * (e.g. SUGGEST_DOMAINS) once it happens to be filled. Absent/`false`
+   * keeps today's behaviour exactly: the slot is required, and an unfilled
+   * required slot blocks both the card and (per `deriveActions` rule 1)
+   * produces SET_SLOT buttons. An unfilled OPTIONAL slot produces no
+   * buttons at all - there is nothing to prompt for.
+   *
+   * ⚠️ Known gap for another wave: `security/routeValidator.ts`'s
+   * `filterSlots`/`isPlaybookSatisfied` (routeValidator.ts:35,49) do not yet
+   * know about either extension:
+   * 1. Neither function skips a slot with `optional: true` when deciding
+   *    Playbook satisfaction - `isPlaybookSatisfied` must treat "unfilled
+   *    AND optional" as satisfied, not as a blocker.
+   * 2. Both still gate every slot's value on `slot.allowedValues.includes(value)`,
+   *    which is always false for `kind: 'label'` (`allowedValues` is `[]` by
+   *    design) - a `kind === 'label'` branch must instead accept the value
+   *    when `validateLabelSlotValue(value).length > 0`.
+   * Until both are fixed, `keyword` values from the model are silently
+   * dropped, but - critically - that no longer blocks the Navigation Card
+   * once `routeValidator.ts` also learns to skip optional slots; it merely
+   * means the SUGGEST_DOMAINS action stays unavailable for that turn. Not
+   * fixed here - that file is owned by another agent.
+   */
+  optional?: boolean
+}
+
+/** §10.1 verbatim. */
+export interface AssistantPlaybook {
+  intent: IntentId
+  description: string
+  /** Must all be filled (with an allowedValues value) before a Navigation Card can show. */
+  requiredSlots: AssistantSlot[]
+  /** RouteIds this intent may ever propose. */
+  allowedRoutes: RouteId[]
+  defaultRoute: RouteId | null
+  /** One beginner-friendly sentence shown on the Navigation Card. */
+  guidance: string
+  warnings: string[]
+}
+
+/**
+ * §9.2 ⚠️: the DNS trio is real (functions/src/api/dnsRecords.ts) but the
+ * rental DNS is a store-backed mini resolver (§6.3.2 Lv2) — records are never
+ * published to the real internet DNS, so propagation still must not be
+ * promised.
+ */
+const DNS_STUB_WARNING = 'DNS設定の保存はまだ検証中の機能です。反映を保証する案内はしません。'
+
+/** §6.3.3.3 の警告必須要件 (docs/registrar-spec-draft.md §6.3.3): must always accompany CHANGE_NAMESERVER. */
+const NAMESERVER_CHANGE_WARNING =
+  'ネームサーバーを変更すると、このサービスで設定したDNSレコードは使われなくなります。メールも止まります。'
+
+/** DNS record values are never generated by the AI (§8.2, §2.2). */
+const NO_DNS_VALUE_WARNING = 'DNSレコードの値はAIが決めません。契約先の案内に従って入力してください。'
+
+/**
+ * Human display name for one `enum` slot value: the 8 `DNS_RECIPES` ids get
+ * their own `recipe.service` name, and `other` gets the fixed fallback label.
+ *
+ * ⚠️ Lives here, not in `actions.ts`, because BOTH the Quick Action button
+ * labels AND the slot's own clarifying question are built from it. Before this
+ * move they had two independent sources: `actions.ts` generated one button per
+ * `allowedValues` entry while the `question` string below was hand-written, and
+ * the two drifted - `CONNECT_WEBSITE`'s question named
+ * 「Vercel / Netlify / GitHub Pages / Cloudflare / その他」 while `allowedValues`
+ * additionally contained `sakura-rental` and `xserver`. A real browser report
+ * was exactly that mismatch: the assistant asked about Cloudflare and then
+ * offered さくら/エックスサーバー buttons instead. Generating both from this one
+ * table makes that class of drift impossible.
+ */
+export const SLOT_VALUE_DISPLAY_NAMES: Readonly<Record<string, string>> = Object.fromEntries([
+  ...DNS_RECIPES.map((recipe) => [recipe.id, recipe.service] as const),
+  ['other', SLOT_VALUE_OTHER_LABEL],
+])
+
+export function slotValueDisplayName(value: string): string {
+  return SLOT_VALUE_DISPLAY_NAMES[value] ?? value
+}
+
+/** `どのサービスで…しますか？（A / B / その他）` - the option list is always every `allowedValues` entry, in order. */
+function enumSlotQuestion(prompt: string, allowedValues: readonly string[]): string {
+  return `${prompt}（${allowedValues.map(slotValueDisplayName).join(' / ')}）`
+}
+
+const CONNECT_WEBSITE_PROVIDERS: readonly string[] = [
+  'vercel',
+  'netlify',
+  'github-pages',
+  'sakura-rental',
+  'xserver',
+  'cloudflare',
+  'other',
+]
+
+const SETUP_EMAIL_PROVIDERS: readonly string[] = ['google-workspace', 'microsoft-365', 'other']
+
+/** v1.4 §4.1: shared by SEARCH_DOMAIN and PURCHASE_DOMAIN - both need the same "what is this domain for" answer. */
+const KEYWORD_SLOT_QUESTION =
+  'どんなサイトやサービスのためのドメインをお探しですか？キーワードを教えてください（例: パン屋, カフェ）。'
+
+/**
+ * v1.4 §4.1: `SEARCH_DOMAIN`/`PURCHASE_DOMAIN`'s `keyword` slot - a
+ * comma-separated list of purpose words, not an enum choice. `optional:
+ * true` because a keyword-less "ドメインを取得したい" must still resolve to
+ * the DOMAIN_SEARCH Navigation Card (v1.3 behaviour); the slot only exists
+ * to unlock the SUGGEST_DOMAINS Quick Action when the user happens to
+ * mention a purpose.
+ */
+const KEYWORD_SLOT: AssistantSlot = {
+  key: 'keyword',
+  kind: 'label',
+  optional: true,
+  allowedValues: [],
+  question: KEYWORD_SLOT_QUESTION,
+}
+
+function addRecordPlaybook(intent: IntentId, description: string, recordLabel: string): AssistantPlaybook {
+  return {
+    intent,
+    description,
+    requiredSlots: [],
+    allowedRoutes: ['DNS_RECORDS'],
+    defaultRoute: 'DNS_RECORDS',
+    guidance: `DNS設定のレコード設定モードから${recordLabel}を追加できます。値はサービス提供元の案内に従って入力してください。`,
+    warnings: [NO_DNS_VALUE_WARNING, DNS_STUB_WARNING],
+  }
+}
+
+export const ASSISTANT_PLAYBOOKS: readonly AssistantPlaybook[] = [
+  {
+    intent: 'SEARCH_DOMAIN',
+    description: 'ドメインを探す',
+    requiredSlots: [KEYWORD_SLOT],
+    allowedRoutes: ['DOMAIN_SEARCH'],
+    defaultRoute: 'DOMAIN_SEARCH',
+    guidance: 'ドメイン検索画面で希望の名前を入力すると、空き状況と料金を確認できます。',
+    warnings: [],
+  },
+  {
+    intent: 'PURCHASE_DOMAIN',
+    description: 'ドメインを取得したい',
+    requiredSlots: [KEYWORD_SLOT],
+    // 取得は検索から始まる - DOMAIN_ORDER は §9.2 で 🤔 false のまま。
+    allowedRoutes: ['DOMAIN_SEARCH'],
+    defaultRoute: 'DOMAIN_SEARCH',
+    guidance: 'ドメイン検索画面で希望の名前を検索し、候補の中から取得を申し込めます。',
+    warnings: [],
+  },
+  {
+    intent: 'VIEW_DOMAIN',
+    description: '自分のドメインを見たい',
+    requiredSlots: [],
+    allowedRoutes: ['DOMAIN_LIST', 'DOMAIN_DETAIL'],
+    defaultRoute: 'DOMAIN_LIST',
+    guidance: '取得済みドメインの一覧から、確認したいドメインを選べます。',
+    warnings: [],
+  },
+  {
+    intent: 'POST_PURCHASE_NEXT_STEPS',
+    description: 'ドメインを取得したあと何をするか',
+    // No slot: the branch itself is the question, and it is asked with Quick
+    // Action buttons (`actions.ts`'s `nextStepBranchActions`) that resolve to
+    // the CONCRETE intents - CONNECT_WEBSITE / SETUP_EMAIL / EXPLAIN_DNS /
+    // VIEW_DOMAIN - not to a slot value on this Playbook. Modelling it as a
+    // `requiredSlots` enum would have produced the same four buttons, but a
+    // click would then have to be answered from THIS Playbook's single
+    // `guidance` string and single `defaultRoute`, which is exactly what the
+    // four branches differ in.
+    requiredSlots: [],
+    // Deliberately empty: this intent's whole job is to hand the user to
+    // another intent, so it must never propose a screen itself. It also makes
+    // every model-proposed route contradict it, which is what lets
+    // `useAssistantChat.ts`'s cross-check override a model that read
+    // 「取得した」 as 「取得したい」 (PURCHASE_DOMAIN → ドメイン検索).
+    allowedRoutes: [],
+    defaultRoute: null,
+    guidance:
+      'ドメインの取得ができたら、次は「そのドメインをどこに向けるか」をDNSで設定します。DNSは、ドメイン名と、実際にサイトやメールを動かしているサービスを結びつけるための住所録のようなものです。まずはやりたいことを選んでください。',
+    warnings: [],
+  },
+  {
+    intent: 'CONNECT_WEBSITE',
+    // §10.3 verbatim.
+    description: '取得済みドメインをWebホスティングサービスへ接続する',
+    requiredSlots: [
+      {
+        key: 'provider',
+        allowedValues: [...CONNECT_WEBSITE_PROVIDERS],
+        question: enumSlotQuestion('どのサービスでWebサイトを公開しますか？', CONNECT_WEBSITE_PROVIDERS),
+      },
+    ],
+    allowedRoutes: ['DNS_RECORDS', 'DNS_NAMESERVER'],
+    defaultRoute: 'DNS_RECORDS',
+    guidance: 'レコード設定モードの「レシピ」からお使いのサービスを選ぶと、必要なレコードが自動で入ります。',
+    warnings: ['設定値はレシピ機能が用意します。AIは値を案内しません。', DNS_STUB_WARNING],
+  },
+  {
+    intent: 'SETUP_EMAIL',
+    description: 'メールを使いたい',
+    requiredSlots: [
+      {
+        key: 'provider',
+        allowedValues: [...SETUP_EMAIL_PROVIDERS],
+        question: enumSlotQuestion('どのサービスでメールを使いますか？', SETUP_EMAIL_PROVIDERS),
+      },
+    ],
+    allowedRoutes: ['DNS_RECORDS'],
+    defaultRoute: 'DNS_RECORDS',
+    guidance: 'レコード設定モードの「レシピ」からお使いのメールサービスを選ぶと、必要なレコードが自動で入ります。',
+    warnings: ['設定値はレシピ機能が用意します。AIは値を案内しません。', DNS_STUB_WARNING],
+  },
+  addRecordPlaybook('ADD_A_RECORD', 'レコード追加', 'Aレコード'),
+  addRecordPlaybook('ADD_AAAA_RECORD', 'レコード追加', 'AAAAレコード'),
+  addRecordPlaybook('ADD_CNAME', 'レコード追加', 'CNAMEレコード'),
+  addRecordPlaybook('ADD_TXT', 'レコード追加', 'TXTレコード'),
+  addRecordPlaybook('ADD_MX', 'レコード追加', 'MXレコード'),
+  {
+    intent: 'CREATE_SUBDOMAIN',
+    description: 'www等を作りたい',
+    requiredSlots: [],
+    allowedRoutes: ['DNS_RECORDS'],
+    defaultRoute: 'DNS_RECORDS',
+    guidance: 'DNS設定のレコード設定モードから、wwwなどのサブドメイン用レコードを追加できます。',
+    warnings: [DNS_STUB_WARNING],
+  },
+  {
+    intent: 'CHANGE_NAMESERVER',
+    description: 'ネームサーバーを変えたい',
+    requiredSlots: [],
+    allowedRoutes: ['DNS_NAMESERVER'],
+    defaultRoute: 'DNS_NAMESERVER',
+    guidance: 'DNS設定のネームサーバー変更モードから変更できます。',
+    warnings: [NAMESERVER_CHANGE_WARNING, DNS_STUB_WARNING],
+  },
+  {
+    intent: 'SETUP_DNSSEC',
+    description: 'DNSSEC',
+    requiredSlots: [],
+    // §10.2: UI が存在しないため常に固定回答。
+    allowedRoutes: [],
+    defaultRoute: null,
+    guidance: '現在この画面では設定できません。',
+    warnings: [],
+  },
+  {
+    intent: 'VERIFY_DOMAIN',
+    description: '所有権確認（TXT）',
+    requiredSlots: [],
+    allowedRoutes: ['DNS_RECORDS'],
+    defaultRoute: 'DNS_RECORDS',
+    guidance:
+      'DNS設定のレコード設定モードで、外部サービスから渡された案内文を「貼り付けて読み取る」機能に貼り付けると、TXTレコードの下書きを作成できます。',
+    warnings: [NO_DNS_VALUE_WARNING, DNS_STUB_WARNING],
+  },
+  {
+    intent: 'TRANSFER_DOMAIN',
+    description: '移管したい',
+    requiredSlots: [],
+    allowedRoutes: ['DOMAIN_DETAIL'],
+    defaultRoute: 'DOMAIN_DETAIL',
+    guidance: 'ドメイン詳細画面の移管カードから、移管に必要な認証コード（AuthInfo）を確認できます。',
+    warnings: [],
+  },
+  {
+    intent: 'RENEW_DOMAIN',
+    description: '更新・期限',
+    requiredSlots: [],
+    allowedRoutes: ['DOMAIN_DETAIL'],
+    defaultRoute: 'DOMAIN_DETAIL',
+    guidance: 'ドメイン詳細画面から有効期限の確認や更新ができます。',
+    warnings: [],
+  },
+  {
+    intent: 'RETIRE_DOMAIN',
+    description: 'もう使わない・復旧',
+    requiredSlots: [],
+    allowedRoutes: ['DOMAIN_DETAIL'],
+    defaultRoute: 'DOMAIN_DETAIL',
+    guidance: 'ドメイン詳細画面からドメインの廃止・復旧ができます。',
+    warnings: [],
+  },
+  {
+    intent: 'TROUBLESHOOT_DNS',
+    description: '反映されない',
+    requiredSlots: [],
+    allowedRoutes: ['DNS_RECORDS'],
+    defaultRoute: 'DNS_RECORDS',
+    guidance: 'DNS設定画面の「確認する」機能で、設定した内容が反映されているか確認できます。',
+    warnings: [DNS_STUB_WARNING],
+  },
+  {
+    intent: 'EXPLAIN_DNS',
+    description: '用語説明',
+    requiredSlots: [],
+    allowedRoutes: [],
+    defaultRoute: null,
+    guidance: 'DNSの仕組みについてご説明します。画面の操作は不要です。',
+    warnings: [],
+  },
+  {
+    intent: 'EXPLAIN_RECORD',
+    description: '用語説明',
+    requiredSlots: [],
+    allowedRoutes: [],
+    defaultRoute: null,
+    guidance: 'レコードの意味についてご説明します。画面の操作は不要です。',
+    warnings: [],
+  },
+  {
+    intent: 'LOGIN_HELP',
+    description: 'ログイン・登録',
+    requiredSlots: [],
+    allowedRoutes: ['LOGIN', 'SIGNUP'],
+    defaultRoute: 'LOGIN',
+    guidance: 'ログイン画面からサインインできます。アカウントをお持ちでない場合は新規登録もできます。',
+    warnings: [],
+  },
+  {
+    intent: 'UNKNOWN',
+    description: '判断不能',
+    requiredSlots: [],
+    allowedRoutes: [],
+    defaultRoute: null,
+    guidance: 'もう少し詳しく教えてください。',
+    warnings: [],
+  },
+  {
+    intent: 'OUT_OF_SCOPE',
+    description: '対象外',
+    requiredSlots: [],
+    allowedRoutes: [],
+    defaultRoute: null,
+    guidance: 'このサービスに関する質問のみお答えできます。',
+    warnings: [],
+  },
+]
+
+/**
+ * Narrows a non-empty array into zod's `z.enum()` tuple shape without an
+ * unsound direct cast. Throws only if the source array turns out empty -
+ * a coding error in this module, never a runtime/user-input condition.
+ */
+function asNonEmptyTuple<T>(values: readonly T[]): readonly [T, ...T[]] {
+  if (values.length === 0) throw new Error('expected a non-empty array')
+  return values as readonly [T, ...T[]]
+}
+
+/** Derived from ASSISTANT_PLAYBOOKS, not hand-written (§14.2 "二重定義を作らない"). */
+export const ALLOWED_INTENT_IDS = asNonEmptyTuple(ASSISTANT_PLAYBOOKS.map((playbook) => playbook.intent))
+
+export function findPlaybook(intent: IntentId): AssistantPlaybook | undefined {
+  return ASSISTANT_PLAYBOOKS.find((playbook) => playbook.intent === intent)
+}
+
+export function isIntentId(value: string): value is IntentId {
+  return ASSISTANT_PLAYBOOKS.some((playbook) => playbook.intent === value)
+}
+
+/**
+ * §10.2 note: `provider` values only decide the route within the range the
+ * app already defined (`allowedRoutes`/`defaultRoute`) - the model's free
+ * text never picks a route directly. Written as a small per-intent table so
+ * more overrides can be added without touching `resolveRouteForSlots` itself.
+ *
+ * §10.2 names only `provider === 'cloudflare'` here, but `features/dns/recipes.ts`
+ * marks BOTH `cloudflare` and `xserver` as `mode: 'ns-guide'` - i.e. both are
+ * used through a nameserver change, not through records written in this
+ * service. Hard-coding the single id the spec happened to name meant an
+ * `xserver` user was routed to DNS_RECORDS and offered a records recipe that
+ * this provider has none of (`recipe.records` is absent for `ns-guide`
+ * entries). `providerNeedsNameserverChange` reads `recipe.mode` instead, so the
+ * routing decision and the recipe data can never disagree, and adding a future
+ * `ns-guide` provider needs no edit here (the "新サービスの追加＝JSON追加のみ"
+ * principle `recipes.ts` is built on).
+ */
+export function providerNeedsNameserverChange(providerId: string | null | undefined): boolean {
+  if (!providerId) return false
+  return DNS_RECIPES.some((recipe) => recipe.id === providerId && recipe.mode === 'ns-guide')
+}
+
+const ROUTE_OVERRIDES: Partial<
+  Record<IntentId, (slots: Readonly<Record<string, string>>) => RouteId | null>
+> = {
+  CONNECT_WEBSITE: (slots) => (providerNeedsNameserverChange(slots.provider) ? 'DNS_NAMESERVER' : null),
+}
+
+export function resolveRouteForSlots(
+  playbook: AssistantPlaybook,
+  slots: Readonly<Record<string, string>>,
+): RouteId | null {
+  const override = ROUTE_OVERRIDES[playbook.intent]?.(slots) ?? null
+  const candidate = override ?? playbook.defaultRoute
+  if (candidate === null) return null
+  return playbook.allowedRoutes.includes(candidate) ? candidate : null
+}
+
+/** v1.4 §4.1: how many purpose keywords a `kind: 'label'` slot may carry at once. */
+const MAX_LABEL_SLOT_VALUES = 5
+
+/**
+ * Validates a `kind: 'label'` slot's raw value (v1.4 design contract §4.1):
+ * splits on commas, normalizes and validates each entry with the exact
+ * validators `DomainSearchPage` uses (`normalizeDomainLabel` +
+ * `validateDomainLabel` from `features/domains/validation.ts` - reused, not
+ * reimplemented), drops invalid entries, dedupes, and caps at
+ * `MAX_LABEL_SLOT_VALUES`. Order is preserved (first-seen wins), which
+ * matters for callers that treat the first entry as the primary keyword
+ * (design contract §4.1: "The first valid entry seeds the rule-based
+ * engine; all valid entries become the AI's secondary proposals").
+ */
+export function validateLabelSlotValue(raw: string): string[] {
+  const seen = new Set<string>()
+  const result: string[] = []
+  for (const entry of raw.split(',')) {
+    const normalized = normalizeDomainLabel(entry)
+    if (normalized === '') continue
+    if (validateDomainLabel(normalized) !== undefined) continue
+    if (seen.has(normalized)) continue
+    seen.add(normalized)
+    result.push(normalized)
+    if (result.length >= MAX_LABEL_SLOT_VALUES) break
+  }
+  return result
+}

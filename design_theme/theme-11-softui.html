@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>候補11 ソフトUI型 — ドメイン検索</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+/*
+  候補11｜ソフトUI型（ニューモーフィズム）
+  ------------------------------------------------------------------
+  参考にした系統 : ニューモーフィズム（同色の面を押し出し／へこませて作るUI）
+  特徴 :
+    - 罫線をひとつも使わず、影の向きだけで凹凸を作る
+    - 背景と部品が同じ色。彩度はほぼゼロで、差し色は藍1色だけ
+    - 角丸は大きく統一（18px / 999px の2種）
+  想定ユーザー : やわらかい操作感を好む一般ユーザー
+  このページの唯一の仕事 : へこんだ窓に指を置かせ、そのまま打たせる。
+*/
+:root{
+  --bg:#e8ebf1;
+  --fg:#3a4054;
+  --fg-2:#6c7489;
+  --fg-3:#9aa1b3;
+  --ind:#5b6ee8;
+  --ind-d:#4657d4;
+  --ok:#2f9e78;
+  --ng:#d1596a;
+  --up:6px 6px 14px rgba(163,171,190,.7), -6px -6px 14px rgba(255,255,255,.95);
+  --up-sm:3px 3px 8px rgba(163,171,190,.65), -3px -3px 8px rgba(255,255,255,.95);
+  --in:inset 5px 5px 11px rgba(163,171,190,.75), inset -5px -5px 11px rgba(255,255,255,.95);
+  --in-sm:inset 3px 3px 7px rgba(163,171,190,.6), inset -3px -3px 7px rgba(255,255,255,.9);
+  --r:18px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg);color:var(--fg);
+  font-family:"Noto Sans JP","Outfit",system-ui,sans-serif;
+  font-size:15px;line-height:1.9;-webkit-font-smoothing:antialiased;
+}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1120px;margin:0 auto;padding:0 26px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.en{font-family:"Outfit",sans-serif}
+
+.site-header{padding:18px 0}
+.site-header .inner{
+  max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:24px;height:58px;padding:0 20px;
+  background:var(--bg);border-radius:999px;box-shadow:var(--up);
+}
+.brand{display:flex;align-items:center;gap:11px;font-family:"Outfit",sans-serif;font-weight:600;font-size:18px}
+.brand i{width:24px;height:24px;border-radius:50%;display:block;background:var(--bg);box-shadow:var(--up-sm);position:relative}
+.brand i::after{content:"";position:absolute;inset:7px;border-radius:50%;background:var(--ind)}
+.brand em{font-style:normal;font-weight:400;color:var(--fg-2)}
+.site-nav{display:flex;gap:6px;margin-left:6px}
+.site-nav a{font-size:14px;color:var(--fg-2);padding:6px 14px;border-radius:999px}
+.site-nav a:hover{box-shadow:var(--up-sm);color:var(--fg)}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:14px;font-size:13.5px;color:var(--fg-2)}
+.auth-chip{font-family:"Outfit",sans-serif;font-size:11.5px;color:var(--fg-3);white-space:nowrap}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;border:0;
+  font-family:inherit;font-weight:700;font-size:14.5px;border-radius:999px;padding:12px 24px;line-height:1;
+  background:var(--ind);color:#fff;box-shadow:4px 4px 10px rgba(91,110,232,.35), -4px -4px 10px rgba(255,255,255,.9);
+}
+.btn:hover{background:var(--ind-d)}
+.btn-soft{background:var(--bg);color:var(--fg);box-shadow:var(--up-sm)}
+.btn-soft:hover{box-shadow:var(--in-sm);color:var(--ind)}
+.btn-sm{padding:9px 17px;font-size:13px}
+
+.hero{padding:44px 0 76px;text-align:center}
+.hero h1{margin:0 0 20px;font-family:"Outfit",sans-serif;font-size:12px;font-weight:600;letter-spacing:.2em;color:var(--fg-3)}
+.hero .head{margin:0 auto 16px;font-size:42px;line-height:1.42;font-weight:700;letter-spacing:-.02em;max-width:18em;word-break:auto-phrase}
+.hero .head b{color:var(--ind)}
+.hero .lede{margin:0 auto 34px;color:var(--fg-2);font-size:15px;max-width:36em;word-break:auto-phrase}
+form.q{
+  display:flex;align-items:center;gap:10px;max-width:600px;margin:0 auto;
+  background:var(--bg);border-radius:999px;box-shadow:var(--in);padding:9px 9px 9px 24px;
+}
+form.q svg{width:18px;height:18px;color:var(--fg-3);flex:none}
+form.q input{flex:1;min-width:0;border:0;outline:0;background:transparent;height:48px;font-family:inherit;font-size:16.5px;color:var(--fg)}
+form.q input::placeholder{color:var(--fg-3)}
+form.q .btn{height:48px;padding:0 28px}
+.hint{margin:16px auto 0;max-width:600px;font-size:12.5px;color:var(--fg-3)}
+.chips{margin:26px auto 0;display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.chip{background:var(--bg);border-radius:999px;box-shadow:var(--up-sm);padding:9px 18px;font-size:13px;color:var(--fg-2)}
+.chip b{color:var(--fg);font-family:"Outfit",sans-serif}
+.preview{
+  max-width:760px;margin:52px auto 0;background:var(--bg);border-radius:24px;box-shadow:var(--up);padding:14px;
+}
+.preview .row{display:flex;align-items:center;gap:16px;padding:14px 18px;border-radius:14px;text-align:left}
+.preview .row+.row{margin-top:8px}
+.preview .row.sel{box-shadow:var(--in-sm)}
+.preview .dom{font-family:"Outfit",sans-serif;font-size:16px;font-weight:500;min-width:170px}
+.preview .st{font-size:13px;font-weight:700;min-width:130px}
+.preview .st.ok{color:var(--ok)}
+.preview .st.ng{color:var(--ng)}
+.preview .st.unk{color:var(--fg-3)}
+.preview .fee{margin-left:auto;font-family:"Outfit",sans-serif;font-size:14.5px;text-align:right}
+.preview .fee small{display:block;font-family:"Noto Sans JP",sans-serif;font-size:11.5px;color:var(--fg-3)}
+
+section.block{padding:76px 0}
+.sec-head{text-align:center;margin-bottom:38px}
+.sec-head h2{margin:0 auto 10px;font-size:31px;font-weight:700;letter-spacing:-.02em;line-height:1.5;max-width:22em;word-break:auto-phrase}
+.sec-head p{margin:0 auto;color:var(--fg-2);font-size:14.5px;max-width:46em;word-break:auto-phrase}
+.tlds{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.tld{background:var(--bg);border-radius:var(--r);box-shadow:var(--up-sm);padding:18px 20px}
+.tld:hover{box-shadow:var(--in-sm)}
+.tld .t{font-family:"Outfit",sans-serif;font-size:18px;font-weight:600}
+.tld .p{margin:6px 0 0;font-family:"Outfit",sans-serif;font-size:22px;font-weight:700;color:var(--ind)}
+.tld .p em{font-style:normal;font-family:"Noto Sans JP",sans-serif;font-size:11px;color:var(--fg-3);font-weight:400;margin-left:6px}
+.tld .r{font-family:"Outfit",sans-serif;font-size:12.5px;color:var(--fg-3)}
+.tld .flag{display:inline-block;margin-top:9px;font-size:11px;color:var(--fg-2);border-radius:999px;padding:2px 10px;box-shadow:var(--in-sm)}
+.note{margin:26px auto 0;text-align:center;font-size:12.5px;color:var(--fg-3);line-height:1.95;max-width:58em;word-break:auto-phrase}
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.tile{background:var(--bg);border-radius:24px;box-shadow:var(--up);padding:30px 28px}
+.tile .ico{width:52px;height:52px;border-radius:50%;box-shadow:var(--in-sm);display:flex;align-items:center;justify-content:center;font-family:"Outfit",sans-serif;font-size:18px;font-weight:700;color:var(--ind);margin-bottom:16px}
+.tile h3{margin:0 0 8px;font-size:18px;font-weight:700}
+.tile p{margin:0;color:var(--fg-2);font-size:14px;line-height:2;word-break:auto-phrase}
+.cta{text-align:center;padding:36px 0 90px}
+.cta .box{max-width:900px;margin:0 auto;background:var(--bg);border-radius:28px;box-shadow:var(--up);padding:48px 40px}
+.cta h2{margin:0 auto 10px;font-size:30px;font-weight:700;letter-spacing:-.02em;max-width:20em;line-height:1.5;word-break:auto-phrase}
+.cta p{margin:0 auto 26px;color:var(--fg-2);font-size:14.5px}
+footer.site{padding:0 0 70px;color:var(--fg-2)}
+.fcols{display:grid;grid-template-columns:repeat(4,1fr);gap:26px;margin-bottom:26px}
+.fcols h4{margin:0 0 10px;font-family:"Outfit",sans-serif;font-size:12.5px;font-weight:600;color:var(--fg)}
+.fcols ul{margin:0;padding:0;list-style:none}
+.fcols li{margin-bottom:7px}
+.fcols a{font-size:13.5px}
+.fcols a:hover{color:var(--ind)}
+.fbottom{font-size:12px;color:var(--fg-3);display:flex;flex-wrap:wrap;gap:16px;padding-top:18px}
+@media (max-width:1000px){
+  .site-nav{display:none}
+  .hero .head{font-size:27px}
+  .sec-head h2,.cta h2{font-size:23px}
+  .tlds{grid-template-columns:repeat(2,1fr)}
+  .trio{grid-template-columns:1fr}
+  .fcols{grid-template-columns:repeat(2,1fr)}
+  form.q{flex-wrap:wrap;border-radius:24px;padding:14px}
+  form.q input{flex-basis:100%}
+  form.q .btn{width:100%}
+  .preview .row{flex-wrap:wrap;gap:8px}
+  .preview .dom{flex-basis:100%;min-width:0}
+  .preview .fee{margin-left:0}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="#"><i></i><span>TeamC<em>.Com</em></span></a>
+    <nav class="site-nav"><a href="#">料金</a><a href="#">使い方</a><a href="#">サポート</a></nav>
+    <div class="header-right">
+      <span class="auth-chip">AuthContext: 未認証</span>
+      <a href="#">ログイン</a>
+      <a class="btn btn-soft btn-sm" href="#">会員登録</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <h1>ドメイン検索</h1>
+      <p class="head">名前を入れるだけで、<br /><b>22のTLD</b>をまとめて確認。</p>
+      <p class="lede">空き状況と料金を一度に取得します。ログインは要りません。</p>
+
+      <form class="q" onsubmit="return false">
+        <label class="sr" for="q">取得したいドメイン名</label>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+        <input id="q" type="text" placeholder="my-shop" autocomplete="off" />
+        <button class="btn" type="submit">検索する</button>
+      </form>
+      <p class="hint">TLD（.com など）は含めず入力してください。全角文字は自動的に半角へ変換されます。</p>
+
+      <div class="chips">
+        <span class="chip"><b>22</b> TLDに対応</span>
+        <span class="chip">平均 <b>1.2秒</b></span>
+        <span class="chip">ログイン<b>不要</b></span>
+      </div>
+
+      <div class="preview" aria-hidden="true">
+        <div class="row sel"><span class="dom">my-shop.com</span><span class="st ok">◯ 空きあり</span><span class="fee">¥1,480<small>更新 ¥1,980</small></span></div>
+        <div class="row"><span class="dom">my-shop.net</span><span class="st ng">✕ 使用中</span><span class="fee">—<small>&nbsp;</small></span></div>
+        <div class="row sel"><span class="dom">my-shop.dev</span><span class="st ok">◯ 空きあり</span><span class="fee">¥1,980<small>更新 ¥2,480</small></span></div>
+        <div class="row"><span class="dom">my-shop.io</span><span class="st unk">？ 確認できませんでした</span><span class="fee">¥5,980<small>更新 ¥6,980</small></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>対応TLDと料金</h2>
+        <p>すべて税込・1年あたり。初年度が安いTLDほど2年目からの更新料が上がるため、両方を並べて表示しています。</p>
+      </div>
+      <div class="tlds" id="tlds"></div>
+      <p class="note">復旧料（有効期限切れ後の取り戻し）は ¥3,300 〜 ¥6,600。.dev / .app はHSTSプリロード済みのため常時HTTPS化が必須です。レジストリは Kitaqsign と Kitaqnic の2社です。</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="sec-head"><h2>つくるときに決めた3つのこと</h2></div>
+      <div class="trio">
+        <div class="tile"><div class="ico">01</div><h3>TLDを先に選ばせない</h3><p>対応する22のTLDすべてに毎回問い合わせます。ひとつずつ試し直す必要はありません。</p></div>
+        <div class="tile"><div class="ico">02</div><h3>取れる候補だけを提案</h3><p>希望がすべて埋まっていたときだけ、その場で空きを再確認できた候補を出します。</p></div>
+        <div class="tile"><div class="ico">03</div><h3>分からなかったと書く</h3><p>接続できなかったTLDは空きとも使用中とも表示しません。◯ / ✕ / ？ を記号と文字で区別します。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="wrap">
+      <div class="box">
+        <h2>その名前、まだ空いているかもしれません</h2>
+        <p>入力するのは名前だけ。ログインもカード登録も要りません。</p>
+        <a class="btn" href="#">ドメインを検索する</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="fcols">
+      <div><h4>検索</h4><ul><li><a href="#">ドメイン検索</a></li><li><a href="#">料金一覧</a></li><li><a href="#">対応TLD</a></li><li><a href="#">似た候補の提案</a></li></ul></div>
+      <div><h4>アカウント</h4><ul><li><a href="#">ログイン</a></li><li><a href="#">会員登録</a></li><li><a href="#">マイページ</a></li><li><a href="#">ダッシュボード</a></li></ul></div>
+      <div><h4>サポート</h4><ul><li><a href="#">よくある質問</a></li><li><a href="#">ネームサーバーの設定</a></li><li><a href="#">更新と自動更新</a></li><li><a href="#">ドメインを手放す</a></li></ul></div>
+      <div><h4>TeamC.Com</h4><ul><li><a href="#">概要</a></li><li><a href="#">レジストリ Kitaqsign</a></li><li><a href="#">レジストリ Kitaqnic</a></li><li><a href="#">利用規約</a></li></ul></div>
+    </div>
+    <div class="fbottom"><span>TeamC.Com — GMOインターネットグループ 学生ハッカソン TeamC</span><span>料金・レジストリは演習用のダミーデータです。</span></div>
+  </div>
+</footer>
+
+<script>
+const TLDS=[
+ ['.com',1480,1980,'人気No.1'],['.net',1680,2180,''],['.org',1680,2180,''],['.info',980,2480,''],
+ ['.dev',1980,2480,'HTTPS必須'],['.app',2980,3480,'HTTPS必須'],['.io',5980,6980,'プレミアム'],['.co',3980,4980,''],
+ ['.shop',280,4980,''],['.tech',480,5980,''],['.blog',1980,2980,''],['.site',180,3980,''],
+ ['.online',180,5480,''],['.store',280,5980,''],['.biz',1480,2980,''],['.club',780,2480,''],
+ ['.live',780,3480,''],['.studio',980,3980,''],['.work',180,2480,''],['.design',3980,6980,'プレミアム'],
+ ['.xyz',98,1980,''],['.top',98,1680,'']
+];
+const yen=n=>'¥'+n.toLocaleString('ja-JP');
+document.getElementById('tlds').innerHTML=TLDS.map(([t,f,r,flag])=>`
+  <div class="tld"><div class="t">${t}</div><p class="p">${yen(f)}<em>初年度</em></p><div class="r">更新 ${yen(r)}</div>${flag?`<span class="flag">${flag}</span>`:''}</div>`).join('');
+</script>
+</body>
+</html>

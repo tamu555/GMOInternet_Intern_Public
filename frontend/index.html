@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- アプリアイコン（public/ 配下の PNG）。タブは 32/16、iOS のホーム画面は
+         apple-touch-icon、Android / PWA は 192・512 を選ぶ。ヘッダーの
+         BrandMark も同じ 128px 版を出しているので、タブとバーで絵柄が揃う。 -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#eef7ec" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- やわらか若草テーマ (design_theme/theme-04-3-wakakusa.html):
+         見出し = Zen Maru Gothic (丸ゴシック), 数字・英字 = Poppins,
+         本文 = Noto Sans JP。 -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+JP:wght@300..800&display=swap"
+      rel="stylesheet"
+    />
+    <title>ゼロからドメイン</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
